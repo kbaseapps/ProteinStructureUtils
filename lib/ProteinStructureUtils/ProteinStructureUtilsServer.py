@@ -115,11 +115,10 @@ class JSONRPCServiceCustom(JSONRPCService):
             # Exception was raised inside the method.
             newerr = JSONServerError()
             newerr.trace = traceback.format_exc()
-            if isinstance(e.message, str):
-                newerr.data = e.message
+            if len(e.args) == 1:
+                newerr.data = repr(e.args[0])
             else:
-                # Some exceptions embed other exceptions as the message
-                newerr.data = repr(e.message)
+                newerr.data = repr(e.args)
             raise newerr
         return result
 
@@ -347,10 +346,10 @@ class Application(object):
                              name='ProteinStructureUtils.export_pdb',
                              types=[dict])
         self.method_authentication['ProteinStructureUtils.export_pdb'] = 'required'  # noqa
-        self.rpc_service.add(impl_ProteinStructureUtils.import_pdb_file,
-                             name='ProteinStructureUtils.import_pdb_file',
+        self.rpc_service.add(impl_ProteinStructureUtils.import_model_pdb_file,
+                             name='ProteinStructureUtils.import_model_pdb_file',
                              types=[dict])
-        self.method_authentication['ProteinStructureUtils.import_pdb_file'] = 'required'  # noqa
+        self.method_authentication['ProteinStructureUtils.import_model_pdb_file'] = 'required'  # noqa
         self.rpc_service.add(impl_ProteinStructureUtils.status,
                              name='ProteinStructureUtils.status',
                              types=[dict])

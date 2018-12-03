@@ -23,8 +23,8 @@ class ProteinStructureUtils:
     # the latter method is running.
     ######################################### noqa
     VERSION = "0.0.1"
-    GIT_URL = ""
-    GIT_COMMIT_HASH = ""
+    GIT_URL = "https://github.com/kbaseapps/ProteinStructureUtils.git"
+    GIT_COMMIT_HASH = "64242cf2d4738ebfcbac8c4ed6543937642b1c68"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -90,9 +90,9 @@ class ProteinStructureUtils:
         # return the results
         return [result]
 
-    def import_pdb_file(self, ctx, params):
+    def import_model_pdb_file(self, ctx, params):
         """
-        import_pdb_from_staging: import a ProteinStructure from PDB
+        import_model_pdb_file: import a ProteinStructure from PDB
         :param params: instance of type "ImportPDBParams" (Input of the
            import_matrix_from_excel function input_shock_id: file shock id
            input_file_path: absolute file path input_staging_file_path:
@@ -110,14 +110,14 @@ class ProteinStructureUtils:
         """
         # ctx is the context object
         # return variables are: result
-        #BEGIN import_pdb_file
+        #BEGIN import_model_pdb_file
         logging.info('Starting import_pdb_file with params:\n{}'.format(params))
-        result = self.pdb_util.import_pdb_file(params)
-        #END import_pdb_file
+        result = self.pdb_util.import_model_pdb_file(params)
+        #END import_model_pdb_file
 
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
-            raise ValueError('Method import_pdb_file return value ' +
+            raise ValueError('Method import_model_pdb_file return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]

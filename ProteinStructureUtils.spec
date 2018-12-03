@@ -64,7 +64,7 @@ module ProteinStructureUtils {
       obj_ref structure_obj_ref;
   } ImportPDBOutput;
 
-  /* import_pdb_from_staging: import a ProteinStructure from PDB*/
-  funcdef import_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
+  /* import_model_pdb_file: import a ProteinStructure from PDB*/
+  funcdef import_model_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
 
 };

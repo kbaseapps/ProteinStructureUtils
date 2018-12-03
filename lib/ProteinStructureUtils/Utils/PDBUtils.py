@@ -1,10 +1,11 @@
-import uuid
-import os
+import hashlib
 import logging
-import shutil
+import os
+import uuid
 
-from DataFileUtil.DataFileUtilClient import DataFileUtil
-from KBaseReport.KBaseReportClient import KBaseReport
+from installed_clients.AbstractHandleClient import AbstractHandle
+from installed_clients.DataFileUtilClient import DataFileUtil
+from installed_clients.KBaseReportClient import KBaseReport
 
 
 class PDBUtil:
@@ -38,12 +39,23 @@ class PDBUtil:
 
     def _file_to_data(self, file_path):
         """Do the PDB conversion"""
-        return {}
+        seq = ''
+        return {
+            'name': os.path.basename(file_path),
+            'num_chains': 0,
+            'num_residues': 0,
+            'num_atoms': 0,
+            'protein': {
+                'id': os.path.basename(file_path),
+                'sequence': seq,
+                'md5': hashlib.md5(seq.encode()).hexdigest()
+            },
+        }
 
-    def _pdb_shock_id(self, obj_ref):
-        obj_data = self.dfu.get_objects(
-            {"object_refs": [obj_ref]})['data'][0]
-        return obj_data.get('pdb_ref')
+    def _get_pdb_shock_id(self, obj_ref):
+        """Return the shock id for the PDB file"""
+        obj_data = self.dfu.get_objects({"object_refs": [obj_ref]})['data'][0]['data']
+        return self.hs.hids_to_handles([obj_data['pdb_handle']])[0]['id']
 
     def _upload_to_shock(self, file_path):
         """
@@ -53,14 +65,15 @@ class PDBUtil:
 
         file_to_shock_params = {
             'file_path': file_path,
-            'pack': 'gzip'
+            'pack': 'gzip',
+            'make_handle': True,
         }
-        shock_id = self.dfu.file_to_shock(file_to_shock_params).get('shock_id')
+        shock_id = self.dfu.file_to_shock(file_to_shock_params)['handle']['hid']
 
         return shock_id
 
-    def _generate_search_html_report(self, header_str, table_str):
-        #Included as an example
+    def _generate_html_report(self, header_str, table_str):
+        #TODO: make this work with the PDB viewer
 
         html_report = list()
 
@@ -68,13 +81,8 @@ class PDBUtil:
         self._mkdir_p(output_directory)
         result_file_path = os.path.join(output_directory, 'search.html')
 
-        shutil.copy2(os.path.join(os.path.dirname(__file__), 'templates', 'kbase_icon.png'),
-                     output_directory)
-        shutil.copy2(os.path.join(os.path.dirname(__file__), 'templates', 'search_icon.png'),
-                     output_directory)
-
         with open(result_file_path, 'w') as result_file:
-            with open(os.path.join(os.path.dirname(__file__), 'templates', 'search_template.html'),
+            with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html'),
                       'r') as report_template_file:
                 report_template = report_template_file.read()
                 report_template = report_template.replace('//HEADER_STR', header_str)
@@ -96,7 +104,7 @@ class PDBUtil:
         _generate_report: generate summary report
         """
         # included as an example. Replace with your own implementation
-        # output_html_files = self._generate_search_html_report(header_str, table_str)
+        # output_html_files = self._generate_html_report(header_str, table_str)
 
         report_params = {'message': 'You uploaded a PDB file!',
                          #'html_links': output_html_files,
@@ -118,8 +126,9 @@ class PDBUtil:
         self.scratch = config['scratch']
         self.token = config['KB_AUTH_TOKEN']
         self.dfu = DataFileUtil(self.callback_url)
+        self.hs = AbstractHandle(config['handle-service-url'])
 
-    def import_pdb_file(self, params):
+    def import_model_pdb_file(self, params):
 
         file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
 
@@ -129,15 +138,18 @@ class PDBUtil:
             workspace_id = workspace_name
 
         data = self._file_to_data(file_path)
-        if params.get('description'):
-            data['description'] = params['description']
+        data['pdb_handle'] = self._upload_to_shock(file_path)
+        data['user_data'] = params.get('description', '')
+        logging.info(data)
 
-        info = self.dfu.save_objects([{
-            'obj_type': 'KBaseStructure.ProteinStructure',
-            'obj_name': pdb_name,
-            'data': data,
-            'workspace_name': workspace_id}])[0]
-        obj_ref = "%s/%s/%s" % (info[6], info[0], info[4])
+        info = self.dfu.save_objects({
+            'id': workspace_id,
+            'objects': [
+                {'type': 'KBaseStructure.ModelProteinStructure',
+                 'name': pdb_name,
+                 'data': data}]
+        })[0]
+        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
 
         returnVal = {'structure_obj_ref': obj_ref}
 
@@ -148,25 +160,22 @@ class PDBUtil:
         return returnVal
 
     def export_pdb(self, params):
-        if "obj_ref" not in params:
-            raise ValueError("obj_ref not in supplied params")
+        if "input_ref" not in params:
+            raise ValueError("input_ref not in supplied params")
 
-        return self._pdb_shock_id(params['obj_ref'])
+        return {'shock_id': self._get_pdb_shock_id(params['input_ref'])}
 
     def structure_to_pdb_file(self, params):
-        if "obj_ref" not in params:
-            raise ValueError("obj_ref not in supplied params")
+        if "input_ref" not in params:
+            raise ValueError("input_ref not in supplied params")
         if "destination_dir" not in params:
             raise ValueError("destination_dir not in supplied params")
 
-        shock_id = self._pdb_shock_id(params['obj_ref'])
+        shock_id = self._get_pdb_shock_id(params['input_ref'])
         file_path = self.dfu.shock_to_file({
-            'handle_id': shock_id,
+            'shock_id': shock_id,
             'file_path': params['destination_dir'],
             'unpack': 'uncompress'
         })['file_path']
 
         return {'file_path': file_path}
-
-
-
