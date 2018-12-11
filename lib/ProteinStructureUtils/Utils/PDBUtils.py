@@ -52,7 +52,7 @@ class PDBUtil:
         res_no = 0
         atom_no = 0
         pp_list = []
-        
+        pp_no = 0        
         for model in structure:
             for chain in model:
                 chain_no += 1
@@ -64,6 +64,7 @@ class PDBUtil:
 
 
         for pp in ppb.build_peptides(structure):
+            pp_no += 1
             my_seq= pp.get_sequence()
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
