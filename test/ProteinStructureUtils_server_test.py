@@ -52,7 +52,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     @classmethod
     def prepareData(cls):
-        file = '5o5y.pdb'
+        file = '1nqg.pdb'
         cls.pdb_file_path = os.path.join(cls.scratch, file)
         shutil.copy(os.path.join('data', file), cls.pdb_file_path)
         file_to_shock_params = {
