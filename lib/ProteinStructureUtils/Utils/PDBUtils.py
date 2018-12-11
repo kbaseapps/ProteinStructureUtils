@@ -43,7 +43,7 @@ class PDBUtil:
 
     def _file_to_data(self, file_path):
         """Do the PDB conversion"""
-        pdb1 = os.path.basename(file_path)
+        pdb1 = file_path
         structure = parser.get_structure("test", pdb1)
         model = structure[0]
         chain_no = 0
