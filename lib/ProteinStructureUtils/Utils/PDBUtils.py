@@ -10,7 +10,9 @@ from installed_clients.KBaseReportClient import KBaseReport
 from Bio import PDB
 parser = PDB.PDBParser(PERMISSIVE=1)
 
-
+from Bio.PDB.Polypeptide import PPBuilder
+from Bio.Seq import Seq
+ppb=PPBuilder()
 
 class PDBUtil:
 
@@ -49,7 +51,8 @@ class PDBUtil:
         chain_no = 0
         res_no = 0
         atom_no = 0
-
+        pp_list = []
+        
         for model in structure:
             for chain in model:
                 chain_no += 1
@@ -59,7 +62,11 @@ class PDBUtil:
             for atom in residue.get_atoms():
                 atom_no += 1
 
-        seq = ''
+
+        for pp in ppb.build_peptides(structure):
+            my_seq= pp.get_sequence()
+            pp_list += str(my_seq)
+        seq = ''.join(pp_list)
         return {
             'name': os.path.basename(file_path),
             'num_chains': chain_no,
