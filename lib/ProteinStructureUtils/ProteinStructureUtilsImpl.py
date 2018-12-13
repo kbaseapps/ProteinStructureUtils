@@ -23,8 +23,8 @@ class ProteinStructureUtils:
     # the latter method is running.
     ######################################### noqa
     VERSION = "0.0.1"
-    GIT_URL = "https://github.com/asedova/ProteinStructureUtils.git"
-    GIT_COMMIT_HASH = "58685884d5778543c5e89732ca3f100935e78241"
+    GIT_URL = "https://github.com/kbaseapps/ProteinStructureUtils.git"
+    GIT_COMMIT_HASH = "c382ad991f24c7fb4e191b164413a95a6a33eaba"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
