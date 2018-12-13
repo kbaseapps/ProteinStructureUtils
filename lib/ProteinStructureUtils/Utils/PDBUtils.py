@@ -7,6 +7,12 @@ from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 
+from Bio import PDB
+parser = PDB.PDBParser(PERMISSIVE=1)
+
+from Bio.PDB.Polypeptide import PPBuilder
+from Bio.Seq import Seq
+ppb=PPBuilder()
 
 class PDBUtil:
 
@@ -39,12 +45,34 @@ class PDBUtil:
 
     def _file_to_data(self, file_path):
         """Do the PDB conversion"""
-        seq = ''
+        pdb1 = file_path
+        structure = parser.get_structure("test", pdb1)
+        model = structure[0]
+        chain_no = 0
+        res_no = 0
+        atom_no = 0
+        pp_list = []
+        pp_no = 0        
+        for model in structure:
+            for chain in model:
+                chain_no += 1
+        for residue in model.get_residues():
+            if PDB.is_aa(residue):
+                res_no += 1
+            for atom in residue.get_atoms():
+                atom_no += 1
+
+
+        for pp in ppb.build_peptides(structure):
+            pp_no += 1
+            my_seq= pp.get_sequence()
+            pp_list += str(my_seq)
+        seq = ''.join(pp_list)
         return {
             'name': os.path.basename(file_path),
-            'num_chains': 0,
-            'num_residues': 0,
-            'num_atoms': 0,
+            'num_chains': chain_no,
+            'num_residues': res_no,
+            'num_atoms': atom_no,
             'protein': {
                 'id': os.path.basename(file_path),
                 'sequence': seq,
