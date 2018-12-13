@@ -3,16 +3,13 @@ import logging
 import os
 import uuid
 
+from Bio import PDB
+from Bio.PDB.Polypeptide import PPBuilder
+
 from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 
-from Bio import PDB
-parser = PDB.PDBParser(PERMISSIVE=1)
-
-from Bio.PDB.Polypeptide import PPBuilder
-from Bio.Seq import Seq
-ppb=PPBuilder()
 
 class PDBUtil:
 
@@ -45,6 +42,8 @@ class PDBUtil:
 
     def _file_to_data(self, file_path):
         """Do the PDB conversion"""
+        parser = PDB.PDBParser(PERMISSIVE=1)
+        ppb = PPBuilder()
         pdb1 = file_path
         structure = parser.get_structure("test", pdb1)
         model = structure[0]
@@ -68,7 +67,8 @@ class PDBUtil:
             my_seq= pp.get_sequence()
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
-        return {
+
+        data = {
             'name': os.path.basename(file_path),
             'num_chains': chain_no,
             'num_residues': res_no,
@@ -79,6 +79,8 @@ class PDBUtil:
                 'md5': hashlib.md5(seq.encode()).hexdigest()
             },
         }
+
+        return data, pp_no
 
     def _get_pdb_shock_id(self, obj_ref):
         """Return the shock id for the PDB file"""
@@ -127,14 +129,14 @@ class PDBUtil:
 
         return html_report
 
-    def _generate_report(self, pdb_obj_ref, workspace_name):
+    def _generate_report(self, pdb_obj_ref, workspace_name, n_poly_pep):
         """
         _generate_report: generate summary report
         """
         # included as an example. Replace with your own implementation
         # output_html_files = self._generate_html_report(header_str, table_str)
 
-        report_params = {'message': 'You uploaded a PDB file!',
+        report_params = {'message': f'You uploaded a PDB file with {n_poly_pep} polypeptides!',
                          #'html_links': output_html_files,
                          #'direct_html_link_index': 0,
                          'objects_created': [{'ref': pdb_obj_ref,
@@ -165,7 +167,7 @@ class PDBUtil:
         else:
             workspace_id = workspace_name
 
-        data = self._file_to_data(file_path)
+        data, n_polypeptides = self._file_to_data(file_path)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
         logging.info(data)
@@ -181,7 +183,7 @@ class PDBUtil:
 
         returnVal = {'structure_obj_ref': obj_ref}
 
-        report_output = self._generate_report(obj_ref, workspace_name)
+        report_output = self._generate_report(obj_ref, workspace_name, n_polypeptides)
 
         returnVal.update(report_output)
 

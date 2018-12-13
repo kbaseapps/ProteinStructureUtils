@@ -1,6 +1,6 @@
-name     : Import AmpliconMatrix from BIOM File in Staging Area
-subtitle : Import a PDB file from your staging area into your Narrative as an ProteinStructure
-tooltip  : Import a PDB file from your staging area into your Narrative as an ProteinStructure
+name     : Import ModelProteinStructure from PDB File in Staging Area
+subtitle : Import a PDB file from your staging area into your Narrative as an ModelProteinStructure
+tooltip  : Import a PDB file from your staging area into your Narrative as an ModelProteinStructure
 
 icon: data-blue.png
 
