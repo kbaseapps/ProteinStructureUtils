@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import os
+import shutil
 import uuid
 
 from Bio import PDB
@@ -102,43 +103,43 @@ class PDBUtil:
 
         return shock_id
 
-    def _generate_html_report(self, header_str, table_str):
-        #TODO: make this work with the PDB viewer
-
+    def _generate_report_html(self, pdb_name, pdb_path):
+        """
+            _generate_report: generates the HTML for the upload report
+        """
         html_report = list()
 
+        # Make report directory and copy over files
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
-        self._mkdir_p(output_directory)
-        result_file_path = os.path.join(output_directory, 'search.html')
+        os.mkdir(output_directory)
+        result_file_path = os.path.join(output_directory, 'viewer.html')
+        new_pdb_path = os.path.join(output_directory, os.path.basename(pdb_path))
+        shutil.copy(pdb_path, new_pdb_path)
+
+        # Fill in template HTML
+        with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html')
+                  ) as report_template_file:
+            report_template = report_template_file.read()\
+                .replace('*PDB_NAME*', pdb_name)\
+                .replace('*PDB_PATH*', os.path.basename(pdb_path))
 
         with open(result_file_path, 'w') as result_file:
-            with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html'),
-                      'r') as report_template_file:
-                report_template = report_template_file.read()
-                report_template = report_template.replace('//HEADER_STR', header_str)
-                report_template = report_template.replace('//TABLE_STR', table_str)
                 result_file.write(report_template)
 
-        report_shock_id = self.dfu.file_to_shock({'file_path': output_directory,
-                                                  'pack': 'zip'})['shock_id']
-
-        html_report.append({'shock_id': report_shock_id,
+        html_report.append({'path': output_directory,
                             'name': os.path.basename(result_file_path),
-                            'label': os.path.basename(result_file_path),
-                            'description': 'HTML summary report for Search Matrix App'})
+                            'description': 'HTML report for PDB upload'})
 
         return html_report
 
-    def _generate_report(self, pdb_obj_ref, workspace_name, n_poly_pep):
+    def _generate_report(self, pdb_obj_ref, workspace_name, n_poly_pep, pdb_name, pdb_path):
         """
-        _generate_report: generate summary report
+        _generate_report: generate summary report for upload
         """
-        # included as an example. Replace with your own implementation
-        # output_html_files = self._generate_html_report(header_str, table_str)
+        output_html_files = self._generate_report_html(pdb_name, pdb_path)
 
-        report_params = {'message': f'You uploaded a PDB file with {n_poly_pep} polypeptides!',
-                         #'html_links': output_html_files,
-                         #'direct_html_link_index': 0,
+        report_params = {'message': f'You uploaded a PDB file. {n_poly_pep} polypeptides were detected.',
+                         'html_links': output_html_files,
                          'objects_created': [{'ref': pdb_obj_ref,
                                               'description': 'Imported PDB'}],
                          'workspace_name': workspace_name,
@@ -183,7 +184,8 @@ class PDBUtil:
 
         returnVal = {'structure_obj_ref': obj_ref}
 
-        report_output = self._generate_report(obj_ref, workspace_name, n_polypeptides)
+        report_output = self._generate_report(obj_ref, workspace_name, n_polypeptides, pdb_name,
+                                              file_path)
 
         returnVal.update(report_output)
 
