@@ -34,7 +34,7 @@
       "default_values" : [ "" ],
       "field_type" : "text",
       "text_options" : {
-        "valid_ws_types" : ["KBaseStructure.ProteinStructure"],
+        "valid_ws_types" : ["KBaseStructure.ModelProteinStructure"],
         "is_output_name" : true
       }
     }
