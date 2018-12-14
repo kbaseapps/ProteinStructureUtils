@@ -140,6 +140,7 @@ class PDBUtil:
 
         report_params = {'message': f'You uploaded a PDB file. {n_poly_pep} polypeptides were detected.',
                          'html_links': output_html_files,
+                         'direct_html_link_index': 0,
                          'objects_created': [{'ref': pdb_obj_ref,
                                               'description': 'Imported PDB'}],
                          'workspace_name': workspace_name,
