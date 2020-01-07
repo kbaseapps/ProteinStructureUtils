@@ -22,9 +22,9 @@ class ProteinStructureUtils:
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "0.0.1"
-    GIT_URL = "https://github.com/kbaseapps/ProteinStructureUtils.git"
-    GIT_COMMIT_HASH = "c382ad991f24c7fb4e191b164413a95a6a33eaba"
+    VERSION = "0.0.2"
+    GIT_URL = "https://github.com/Tianhao-Gu/ProteinStructureUtils.git"
+    GIT_COMMIT_HASH = "7fb3a1f471f5f5832cbb415fadda86ff878fc0f7"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
