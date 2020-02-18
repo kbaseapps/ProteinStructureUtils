@@ -48,7 +48,7 @@ module KBaseStructure {
   */
   typedef structure {
     mol_id id;
-    string sequence;
+    list<string> sequence;
     string md5;
     uniref_id uniref_id;
     genome_ref genome_ref;
