@@ -1,6 +1,6 @@
 
 /*
-@author chenry jmc jjeffryes tgu2
+@author chenry jmc jjeffryes tgu2 qzhang
 */
 module KBaseStructure {
   typedef int bool;
@@ -108,5 +108,21 @@ module KBaseStructure {
     /*File links*/
     handle_ref pdb_handle;
   } ModelProteinStructure;
+
+
+  /*
+    ProteinStructures
+    model_structures: a list of references to ModelProteinStructures
+    experimental_structures: a list of references to ExperimentalProteinStructures
+    total_structures: total count of protein structures
+    description: decription
+    @optional
+  */
+  typedef structure {
+    list<ModelProteinStructure> model_structures;
+    list<ExperimentalProteinStructure> experimental_structures;
+    int total_structures;
+    string description;
+  } ProteinStructures;
 };
 
