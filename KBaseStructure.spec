@@ -115,7 +115,7 @@ module KBaseStructure {
     model_structures: a list of references to ModelProteinStructures
     experimental_structures: a list of references to ExperimentalProteinStructures
     total_structures: total count of protein structures
-    description: decription
+    description: description/remarks
     @optional
   */
   typedef structure {
