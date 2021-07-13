@@ -24,7 +24,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = "https://github.com/qzzhang/ProteinStructureUtils.git"
-    GIT_COMMIT_HASH = "ce77ead5fa5bd1b22305c4b7f65fd93bed0ac0a1"
+    GIT_COMMIT_HASH = "779f3363681ed75506c448a5613f65b5afab76ba"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -160,19 +160,23 @@ class ProteinStructureUtils:
         """
         batch_import_pdb_files: import a batch of ProteinStructures from PDB files
         :param params: instance of type "BatchPDBImportParams" (Input of the
-           batch_import_pdb_files staging_subdir: staging subdir for the user
-           structures_name: Proteinstructures object name workspace_name:
-           workspace name for object to be saved to) -> structure: parameter
-           "staging_subdir" of String, parameter "structures_name" of String,
-           parameter "workspace_name" of type "workspace_name" (workspace
-           name of the object)
+           batch_import_pdb_files exp_pdb_file_paths: a list experiment pdb
+           files (absolute path) model_pdb_file_paths: a list model pdb files
+           (absolute path) structures_name: Proteinstructures object name
+           workspace_name: workspace name for object to be saved to) ->
+           structure: parameter "exp_pdb_file_paths" of list of String,
+           parameter "model_pdb_file_paths" of list of String, parameter
+           "structures_name" of String, parameter "workspace_name" of type
+           "workspace_name" (workspace name of the object)
         :returns: instance of type "BatchPDBImportOutput" -> structure:
-           parameter "pdbs_ref" of String, parameter "report_name" of String,
-           parameter "report_ref" of String
+           parameter "structures_ref" of String, parameter "report_name" of
+           String, parameter "report_ref" of String
         """
         # ctx is the context object
         # return variables are: result
         #BEGIN batch_import_pdb_files
+        logging.info('Starting batch_import_pdb_files with params:\n{}'.format(params))
+        result = self.pdb_util.batch_import_pdb_files(params)
         #END batch_import_pdb_files
 
         # At some point might do deeper type checking...
