@@ -16,8 +16,8 @@ class PDBUtil:
 
     def _validate_import_pdb_file_params(self, params):
         """
-        _validate_import_matrix_from_excel_params:
-            validates params passed to import_matrix_from_excel method
+        _validate_import_pdb_file_params:
+            validates params passed to import_model_pdb_file and import_experiment_pdb_file methods
         """
         # check for required parameters
         for p in ['structure_name', 'workspace_name']:
@@ -32,8 +32,8 @@ class PDBUtil:
                  'file_path': self.scratch}).get('file_path')
         elif params.get('input_staging_file_path'):
             file_path = self.dfu.download_staging_file(
-                        {'staging_file_subdir_path': params.get('input_staging_file_path')}
-                        ).get('copy_file_path')
+                {'staging_file_subdir_path': params.get('input_staging_file_path')}
+                 ).get('copy_file_path')
         else:
             error_msg = "Must supply either a input_shock_id or input_file_path "
             error_msg += "or input_staging_file_path"
@@ -41,8 +41,11 @@ class PDBUtil:
 
         return file_path, params.get('workspace_name'), params.get('structure_name')
 
-    def _file_to_data(self, file_path):
-        """Do the PDB conversion"""
+    def _model_file_to_data(self, file_path):
+        """
+        _model_file_to_data:
+            Do the PDB conversion--parse the pdb file for creating a pdb data object
+        """
         parser = PDB.PDBParser(PERMISSIVE=1)
         ppb = PPBuilder()
         pdb1 = file_path
@@ -53,6 +56,51 @@ class PDBUtil:
         atom_no = 0
         pp_list = []
         pp_no = 0        
+        for model in structure:
+            for chain in model:
+                chain_no += 1
+        for residue in model.get_residues():
+            if PDB.is_aa(residue):
+                res_no += 1
+            for atom in residue.get_atoms():
+                atom_no += 1
+
+
+        for pp in ppb.build_peptides(structure):
+            pp_no += 1
+            my_seq= pp.get_sequence()
+            pp_list += str(my_seq)
+        seq = ''.join(pp_list)
+
+        data = {
+            'name': os.path.basename(file_path),
+            'num_chains': chain_no,
+            'num_residues': res_no,
+            'num_atoms': atom_no,
+            'protein': {
+                'id': os.path.basename(file_path),
+                'sequence': seq,
+                'md5': hashlib.md5(seq.encode()).hexdigest()
+            },
+        }
+
+        return data, pp_no
+
+    def _exp_file_to_data(self, file_path):
+        """
+        _exp_file_to_data:
+            Do the PDB conversion--parse the pdb file for creating a pdb data object
+        """
+        parser = PDB.PDBParser(PERMISSIVE=1)
+        ppb = PPBuilder()
+        pdb2 = file_path
+        structure = parser.get_structure("test", pdb2)
+        model = structure[0]
+        chain_no = 0
+        res_no = 0
+        atom_no = 0
+        pp_list = []
+        pp_no = 0
         for model in structure:
             for chain in model:
                 chain_no += 1
@@ -169,7 +217,7 @@ class PDBUtil:
         else:
             workspace_id = workspace_name
 
-        data, n_polypeptides = self._file_to_data(file_path)
+        data, n_polypeptides = self._model_file_to_data(file_path)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
         logging.info(data)
@@ -178,6 +226,38 @@ class PDBUtil:
             'id': workspace_id,
             'objects': [
                 {'type': 'KBaseStructure.ModelProteinStructure',
+                 'name': pdb_name,
+                 'data': data}]
+        })[0]
+        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+
+        returnVal = {'structure_obj_ref': obj_ref}
+
+        report_output = self._generate_report(obj_ref, workspace_name, n_polypeptides, pdb_name,
+                                              file_path)
+
+        returnVal.update(report_output)
+
+        return returnVal
+
+    def import_experiment_pdb_file(self, params):
+
+        file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
+
+        if not isinstance(workspace_name, int):
+            workspace_id = self.dfu.ws_name_to_id(workspace_name)
+        else:
+            workspace_id = workspace_name
+
+        data, n_polypeptides = self._exp_file_to_data(file_path)
+        data['pdb_handle'] = self._upload_to_shock(file_path)
+        data['user_data'] = params.get('description', '')
+        logging.info(data)
+
+        info = self.dfu.save_objects({
+            'id': workspace_id,
+            'objects': [
+                {'type': 'KBaseStructure.ExperimentalProteinStructure',
                  'name': pdb_name,
                  'data': data}]
         })[0]

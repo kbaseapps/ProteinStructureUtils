@@ -42,7 +42,7 @@ module KBaseStructure {
     string md5: hash of the amino acid sequence
     uniref_id uniref_id: from uniprot
     genome_ref genome_ref: from a kbase genome
-    cds_id cds_id; from a kbase genome
+    cds_id cds_id: from a kbase genome
 
     @optional id uniref_id genome_ref cds_id
   */
@@ -56,7 +56,7 @@ module KBaseStructure {
   } ProteinData;
 
   /*
-    ExpProteinStructure
+    ExperimentalProteinStructure
     @optional mmcif_handle xml_handle
   */
   typedef structure {
