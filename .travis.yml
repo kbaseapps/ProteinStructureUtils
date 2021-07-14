@@ -1,31 +1,29 @@
 language: python
-
+python: '3.8'
 sudo: required
-
 services:
-  - docker
-
+- docker
+notifications:
+  email:
+    recipients:
+    - tgu@anl.gov
+    on_success: never
+    on_failure: always
 branches:
   only:
-    - master
-
-env:
-
+  - master
 before_install:
-  - docker version
-
+- docker version
+- python --version
+- javac -version
+- java -version
 install:
-  - pushd ..
-  - git clone https://github.com/kbase/jars
-  - git clone https://github.com/kbase/kb_sdk
-  - cd kb_sdk
-  - make bin
-  - make sdkbase
-  - export PATH=$(pwd)/bin:$PATH
-  - source src/sh/sdk-completion.sh
-  - popd
-
+- pip install coveralls
+- docker pull kbase/kb-sdk
+- docker run kbase/kb-sdk genscript > $HOME/bin/kb-sdk
+- chmod +x $HOME/bin/kb-sdk
+- export PATH=$PATH:$HOME/bin/
+- echo "export PATH=\$PATH:$HOME/bin/" >> ~/.bashrc
+- kb-sdk version
 script:
-  - kb-sdk validate
-
-after_script:
+- kb-sdk validate
