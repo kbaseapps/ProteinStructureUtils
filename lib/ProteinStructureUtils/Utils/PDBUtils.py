@@ -44,7 +44,7 @@ class PDBUtil:
     def _model_file_to_data(self, file_path):
         """
         _model_file_to_data:
-            Do the PDB conversion--parse the pdb file for creating a pdb data object
+            Do the PDB conversion--parse the model pdb file for creating a pdb data object
         """
         parser = PDB.PDBParser(PERMISSIVE=1)
         ppb = PPBuilder()
@@ -65,10 +65,9 @@ class PDBUtil:
             for atom in residue.get_atoms():
                 atom_no += 1
 
-
         for pp in ppb.build_peptides(structure):
             pp_no += 1
-            my_seq= pp.get_sequence()
+            my_seq = pp.get_sequence()
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
 
@@ -89,8 +88,42 @@ class PDBUtil:
     def _exp_file_to_data(self, file_path):
         """
         _exp_file_to_data:
-            Do the PDB conversion--parse the pdb file for creating a pdb data object
+            Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
+
+        A KBaseStructure.ExperimentalProteinStructure object is defined to have a structure like:
+          typedef structure {
+            /*Experimental header*/
+            string rcsb_id;
+            string name;
+            string deposition_date;
+            string head;
+            string release_date;
+            string structure_method;
+            float resolution;
+            string author;
+            list<string> compound;
+            list<string> source;
+
+            /*Structure metadata*/
+            int num_models;
+            int num_chains;
+            int num_residues;
+            int num_atoms;
+            int num_het_atoms;
+            int num_water_atoms;
+            int num_disordered_atoms;
+            int num_disordered_residues;
+
+            /*Protein links*/
+            list<ProteinData> proteins;
+
+            /*File links*/
+            handle_ref pdb_handle;
+            handle_ref mmcif_handle;
+            handle_ref xml_handle;
+        } ExperimentalProteinStructure;
         """
+        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
         parser = PDB.PDBParser(PERMISSIVE=1)
         ppb = PPBuilder()
         pdb2 = file_path
@@ -110,10 +143,9 @@ class PDBUtil:
             for atom in residue.get_atoms():
                 atom_no += 1
 
-
         for pp in ppb.build_peptides(structure):
             pp_no += 1
-            my_seq= pp.get_sequence()
+            my_seq = pp.get_sequence()
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
 
@@ -172,7 +204,7 @@ class PDBUtil:
                 .replace('*PDB_PATH*', os.path.basename(pdb_path))
 
         with open(result_file_path, 'w') as result_file:
-                result_file.write(report_template)
+            result_file.write(report_template)
 
         html_report.append({'path': output_directory,
                             'name': os.path.basename(result_file_path),
@@ -187,13 +219,13 @@ class PDBUtil:
         """
         output_html_files = self._generate_report_html(pdb_name, pdb_path)
 
-        report_params = {'message': f'You uploaded a PDB file. {n_poly_pep} polypeptides were detected.',
+        report_params = {'message': f'You uploaded a PDB file. {n_poly_pep} polypeptides detected.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
                          'objects_created': [{'ref': pdb_obj_ref,
                                               'description': 'Imported PDB'}],
                          'workspace_name': workspace_name,
-                         'report_object_name': method_name + '_' + str(uuid.uuid4())}
+                         'report_object_name': method_name + '_report_' + str(uuid.uuid4())}
 
         kbase_report_client = KBaseReport(self.callback_url, token=self.token)
         output = kbase_report_client.create_extended_report(report_params)
@@ -202,19 +234,23 @@ class PDBUtil:
 
         return report_output
 
-    def _generate_batch_report(self, structs_ref, workspace_name, structs_name, pdb_paths):
+    def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
+                               successful_paths, failed_paths):
         """
         _generate_batch_report: generate summary report for upload
         """
-        output_html_files = self._generate_report_html(structs_name, ','.join(pdb_paths))
+        output_html_files = self._generate_report_html(structs_name, ','.join(successful_paths))
 
-        report_params = {'message': f'You uploaded a batch of PDB files.',
+        failed_files = ','.join(failed_paths)
+        description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
+                       f'with files "{failed_files}" failed to load.')
+        report_params = {'message': f'You uploaded a batch of PDB files into {structs_name}.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
                          'objects_created': [{'ref': structs_ref,
-                                              'description': 'Imported PDBs into a ProteinStructures object'}],
+                                              'description': description}],
                          'workspace_name': workspace_name,
-                         'report_object_name': 'batch_import_pdb_files_' + str(uuid.uuid4())}
+                         'report_object_name': 'batch_import_pdb_files_report_' + str(uuid.uuid4())}
 
         kbase_report_client = KBaseReport(self.callback_url, token=self.token)
         output = kbase_report_client.create_extended_report(report_params)
@@ -279,9 +315,11 @@ class PDBUtil:
         else:
             workspace_id = workspace_name
 
+        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
+        data = dict()
         data, n_polypeptides = self._exp_file_to_data(file_path)
-        data['pdb_handle'] = self._upload_to_shock(file_path)
-        data['user_data'] = params.get('description', '')
+        # data['pdb_handle'] = self._upload_to_shock(file_path)
+        # data['user_data'] = params.get('description', '')
         logging.info(data)
 
         info = self.dfu.save_objects({
@@ -296,8 +334,9 @@ class PDBUtil:
         returnVal = {'structure_obj_ref': obj_ref}
 
         if create_report:
-            report_output = self._generate_report('import_experiment_pdb_file', obj_ref, workspace_name,
-                                                   n_polypeptides, pdb_name, file_path)
+            report_output = self._generate_report('import_experiment_pdb_file', obj_ref,
+                                                  workspace_name, n_polypeptides,
+                                                  pdb_name, file_path)
             returnVal.update(report_output)
 
         return returnVal
@@ -308,6 +347,7 @@ class PDBUtil:
                                KBaseStructure.ProteinStructures object
         """
 
+        workspace_name = params.get('workspace_name', None)
         if not isinstance(workspace_name, int):
             workspace_id = self.dfu.ws_name_to_id(workspace_name)
         else:
@@ -317,26 +357,14 @@ class PDBUtil:
         model_pdb_files = params.get('model_pdb_file_paths', None)
         structures_name = params.get('structures_name', 'protein_structures_name')
 
-        exp_pdb_objects = list()
         model_pdb_objects = list()
-        failed_exp_files = list()
+        exp_pdb_objects = list()
+        successful_files = list()
+        failed_files = list()
         protein_structures = dict()
         total_structures = 0
-        successful_files = list()
-        failed_model_files = list()
 
-        # loop through the lists exp_pdb_file_paths and model_pdb_file_paths
-        if exp_pdb_files:
-            for exp_file in exp_pdb_files():
-                exp_pdb_ref = self.import_experiment_pdb_file(params, False)
-
-                if exp_pdb_ref:
-                    exp_pdb_objects.append(exp_pdb_ref)
-                    successful_files.append(exp_file)
-                    total_structures += 1
-                else:
-                    failed_files.append(exp_file)
-
+        # loop through the lists model_pdb_file_paths and exp_pdb_file_paths
         if model_pdb_files:
             for model_file in model_pdb_files():
                 model_pdb_ref = self.import_model_pdb_file(params, False)
@@ -348,12 +376,24 @@ class PDBUtil:
                 else:
                     failed_files.append(model_file)
 
-        if exp_pdb_objects:
-            protein_structures['experimental_structures'] = exp_pdb_objects
+        if exp_pdb_files:
+            for exp_file in exp_pdb_files():
+                exp_pdb_ref = self.import_experiment_pdb_file(params, False)
+
+                if exp_pdb_ref:
+                    exp_pdb_objects.append(exp_pdb_ref)
+                    successful_files.append(exp_file)
+                    total_structures += 1
+                else:
+                    failed_files.append(exp_file)
+
         if model_pdb_objects:
             protein_structures['model_structures'] = model_pdb_objects
+        if exp_pdb_objects:
+            protein_structures['experimental_structures'] = exp_pdb_objects
         protein_structures['total_structures'] = total_structures
-        protein_structures['description'] = f'Created {total_structures} structures in {structures_name}'
+        protein_structures['description'] = (f'Created {total_structures} '
+                                             f'structures in {structures_name}')
 
         logging.info(protein_structures)
 
@@ -369,7 +409,7 @@ class PDBUtil:
         returnVal = {'structures_obj_ref': obj_ref}
 
         report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
-                                                    successful_files)
+                                                    successful_files, failed_files)
 
         returnVal.update(report_output)
 
