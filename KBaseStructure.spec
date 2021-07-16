@@ -12,6 +12,18 @@ module KBaseStructure {
   typedef string genome_ref;
 
   /*
+    Reference to KBase metagenome
+    @id ws KBaseMetagenomes.AnnotatedMetagenomeAssembly KBaseGenomeAnnotations.Assembly
+  */
+  typedef string metagenome_ref;
+
+  /*
+    Reference to KBaseCollections.FeatureSet
+    @id ws KBaseCollections.FeatureSet
+  */
+  typedef string feature_set_ref;
+
+  /*
     CDS ID
     @id kb
   */
@@ -45,6 +57,7 @@ module KBaseStructure {
     cds_id cds_id: from a kbase genome
 
     @optional id uniref_id genome_ref cds_id
+    @optional metagenome_ref feature_set_ref
   */
   typedef structure {
     mol_id id;
@@ -53,11 +66,17 @@ module KBaseStructure {
     uniref_id uniref_id;
     genome_ref genome_ref;
     cds_id cds_id;
+    metagenome_ref;
+    feature_set_ref;
+
   } ProteinData;
 
   /*
     ExperimentalProteinStructure
+    compound: a compound dict
+    source: a source dict
     @optional mmcif_handle xml_handle
+    @optional compound source
   */
   typedef structure {
     /*Experimental header*/
@@ -69,8 +88,8 @@ module KBaseStructure {
     string structure_method;
     float resolution;
     string author;
-    list<string> compound;
-    list<string> source;
+    mapping<string, string> compound;
+    mapping<string, string> source;
 
     /*Structure metadata*/
     int num_models;
@@ -103,7 +122,7 @@ module KBaseStructure {
     int num_atoms;
 
     /*Protein links*/
-    ProteinData protein;
+    list<ProteinData> proteins;
 
     /*File links*/
     handle_ref pdb_handle;

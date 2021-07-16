@@ -99,6 +99,23 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'pack': 'gzip',
             'make_handle': True,
         }
+
+        cpd = {'misc': '',
+               'molecule': 'adp-dependent glucokinase,adp-dependent glucokinase,adp-dependent glucokinase ',
+               'chain': 'a, b',
+               'synonym': 'adpgk,adpgk,adpgk',
+               'ec_number': '2.7.1.147',
+               'ec': '2.7.1.147,2.7.1.147,2.7.1.147',
+               'engineered': 'yes'}
+        src = {'misc': '',
+               'organism_scientific': 'thermococcus litoralis (strain atcc 51850 / dsm5473 / jcm 8560 / ns-c) ',
+               'organism_taxid': '523849',
+               'gene': 'glka, occ_09701',
+               'expression_system': 'escherichia coli bl21(de3)',
+               'expression_system_taxid': '469008',
+               'expression_system_vector_type': 'plasmid',
+               'expression_system_vector': 'pet17'}
+
         shock_id = cls.dfu.file_to_shock(file_to_shock_params)['handle']['hid']
         data = {
             'name': 'PHYTOHEMAGGLUTININ-L',
@@ -109,8 +126,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'structure_method': 'x-ray diffraction',
             'resolution': 2.8,
             'author': 'unknown',
-            'compound': ['abc', 'def'],
-            'source': ['src1', 'src2'],
+            'compound': cpd,
+            'source': src,
             'num_chains': 0,
             'num_atoms': 0,
             'num_models': 0,
@@ -171,3 +188,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'workspace_name': self.wsName,
             })[0]
         self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
+
+    # @unittest.skip('test_structure_to_pdb_file')
+    def test_structure_to_mmcif_file(self):
+        ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_mmCif_ref,
+                                                                'destination_dir': self.scratch})
+
+    # @unittest.skip('test_export_structure')
+    def test_export_mmcif_structure(self):
+        ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_mmCif_ref})

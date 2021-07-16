@@ -8,7 +8,8 @@ MAINTAINER KBase Developer
 
 # RUN apt-get update
 
-
+RUN pip install --upgrade pip \
+    && pip install biopython --upgrade
 # -----------------------------------------
 
 COPY ./ /kb/module

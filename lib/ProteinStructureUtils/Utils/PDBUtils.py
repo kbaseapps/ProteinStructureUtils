@@ -142,20 +142,16 @@ class PDBUtil:
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
 
-        cpd_str_arr = []
+        cpd_dict = dict()
         cpd = structure.header.get('compound', {})
         print(f'Compound:\n {cpd}')
         if cpd and cpd.get('1'):
-            cpd = cpd.get('1')
-            if cpd and cpd.get('molecule'):
-                cpd_str_arr = cpd.get('1').get('molecule').split(',')
+            cpd_dict = cpd.get('1')
 
-        src_str_arr = []
+        src_dict = dict()
         src = structure.header.get('source', {})
         if src and src.get('1'):
-            src = src.get('1')
-            if src and src.get('organism_scientific'):
-                src_str_arr = src.get('1').get('organism_scientific').split('/')
+            src_dict = src.get('1')
 
         hd = self._upload_to_shock(file_path)
 
@@ -170,8 +166,8 @@ class PDBUtil:
             'structure_reference': structure.header.get('structure_reference', []),
             'keywords': structure.header.get('keywords', ''),
             'author': structure.header.get('author', ''),
-            'compound': cpd_str_arr,
-            'source': src_str_arr,
+            'compound': cpd_dict,
+            'source': src_dict,
             'num_models': structure.header.get('num_models', 0),
             'num_chains': structure.header.get('num_chains', 0),
             'num_residues': structure.header.get('residues', 0),
@@ -192,6 +188,12 @@ class PDBUtil:
         }
 
         return mmcif_data, pp_no
+
+    # TODO!!! ##
+    def _parse_kbase_metadata(self, meta_file_path):
+        """Return the kb_meta_data from the given spreadsheet"""
+        meta_data = dict()
+        return meta_data
 
     def _get_pdb_shock_id(self, obj_ref):
         """Return the shock id for the PDB file"""
@@ -371,8 +373,15 @@ class PDBUtil:
 
     def batch_import_pdb_files(self, params):
         """
-        batch_import_pdb_files: upload two sets of pdb files and convert into a 
+        batch_import_pdb_files: upload two sets of pdb files and convert into a
                                KBaseStructure.ProteinStructures object
+        1. from the params['meta_file_path'] spreadsheet, sort out the model_pdb_paths,
+           exp_pdb_paths and the kbase_meta_data
+        2. call import_model_pdb_file on each entry in model_pdb_paths,
+           call import_experiment_pdb_file on each entry in exp_pdb_paths, and
+           call _parse_kbase_metadata to parse for KBase metadata
+        3. assemble the data for a ProteinStructures and save the data object
+        4. generate a report
         """
 
         (model_pdb_files, exp_pdb_files, workspace_name,

@@ -72,14 +72,12 @@ module ProteinStructureUtils {
 
 
   /* Input of the batch_import_pdb_files
-    exp_pdb_file_paths: a list experiment pdb files (absolute path)
-    model_pdb_file_paths: a list model pdb files (absolute path)
     structures_name: Proteinstructures object name
     workspace_name: workspace name for object to be saved to
+    metadata_file_path: path to a spreadsheet file
   */
   typedef structure {
-      list<string> exp_pdb_file_paths;
-      list<string> model_pdb_file_paths;
+      string metadata_file_path;
       string structures_name;
       workspace_name workspace_name;
   } BatchPDBImportParams;
