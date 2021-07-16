@@ -68,11 +68,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'num_chains': 0,
             'num_residues': 0,
             'num_atoms': 0,
-            'protein': {
+            'proteins': [{
                 'id': '',
                 'sequence': '',
                 'md5': ''
-            },
+            }],
             'user_data': '',
             'pdb_handle': shock_id,
         }
@@ -161,7 +161,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
 
-    @unittest.skip('test_model_upload')
+    # @unittest.skip('test_model_upload')
     def test_model_upload(self):
         ret = self.serviceImpl.import_model_pdb_file(
             self.ctx, {
@@ -171,12 +171,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             })[0]
         self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
 
-    @unittest.skip('test_structure_to_pdb_file')
+    #@unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
         ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_ref,
                                                                 'destination_dir': self.scratch})
 
-    @unittest.skip('test_export_structure')
+    #@unittest.skip('test_export_structure')
     def test_export_structure(self):
         ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_ref})
 

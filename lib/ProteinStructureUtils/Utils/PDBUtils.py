@@ -98,11 +98,11 @@ class PDBUtil:
             'num_chains': chain_no,
             'num_residues': res_no,
             'num_atoms': atom_no,
-            'protein': {
+            'proteins': [{
                 'id': os.path.basename(file_path),
                 'sequence': seq,
                 'md5': hashlib.md5(seq.encode()).hexdigest()
-            },
+            }],
         }
 
         return data, pp_no
