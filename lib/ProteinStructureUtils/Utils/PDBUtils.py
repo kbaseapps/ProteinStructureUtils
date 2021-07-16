@@ -6,6 +6,7 @@ import uuid
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
+from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 
 from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
@@ -41,6 +42,27 @@ class PDBUtil:
 
         return file_path, params.get('workspace_name'), params.get('structure_name')
 
+    def _validate_batch_import_pdb_files_params(self, params):
+        """
+        _validate_batch_import_pdb_files_params:
+            validates params passed to batch_import_pdb_files method
+        """
+        # check for required parameters
+        for p in ['structures_name', 'workspace_name']:
+            if p not in params:
+                raise ValueError('"{}" parameter is required, but missing'.format(p))
+
+        if params.get('model_pdb_file_paths'):
+            model_file_paths = params.get('model_pdb_file_paths')
+        if params.get('exp_pdb_file_paths'):
+            exp_file_paths = params.get('exp_pdb_file_paths')
+        if not model_file_paths and not exp_file_paths:
+            error_msg = "At least one list of pdb file(s) should be provided!"
+            raise ValueError(error_msg)
+
+        return (model_file_paths, exp_file_paths,
+                params.get('workspace_name'), params.get('structures_name'))
+
     def _model_file_to_data(self, file_path):
         """
         _model_file_to_data:
@@ -50,84 +72,6 @@ class PDBUtil:
         ppb = PPBuilder()
         pdb1 = file_path
         structure = parser.get_structure("test", pdb1)
-        model = structure[0]
-        chain_no = 0
-        res_no = 0
-        atom_no = 0
-        pp_list = []
-        pp_no = 0        
-        for model in structure:
-            for chain in model:
-                chain_no += 1
-        for residue in model.get_residues():
-            if PDB.is_aa(residue):
-                res_no += 1
-            for atom in residue.get_atoms():
-                atom_no += 1
-
-        for pp in ppb.build_peptides(structure):
-            pp_no += 1
-            my_seq = pp.get_sequence()
-            pp_list += str(my_seq)
-        seq = ''.join(pp_list)
-
-        data = {
-            'name': os.path.basename(file_path),
-            'num_chains': chain_no,
-            'num_residues': res_no,
-            'num_atoms': atom_no,
-            'protein': {
-                'id': os.path.basename(file_path),
-                'sequence': seq,
-                'md5': hashlib.md5(seq.encode()).hexdigest()
-            },
-        }
-
-        return data, pp_no
-
-    def _exp_file_to_data(self, file_path):
-        """
-        _exp_file_to_data:
-            Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
-
-        A KBaseStructure.ExperimentalProteinStructure object is defined to have a structure like:
-          typedef structure {
-            /*Experimental header*/
-            string rcsb_id;
-            string name;
-            string deposition_date;
-            string head;
-            string release_date;
-            string structure_method;
-            float resolution;
-            string author;
-            list<string> compound;
-            list<string> source;
-
-            /*Structure metadata*/
-            int num_models;
-            int num_chains;
-            int num_residues;
-            int num_atoms;
-            int num_het_atoms;
-            int num_water_atoms;
-            int num_disordered_atoms;
-            int num_disordered_residues;
-
-            /*Protein links*/
-            list<ProteinData> proteins;
-
-            /*File links*/
-            handle_ref pdb_handle;
-            handle_ref mmcif_handle;
-            handle_ref xml_handle;
-        } ExperimentalProteinStructure;
-        """
-        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
-        parser = PDB.PDBParser(PERMISSIVE=1)
-        ppb = PPBuilder()
-        pdb2 = file_path
-        structure = parser.get_structure("test", pdb2)
         model = structure[0]
         chain_no = 0
         res_no = 0
@@ -162,6 +106,92 @@ class PDBUtil:
         }
 
         return data, pp_no
+
+    def _exp_file_to_data(self, file_path):
+        """
+        _exp_file_to_data:
+            Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
+        """
+        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
+        parser = PDB.MMCIFParser()
+        cif = file_path
+        structure = parser.get_structure("PHA-L", cif)
+        #structure.header = structure.header
+        #print(f'The mmcif structure header for {cif}*************************:\n\n')
+        #kwds = structure.header.get('keywords')
+        #print(f'Keywords: {kwds}')
+        #resl = structure.header.get('resolution')
+        #print(f'Resolution: {resl}')
+
+        # create a dictionary that maps all mmCIF tags in an mmCIF file to their values
+        #mmcif_dict = MMCIF2Dict(cif)  # TypeError: 'module' object is not callable
+        #print("The mmcif dictionary:*****************************************\n\n")
+        # E.g., get the solvent content from an mmCIF file:
+        #sc = mmcif_dict["_exptl_crystal.density_percent_sol"]
+        #print(f'_exptl_crystal.density_percent_sol: {sc}')
+        # get the list of the y coordinates of all atoms
+        #y_list = mmcif_dict["_atom_site.Cartn_y"]
+        # print(f'_atom_site.Cartn_y: {y_list}')
+
+        ppb = PPBuilder()
+        pp_list = []
+        pp_no = 0
+        for pp in ppb.build_peptides(structure):
+            pp_no += 1
+            my_seq = pp.get_sequence()
+            pp_list += str(my_seq)
+        seq = ''.join(pp_list)
+
+        cpd_str_arr = []
+        cpd = structure.header.get('compound', {})
+        print(f'Compound:\n {cpd}')
+        if cpd and cpd.get('1'):
+            cpd = cpd.get('1')
+            if cpd and cpd.get('molecule'):
+                cpd_str_arr = cpd.get('1').get('molecule').split(',')
+
+        src_str_arr = []
+        src = structure.header.get('source', {})
+        if src and src.get('1'):
+            src = src.get('1')
+            if src and src.get('organism_scientific'):
+                src_str_arr = src.get('1').get('organism_scientific').split('/')
+
+        hd = self._upload_to_shock(file_path)
+
+        mmcif_data = {
+            'name': structure.header.get('name', ''),
+            'head': structure.header.get('head', ''),
+            'rcsb_id': structure.header.get('rcsb_id', ''),
+            'deposition_date': structure.header.get('deposition_date', ''),
+            'release_date': structure.header.get('release_date', ''),
+            'structure_method': structure.header.get('structure_method', ''),
+            'resolution': structure.header.get('resolution', 0.0),
+            'structure_reference': structure.header.get('structure_reference', []),
+            'keywords': structure.header.get('keywords', ''),
+            'author': structure.header.get('author', ''),
+            'compound': cpd_str_arr,
+            'source': src_str_arr,
+            'num_models': structure.header.get('num_models', 0),
+            'num_chains': structure.header.get('num_chains', 0),
+            'num_residues': structure.header.get('residues', 0),
+            'num_atoms': structure.header.get('num_atoms', 0),
+            'num_het_atoms': structure.header.get('num_het_atoms', 0),
+            'num_water_atoms': structure.header.get('num_water_atoms', 0),
+            'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
+            'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
+            'proteins': structure.header.get('proteins', []),
+            'pdb_handle': hd,
+            'mmcif_handle': hd,
+            'xml_handle': hd,
+            'protein': {
+                'id': os.path.basename(file_path),
+                'sequence': seq,
+                'md5': hashlib.md5(seq.encode()).hexdigest()
+            }
+        }
+
+        return mmcif_data, pp_no
 
     def _get_pdb_shock_id(self, obj_ref):
         """Return the shock id for the PDB file"""
@@ -308,7 +338,7 @@ class PDBUtil:
                                    KBaseStructure.ExperimentalProteinStructure object
         """
 
-        file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
+        file_path, workspace_name, mmcif_name = self._validate_import_pdb_file_params(params)
 
         if not isinstance(workspace_name, int):
             workspace_id = self.dfu.ws_name_to_id(workspace_name)
@@ -316,17 +346,15 @@ class PDBUtil:
             workspace_id = workspace_name
 
         # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
-        data = dict()
-        data, n_polypeptides = self._exp_file_to_data(file_path)
-        # data['pdb_handle'] = self._upload_to_shock(file_path)
-        # data['user_data'] = params.get('description', '')
+        data, n_polypeptides,  = self._exp_file_to_data(file_path)
+        data['user_data'] = params.get('description', '')
         logging.info(data)
 
         info = self.dfu.save_objects({
             'id': workspace_id,
             'objects': [
                 {'type': 'KBaseStructure.ExperimentalProteinStructure',
-                 'name': pdb_name,
+                 'name': mmcif_name,
                  'data': data}]
         })[0]
         obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
@@ -336,7 +364,7 @@ class PDBUtil:
         if create_report:
             report_output = self._generate_report('import_experiment_pdb_file', obj_ref,
                                                   workspace_name, n_polypeptides,
-                                                  pdb_name, file_path)
+                                                  mmcif_name, file_path)
             returnVal.update(report_output)
 
         return returnVal
@@ -347,15 +375,13 @@ class PDBUtil:
                                KBaseStructure.ProteinStructures object
         """
 
-        workspace_name = params.get('workspace_name', None)
+        (model_pdb_files, exp_pdb_files, workspace_name,
+         structures_name) = self._validate_batch_import_pdb_files_params(params)
+
         if not isinstance(workspace_name, int):
             workspace_id = self.dfu.ws_name_to_id(workspace_name)
         else:
             workspace_id = workspace_name
-
-        exp_pdb_files = params.get('exp_pdb_file_paths', None)
-        model_pdb_files = params.get('model_pdb_file_paths', None)
-        structures_name = params.get('structures_name', 'protein_structures_name')
 
         model_pdb_objects = list()
         exp_pdb_objects = list()

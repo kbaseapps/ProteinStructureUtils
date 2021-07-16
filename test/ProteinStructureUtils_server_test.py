@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import unittest
+from Bio import PDB
 from configparser import ConfigParser
 
 from ProteinStructureUtils.ProteinStructureUtilsImpl import ProteinStructureUtils
@@ -49,6 +50,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         cls.wsName = "test_ProteinStructureUtils_" + str(suffix)
         cls.ws_id = cls.wsClient.create_workspace({'workspace': cls.wsName})[0]
         cls.prepareData()
+        cls.prepareCIFData()
 
     @classmethod
     def prepareData(cls):
@@ -83,6 +85,58 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         })[0]
         cls.pdb_ref = f"{info[6]}/{info[0]}/{info[4]}"
 
+    @classmethod
+    def prepareCIFData(cls):
+        file_name = '1fat.cif'
+        # download structures from the PDB
+        # pdbl = PDB.PDBList()
+        # mmCif_file = pdbl.retrieve_pdb_file(file_name, pdir='data', format='mmCif')
+
+        cls.pdb_mmcif_file_path = os.path.join(cls.scratch, file_name)
+        shutil.copy(os.path.join('data', file_name), cls.pdb_mmcif_file_path)
+        file_to_shock_params = {
+            'file_path': cls.pdb_mmcif_file_path,
+            'pack': 'gzip',
+            'make_handle': True,
+        }
+        shock_id = cls.dfu.file_to_shock(file_to_shock_params)['handle']['hid']
+        data = {
+            'name': 'PHYTOHEMAGGLUTININ-L',
+            'rcsb_id': 'unknown',
+            'deposition_date': '1996-06-12',
+            'head': 'LECTIN',
+            'release_date': 'unknown',
+            'structure_method': 'x-ray diffraction',
+            'resolution': 2.8,
+            'author': 'unknown',
+            'compound': ['abc', 'def'],
+            'source': ['src1', 'src2'],
+            'num_chains': 0,
+            'num_atoms': 0,
+            'num_models': 0,
+            'num_residues': 0,
+            'num_het_atoms': 0,
+            'num_water_atoms': 0,
+            'num_disordered_atoms': 0,
+            'num_disordered_residues': 0,
+            'proteins': [{
+                'id': '',
+                'sequence': '',
+                'md5': ''
+            }],
+            'user_data': '',
+            'pdb_handle': shock_id,
+            'mmcif_handle': shock_id,
+            'xml_handle': shock_id
+        }
+        info = cls.dfu.save_objects({
+            'id': cls.ws_id,
+            'objects': [
+                {'type': 'KBaseStructure.ExperimentalProteinStructure',
+                 'name': file_name,
+                 'data': data}]
+        })[0]
+        cls.pdb_mmCif_ref = f"{info[6]}/{info[0]}/{info[4]}"
 
     @classmethod
     def tearDownClass(cls):
@@ -90,6 +144,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
 
+    @unittest.skip('test_model_upload')
     def test_model_upload(self):
         ret = self.serviceImpl.import_model_pdb_file(
             self.ctx, {
@@ -99,9 +154,20 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             })[0]
         self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
 
+    @unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
         ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_ref,
                                                                 'destination_dir': self.scratch})
 
+    @unittest.skip('test_export_structure')
     def test_export_structure(self):
         ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_ref})
+
+    def test_experiment_upload(self):
+        ret = self.serviceImpl.import_experiment_pdb_file(
+            self.ctx, {
+                'input_file_path': self.pdb_mmcif_file_path,
+                'structure_name': 'import_mmcif_test',
+                'workspace_name': self.wsName,
+            })[0]
+        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
