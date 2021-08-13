@@ -1,6 +1,6 @@
 
 /*
-@author chenry jmc jjeffryes tgu2
+@author chenry jmc jjeffryes tgu2 qzhang
 */
 module KBaseStructure {
   typedef int bool;
@@ -10,6 +10,18 @@ module KBaseStructure {
     @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation
   */
   typedef string genome_ref;
+
+  /*
+    Reference to KBase metagenome
+    @id ws KBaseMetagenomes.AnnotatedMetagenomeAssembly KBaseGenomeAnnotations.Assembly
+  */
+  typedef string metagenome_ref;
+
+  /*
+    Reference to KBaseCollections.FeatureSet
+    @id ws KBaseCollections.FeatureSet
+  */
+  typedef string feature_set_ref;
 
   /*
     CDS ID
@@ -42,9 +54,10 @@ module KBaseStructure {
     string md5: hash of the amino acid sequence
     uniref_id uniref_id: from uniprot
     genome_ref genome_ref: from a kbase genome
-    cds_id cds_id; from a kbase genome
+    cds_id cds_id: from a kbase genome
 
     @optional id uniref_id genome_ref cds_id
+    @optional metagenome_ref feature_set_ref
   */
   typedef structure {
     mol_id id;
@@ -53,11 +66,16 @@ module KBaseStructure {
     uniref_id uniref_id;
     genome_ref genome_ref;
     cds_id cds_id;
+    metagenome_ref metagenome_ref;
+    feature_set_ref feature_set_ref;
   } ProteinData;
 
   /*
-    ExpProteinStructure
+    ExperimentalProteinStructure
+    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
+    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional mmcif_handle xml_handle
+    @optional compound source
   */
   typedef structure {
     /*Experimental header*/
@@ -69,8 +87,8 @@ module KBaseStructure {
     string structure_method;
     float resolution;
     string author;
-    list<string> compound;
-    list<string> source;
+    mapping<string, string> compound;
+    mapping<string, string> source;
 
     /*Structure metadata*/
     int num_models;
@@ -93,7 +111,9 @@ module KBaseStructure {
 
   /*
     ModelProteinStructure
-    @optional
+    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
+    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
+    @optional compound source
   */
   typedef structure {
     string user_data;
@@ -101,12 +121,30 @@ module KBaseStructure {
     int num_chains;
     int num_residues;
     int num_atoms;
+    mapping<string, string> compound;
+    mapping<string, string> source;
 
     /*Protein links*/
-    ProteinData protein;
+    list<ProteinData> proteins;
 
     /*File links*/
     handle_ref pdb_handle;
   } ModelProteinStructure;
-};
 
+
+  /*
+    ProteinStructures
+    model_structures: a list of references to ModelProteinStructures
+    experimental_structures: a list of references to ExperimentalProteinStructures
+    total_structures: total count of protein structures
+    description: description/remarks
+    @optional experimental_structures description
+  */
+  typedef structure {
+    list<ModelProteinStructure> model_structures;
+    list<ExperimentalProteinStructure> experimental_structures;
+    int total_structures;
+    string description;
+  } ProteinStructures;
+
+};
