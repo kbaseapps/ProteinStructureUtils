@@ -215,13 +215,13 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(pdb_obj_data['source']['other_details'],
                          'purified pha-l was purchased from sigma')
 
-    @unittest.skip('test_structure_to_pdb_file')
+    # @unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
         ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_ref,
                                                                 'destination_dir': self.scratch})
         self.assertEqual(ret[0]['file_path'], os.path.join(self.scratch, '1nqg.pdb'))
 
-    @unittest.skip('test_export_pdb_structure')
+    # @unittest.skip('test_export_pdb_structure')
     def test_export_pdb_structure(self):
         ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_ref})
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
@@ -253,19 +253,19 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('rcsb_id', pdb_obj_data.keys())
         self.assertIn('release_date', pdb_obj_data.keys())
 
-    @unittest.skip('test_structure_to_mmcif_file')
+    # @unittest.skip('test_structure_to_mmcif_file')
     def test_structure_to_mmcif_file(self):
         ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_mmCif_ref,
                                                                 'destination_dir': self.scratch})
         self.assertEqual(ret[0]['file_path'], os.path.join(self.scratch, '1fat.cif'))
 
-    @unittest.skip('test_export_structure')
+    # @unittest.skip('test_export_structure')
     def test_export_mmcif_structure(self):
         ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_mmCif_ref})
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
 
     # Testing PDBUtils module functions
-    @unittest.skip('test_model_file_to_data')
+    # @unittest.skip('test_model_file_to_data')
     def test_model_file_to_data(self):
         fileName = '1fat.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -300,7 +300,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                                'gene', 'expression_system_taxid', 'expression_system_vector_type',
                                'organism_taxid', 'expression_system_vector'])
 
-    @unittest.skip('test_exp_file_to_data')
+    # @unittest.skip('test_exp_file_to_data')
     def test_exp_file_to_data(self):
         fileName = '1fat.cif'
         pdb_file_path = os.path.join(self.scratch, fileName)
