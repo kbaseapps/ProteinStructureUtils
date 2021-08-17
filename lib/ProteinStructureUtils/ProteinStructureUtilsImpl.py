@@ -24,7 +24,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = "https://github.com/qzzhang/ProteinStructureUtils.git"
-    GIT_COMMIT_HASH = "779f3363681ed75506c448a5613f65b5afab76ba"
+    GIT_COMMIT_HASH = "48d0e649c9b29b6036e062b5ab85861f9cebc717"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -43,7 +43,6 @@ class ProteinStructureUtils:
         self.pdb_util = PDBUtil(self.config)
         #END_CONSTRUCTOR
         pass
-
 
     def structure_to_pdb_file(self, ctx, params):
         """
@@ -71,7 +70,7 @@ class ProteinStructureUtils:
         """
         :param params: instance of type "ExportParams" (Input of the
            export_pdb function obj_ref: generics object reference) ->
-           structure: parameter "obj_ref" of type "obj_ref" (An X/Y/Z style
+           structure: parameter "input_ref" of type "obj_ref" (An X/Y/Z style
            reference @id ws)
         :returns: instance of type "ExportOutput" -> structure: parameter
            "shock_id" of String
@@ -94,7 +93,7 @@ class ProteinStructureUtils:
         """
         import_model_pdb_file: import a ProteinStructure from PDB
         :param params: instance of type "ImportPDBParams" (Input of the
-           import_model_pdb_file and import_model_pdb_file functions
+           import_model_pdb_file and import_experiment_pdb_file functions
            input_shock_id: file shock id input_file_path: absolute file path
            input_staging_file_path: staging area file path structure_name:
            structure object name workspace_name: workspace name for object to
@@ -112,7 +111,7 @@ class ProteinStructureUtils:
         # ctx is the context object
         # return variables are: result
         #BEGIN import_model_pdb_file
-        logging.info('Starting import_pdb_file with params:\n{}'.format(params))
+        logging.info('Starting import_model_pdb_file with params:\n{}'.format(params))
         result = self.pdb_util.import_model_pdb_file(params)
         #END import_model_pdb_file
 
@@ -127,7 +126,7 @@ class ProteinStructureUtils:
         """
         import_experiment_pdb_file: import a ProteinStructure from PDB
         :param params: instance of type "ImportPDBParams" (Input of the
-           import_model_pdb_file and import_model_pdb_file functions
+           import_model_pdb_file and import_experiment_pdb_file functions
            input_shock_id: file shock id input_file_path: absolute file path
            input_staging_file_path: staging area file path structure_name:
            structure object name workspace_name: workspace name for object to
@@ -152,36 +151,6 @@ class ProteinStructureUtils:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method import_experiment_pdb_file return value ' +
-                             'result is not type dict as required.')
-        # return the results
-        return [result]
-
-    def batch_import_pdb_files(self, ctx, params):
-        """
-        batch_import_pdb_files: import a batch of ProteinStructures from PDB files
-        :param params: instance of type "BatchPDBImportParams" (Input of the
-           batch_import_pdb_files exp_pdb_file_paths: a list experiment pdb
-           files (absolute path) model_pdb_file_paths: a list model pdb files
-           (absolute path) structures_name: Proteinstructures object name
-           workspace_name: workspace name for object to be saved to) ->
-           structure: parameter "exp_pdb_file_paths" of list of String,
-           parameter "model_pdb_file_paths" of list of String, parameter
-           "structures_name" of String, parameter "workspace_name" of type
-           "workspace_name" (workspace name of the object)
-        :returns: instance of type "BatchPDBImportOutput" -> structure:
-           parameter "structures_ref" of String, parameter "report_name" of
-           String, parameter "report_ref" of String
-        """
-        # ctx is the context object
-        # return variables are: result
-        #BEGIN batch_import_pdb_files
-        logging.info('Starting batch_import_pdb_files with params:\n{}'.format(params))
-        result = self.pdb_util.batch_import_pdb_files(params)
-        #END batch_import_pdb_files
-
-        # At some point might do deeper type checking...
-        if not isinstance(result, dict):
-            raise ValueError('Method batch_import_pdb_files return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]

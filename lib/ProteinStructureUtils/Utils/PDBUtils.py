@@ -3,6 +3,8 @@ import logging
 import os
 import shutil
 import uuid
+import errno
+import pandas as pd
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
@@ -17,8 +19,8 @@ class PDBUtil:
 
     def _validate_import_pdb_file_params(self, params):
         """
-        _validate_import_pdb_file_params:
-            validates params passed to import_model_pdb_file and import_experiment_pdb_file methods
+            _validate_import_pdb_file_params:
+                validates input params to import_model_pdb_file and import_experiment_pdb_file methods
         """
         # check for required parameters
         for p in ['structure_name', 'workspace_name']:
@@ -42,31 +44,10 @@ class PDBUtil:
 
         return file_path, params.get('workspace_name'), params.get('structure_name')
 
-    def _validate_batch_import_pdb_files_params(self, params):
-        """
-        _validate_batch_import_pdb_files_params:
-            validates params passed to batch_import_pdb_files method
-        """
-        # check for required parameters
-        for p in ['structures_name', 'workspace_name']:
-            if p not in params:
-                raise ValueError('"{}" parameter is required, but missing'.format(p))
-
-        if params.get('model_pdb_file_paths'):
-            model_file_paths = params.get('model_pdb_file_paths')
-        if params.get('exp_pdb_file_paths'):
-            exp_file_paths = params.get('exp_pdb_file_paths')
-        if not model_file_paths and not exp_file_paths:
-            error_msg = "At least one list of pdb file(s) should be provided!"
-            raise ValueError(error_msg)
-
-        return (model_file_paths, exp_file_paths,
-                params.get('workspace_name'), params.get('structures_name'))
-
     def _model_file_to_data(self, file_path):
         """
-        _model_file_to_data:
-            Do the PDB conversion--parse the model pdb file for creating a pdb data object
+            _model_file_to_data:
+                Do the PDB conversion--parse the model pdb file for creating a pdb data object
         """
         parser = PDB.PDBParser(PERMISSIVE=1)
         ppb = PPBuilder()
@@ -93,11 +74,15 @@ class PDBUtil:
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
 
+        (compound, source) = self._get_compound_source(structure)
+
         data = {
-            'name': os.path.basename(file_path),
+            'name': structure.header.get('name', ''),
             'num_chains': chain_no,
             'num_residues': res_no,
             'num_atoms': atom_no,
+            'compound': compound,
+            'source': source,
             'proteins': [{
                 'id': os.path.basename(file_path),
                 'sequence': seq,
@@ -109,28 +94,28 @@ class PDBUtil:
 
     def _exp_file_to_data(self, file_path):
         """
-        _exp_file_to_data:
-            Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
+            _exp_file_to_data:
+                Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
         """
         # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
         parser = PDB.MMCIFParser()
         cif = file_path
         structure = parser.get_structure("PHA-L", cif)
-        #structure.header = structure.header
-        #print(f'The mmcif structure header for {cif}*************************:\n\n')
-        #kwds = structure.header.get('keywords')
-        #print(f'Keywords: {kwds}')
-        #resl = structure.header.get('resolution')
-        #print(f'Resolution: {resl}')
+        # structure.header = structure.header
+        # print(f'The mmcif structure header for {cif}*************************:\n\n')
+        # kwds = structure.header.get('keywords')
+        # print(f'Keywords: {kwds}')
+        # resl = structure.header.get('resolution')
+        # print(f'Resolution: {resl}')
 
         # create a dictionary that maps all mmCIF tags in an mmCIF file to their values
-        #mmcif_dict = MMCIF2Dict(cif)  # TypeError: 'module' object is not callable
-        #print("The mmcif dictionary:*****************************************\n\n")
+        # mmcif_dict = MMCIF2Dict(cif)  # TypeError: 'module' object is not callable
+        # print("The mmcif dictionary:*****************************************\n\n")
         # E.g., get the solvent content from an mmCIF file:
-        #sc = mmcif_dict["_exptl_crystal.density_percent_sol"]
-        #print(f'_exptl_crystal.density_percent_sol: {sc}')
+        # sc = mmcif_dict["_exptl_crystal.density_percent_sol"]
+        # print(f'_exptl_crystal.density_percent_sol: {sc}')
         # get the list of the y coordinates of all atoms
-        #y_list = mmcif_dict["_atom_site.Cartn_y"]
+        # y_list = mmcif_dict["_atom_site.Cartn_y"]
         # print(f'_atom_site.Cartn_y: {y_list}')
 
         ppb = PPBuilder()
@@ -142,18 +127,9 @@ class PDBUtil:
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
 
-        cpd_dict = dict()
-        cpd = structure.header.get('compound', {})
-        print(f'Compound:\n {cpd}')
-        if cpd and cpd.get('1'):
-            cpd_dict = cpd.get('1')
-
-        src_dict = dict()
-        src = structure.header.get('source', {})
-        if src and src.get('1'):
-            src_dict = src.get('1')
-
         hd = self._upload_to_shock(file_path)
+
+        (cpd, src) = self._get_compound_source(structure)
 
         mmcif_data = {
             'name': structure.header.get('name', ''),
@@ -166,8 +142,8 @@ class PDBUtil:
             'structure_reference': structure.header.get('structure_reference', []),
             'keywords': structure.header.get('keywords', ''),
             'author': structure.header.get('author', ''),
-            'compound': cpd_dict,
-            'source': src_dict,
+            'compound': cpd,
+            'source': src,
             'num_models': structure.header.get('num_models', 0),
             'num_chains': structure.header.get('num_chains', 0),
             'num_residues': structure.header.get('residues', 0),
@@ -176,33 +152,59 @@ class PDBUtil:
             'num_water_atoms': structure.header.get('num_water_atoms', 0),
             'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
             'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
-            'proteins': structure.header.get('proteins', []),
             'pdb_handle': hd,
             'mmcif_handle': hd,
             'xml_handle': hd,
-            'protein': {
+            'proteins': [{
                 'id': os.path.basename(file_path),
                 'sequence': seq,
                 'md5': hashlib.md5(seq.encode()).hexdigest()
-            }
+            }]
         }
 
         return mmcif_data, pp_no
 
-    # TODO!!! ##
-    def _parse_kbase_metadata(self, meta_file_path):
-        """Return the kb_meta_data from the given spreadsheet"""
-        meta_data = dict()
-        return meta_data
+    def _get_compound_source(self, structure):
+        cpd_dict = dict()
+        cpd = structure.header.get('compound', {})
+        # print(f'Compound:\n {cpd}')
+        if cpd and cpd.get('1'):
+            cpd_dict = cpd.get('1')
+
+        src_dict = dict()
+        src = structure.header.get('source', {})
+        # print(f'Source:\n {src}')
+        if src and src.get('1'):
+            src_dict = src.get('1')
+
+        return (cpd_dict, src_dict)
+
+    def _validate_file(self, file_path):
+        """
+            _validate_file: Check if file_path is accessable, if yes, return the handle
+        """
+        try:
+            fh = open(file_path, 'r')
+        except IOError as e:
+            if e.errno == errno.ENOENT:  # No such file or directory
+                raise ValueError(f'"{file_path}" does not exist!')
+            elif e.errno == errno.EACCES:  # Permission denied
+                raise ValueError(f'"{file_path}" cannot be read!')
+            else:
+                raise ValueError(f'"{e.strerror}" occurred')
+        else:
+            return fh
 
     def _get_pdb_shock_id(self, obj_ref):
-        """Return the shock id for the PDB file"""
+        """
+            _get_pdb_shock_id: Return the shock id for the PDB file
+        """
         obj_data = self.dfu.get_objects({"object_refs": [obj_ref]})['data'][0]['data']
         return self.hs.hids_to_handles([obj_data['pdb_handle']])[0]['id']
 
     def _upload_to_shock(self, file_path):
         """
-        _upload_to_shock: upload target file to shock using DataFileUtil
+            _upload_to_shock: upload target file to shock using DataFileUtil
         """
         logging.info('Start uploading file to shock: {}'.format(file_path))
 
@@ -217,7 +219,7 @@ class PDBUtil:
 
     def _generate_report_html(self, pdb_name, pdb_path):
         """
-            _generate_report: generates the HTML for the upload report
+            _generate_report_html: generates the HTML for the upload report
         """
         html_report = list()
 
@@ -247,7 +249,7 @@ class PDBUtil:
     def _generate_report(self, method_name, pdb_obj_ref, workspace_name,
                          n_poly_pep, pdb_name, pdb_path):
         """
-        _generate_report: generate summary report for upload
+            _generate_report: generate summary report for upload
         """
         output_html_files = self._generate_report_html(pdb_name, pdb_path)
 
@@ -266,31 +268,6 @@ class PDBUtil:
 
         return report_output
 
-    def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
-                               successful_paths, failed_paths):
-        """
-        _generate_batch_report: generate summary report for upload
-        """
-        output_html_files = self._generate_report_html(structs_name, ','.join(successful_paths))
-
-        failed_files = ','.join(failed_paths)
-        description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
-                       f'with files "{failed_files}" failed to load.')
-        report_params = {'message': f'You uploaded a batch of PDB files into {structs_name}.',
-                         'html_links': output_html_files,
-                         'direct_html_link_index': 0,
-                         'objects_created': [{'ref': structs_ref,
-                                              'description': description}],
-                         'workspace_name': workspace_name,
-                         'report_object_name': 'batch_import_pdb_files_report_' + str(uuid.uuid4())}
-
-        kbase_report_client = KBaseReport(self.callback_url, token=self.token)
-        output = kbase_report_client.create_extended_report(report_params)
-
-        report_output = {'report_name': output['name'], 'report_ref': output['ref']}
-
-        return report_output
-
     def __init__(self, config):
         self.callback_url = config['SDK_CALLBACK_URL']
         self.scratch = config['scratch']
@@ -300,8 +277,8 @@ class PDBUtil:
 
     def import_model_pdb_file(self, params, create_report=True):
         """
-        import_model_pdb_file: upload an experiment pdb file and convert into a
-                              KBaseStructure.ModelProteinStructure object
+            import_model_pdb_file: upload an experiment pdb file and convert into a
+                                  KBaseStructure.ModelProteinStructure object
         """
 
         file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
@@ -336,8 +313,8 @@ class PDBUtil:
 
     def import_experiment_pdb_file(self, params, create_report=True):
         """
-        import_experiment_pdb_file: upload an experiment pdb file and convert into a
-                                   KBaseStructure.ExperimentalProteinStructure object
+            import_experiment_pdb_file: upload an experiment pdb file and convert into a
+                                       KBaseStructure.ExperimentalProteinStructure object
         """
 
         file_path, workspace_name, mmcif_name = self._validate_import_pdb_file_params(params)
@@ -347,9 +324,8 @@ class PDBUtil:
         else:
             workspace_id = workspace_name
 
-        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
+        # Parse the experimental pdb file for an experimental data structure
         data, n_polypeptides,  = self._exp_file_to_data(file_path)
-        data['user_data'] = params.get('description', '')
         logging.info(data)
 
         info = self.dfu.save_objects({
@@ -371,92 +347,19 @@ class PDBUtil:
 
         return returnVal
 
-    def batch_import_pdb_files(self, params):
-        """
-        batch_import_pdb_files: upload two sets of pdb files and convert into a
-                               KBaseStructure.ProteinStructures object
-        1. from the params['meta_file_path'] spreadsheet, sort out the model_pdb_paths,
-           exp_pdb_paths and the kbase_meta_data
-        2. call import_model_pdb_file on each entry in model_pdb_paths,
-           call import_experiment_pdb_file on each entry in exp_pdb_paths, and
-           call _parse_kbase_metadata to parse for KBase metadata
-        3. assemble the data for a ProteinStructures and save the data object
-        4. generate a report
-        """
-
-        (model_pdb_files, exp_pdb_files, workspace_name,
-         structures_name) = self._validate_batch_import_pdb_files_params(params)
-
-        if not isinstance(workspace_name, int):
-            workspace_id = self.dfu.ws_name_to_id(workspace_name)
-        else:
-            workspace_id = workspace_name
-
-        model_pdb_objects = list()
-        exp_pdb_objects = list()
-        successful_files = list()
-        failed_files = list()
-        protein_structures = dict()
-        total_structures = 0
-
-        # loop through the lists model_pdb_file_paths and exp_pdb_file_paths
-        if model_pdb_files:
-            for model_file in model_pdb_files():
-                model_pdb_ref = self.import_model_pdb_file(params, False)
-
-                if model_pdb_ref:
-                    model_pdb_objects.append(model_pdb_ref)
-                    successful_files.append(model_file)
-                    total_structures += 1
-                else:
-                    failed_files.append(model_file)
-
-        if exp_pdb_files:
-            for exp_file in exp_pdb_files():
-                exp_pdb_ref = self.import_experiment_pdb_file(params, False)
-
-                if exp_pdb_ref:
-                    exp_pdb_objects.append(exp_pdb_ref)
-                    successful_files.append(exp_file)
-                    total_structures += 1
-                else:
-                    failed_files.append(exp_file)
-
-        if model_pdb_objects:
-            protein_structures['model_structures'] = model_pdb_objects
-        if exp_pdb_objects:
-            protein_structures['experimental_structures'] = exp_pdb_objects
-        protein_structures['total_structures'] = total_structures
-        protein_structures['description'] = (f'Created {total_structures} '
-                                             f'structures in {structures_name}')
-
-        logging.info(protein_structures)
-
-        info = self.dfu.save_objects({
-            'id': workspace_id,
-            'objects': [
-                {'type': 'KBaseStructure.ProteinStructures',
-                 'name': structures_name,
-                 'data': protein_structures}]
-        })[0]
-        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
-
-        returnVal = {'structures_obj_ref': obj_ref}
-
-        report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
-                                                    successful_files, failed_files)
-
-        returnVal.update(report_output)
-
-        return returnVal
-
     def export_pdb(self, params):
+        """
+            export_pdb: return the shock_id of the uploaded pdb object
+        """
         if "input_ref" not in params:
-            raise ValueError("input_ref not in supplied params")
+            raise ValueError("'input_ref' not in supplied params")
 
         return {'shock_id': self._get_pdb_shock_id(params['input_ref'])}
 
     def structure_to_pdb_file(self, params):
+        """
+            structure_to_pdb_file: get the file path for the given pdb object
+        """
         if "input_ref" not in params:
             raise ValueError("input_ref not in supplied params")
         if "destination_dir" not in params:

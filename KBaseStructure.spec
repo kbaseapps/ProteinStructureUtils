@@ -66,15 +66,14 @@ module KBaseStructure {
     uniref_id uniref_id;
     genome_ref genome_ref;
     cds_id cds_id;
-    metagenome_ref;
-    feature_set_ref;
-
+    metagenome_ref metagenome_ref;
+    feature_set_ref feature_set_ref;
   } ProteinData;
 
   /*
     ExperimentalProteinStructure
-    compound: a compound dict
-    source: a source dict
+    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
+    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional mmcif_handle xml_handle
     @optional compound source
   */
@@ -112,7 +111,9 @@ module KBaseStructure {
 
   /*
     ModelProteinStructure
-    @optional
+    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
+    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
+    @optional compound source
   */
   typedef structure {
     string user_data;
@@ -120,6 +121,8 @@ module KBaseStructure {
     int num_chains;
     int num_residues;
     int num_atoms;
+    mapping<string, string> compound;
+    mapping<string, string> source;
 
     /*Protein links*/
     list<ProteinData> proteins;
@@ -143,5 +146,6 @@ module KBaseStructure {
     int total_structures;
     string description;
   } ProteinStructures;
+
 };
 

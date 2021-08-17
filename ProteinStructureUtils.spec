@@ -1,150 +1,72 @@
-
 /*
-@author chenry jmc jjeffryes tgu2 qzhang
+A KBase module: ProteinStructureUtils
 */
-module KBaseStructure {
-  typedef int bool;
 
-  /*
-    Reference to KBase genome
-    @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation
+module ProteinStructureUtils {
+  /* A boolean - 0 for false, 1 for true.
+    @range (0, 1)
   */
-  typedef string genome_ref;
+  typedef int boolean;
 
-  /*
-    Reference to KBase metagenome
-    @id ws KBaseMetagenomes.AnnotatedMetagenomeAssembly KBaseGenomeAnnotations.Assembly
+  /* An X/Y/Z style reference
+    @id ws
   */
-  typedef string metagenome_ref;
+  typedef string obj_ref;
 
-  /*
-    Reference to KBaseCollections.FeatureSet
-    @id ws KBaseCollections.FeatureSet
-  */
-  typedef string feature_set_ref;
+  /* workspace name of the object */
+  typedef string workspace_name;
 
-  /*
-    CDS ID
-    @id kb
-  */
-  typedef string cds_id;
+  typedef structure {
+      obj_ref input_ref;
+      string destination_dir;
+   } StructureToPDBFileParams;
 
-  /*
-    Molecule ID
-    @id external
-  */
-  typedef string mol_id;
+  typedef structure {
+      string file_path;
+  } StructureToPDBFileOutput;
 
-  /*
-    Uniref ID
-    @id external
-  */
-  typedef string uniref_id;
+  funcdef structure_to_pdb_file(StructureToPDBFileParams params)
+      returns (StructureToPDBFileOutput result) authentication required;
 
-  /*
-    Reference to a file handle in shock
-    @id handle
-  */
-  typedef string handle_ref;
-
-  /*
-    ProteinData
-    mol_id id: ID for the protein
-    string sequence: amino acid sequence
-    string md5: hash of the amino acid sequence
-    uniref_id uniref_id: from uniprot
-    genome_ref genome_ref: from a kbase genome
-    cds_id cds_id: from a kbase genome
-
-    @optional id uniref_id genome_ref cds_id
-    @optional metagenome_ref feature_set_ref
+  /* Input of the export_pdb function
+    obj_ref: generics object reference
   */
   typedef structure {
-    mol_id id;
-    string sequence;
-    string md5;
-    uniref_id uniref_id;
-    genome_ref genome_ref;
-    cds_id cds_id;
-    metagenome_ref metagenome_ref;
-    feature_set_ref feature_set_ref;
-  } ProteinData;
+      obj_ref input_ref;
+  } ExportParams;
 
-  /*
-    ExperimentalProteinStructure
-    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
-    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
-    @optional mmcif_handle xml_handle
-    @optional compound source
+  typedef structure {
+      string shock_id;
+  } ExportOutput;
+
+  funcdef export_pdb (ExportParams params) returns (ExportOutput result) authentication required;
+
+  /* Input of the import_model_pdb_file and import_experiment_pdb_file functions
+    input_shock_id: file shock id
+    input_file_path: absolute file path
+    input_staging_file_path: staging area file path
+    structure_name: structure object name
+    workspace_name: workspace name for object to be saved to
   */
   typedef structure {
-    /*Experimental header*/
-    string rcsb_id;
-    string name;
-    string deposition_date;
-    string head;
-    string release_date;
-    string structure_method;
-    float resolution;
-    string author;
-    mapping<string, string> compound;
-    mapping<string, string> source;
+      string input_shock_id;
+      string input_file_path;
+      string input_staging_file_path;
+      string structure_name;
+      string description;
+      workspace_name workspace_name;
+  } ImportPDBParams;
 
-    /*Structure metadata*/
-    int num_models;
-    int num_chains;
-    int num_residues;
-    int num_atoms;
-    int num_het_atoms;
-    int num_water_atoms;
-    int num_disordered_atoms;
-    int num_disordered_residues;
-
-    /*Protein links*/
-    list<ProteinData> proteins;
-
-    /*File links*/
-    handle_ref pdb_handle;
-    handle_ref mmcif_handle;
-    handle_ref xml_handle;
-  } ExperimentalProteinStructure;
-
-  /*
-    ModelProteinStructure
-    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
-    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
-    @optional compound source
-  */
   typedef structure {
-    string user_data;
-    string name;
-    int num_chains;
-    int num_residues;
-    int num_atoms;
-    mapping<string, string> compound;
-    mapping<string, string> source;
+      string report_name;
+      string report_ref;
+      obj_ref structure_obj_ref;
+  } ImportPDBOutput;
 
-    /*Protein links*/
-    list<ProteinData> proteins;
+  /* import_model_pdb_file: import a ProteinStructure from PDB*/
+  funcdef import_model_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
 
-    /*File links*/
-    handle_ref pdb_handle;
-  } ModelProteinStructure;
-
-
-  /*
-    ProteinStructures
-    model_structures: a list of references to ModelProteinStructures
-    experimental_structures: a list of references to ExperimentalProteinStructures
-    total_structures: total count of protein structures
-    description: description/remarks
-    @optional experimental_structures description
-  */
-  typedef structure {
-    list<ModelProteinStructure> model_structures;
-    list<ExperimentalProteinStructure> experimental_structures;
-    int total_structures;
-    string description;
-  } ProteinStructures;
+  /* import_experiment_pdb_file: import a ProteinStructure from PDB*/
+  funcdef import_experiment_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
 
 };
