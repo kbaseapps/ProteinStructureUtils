@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import unittest
+import json
 from Bio import PDB
 from configparser import ConfigParser
 
@@ -168,7 +169,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         pdbl = PDB.PDBList()
         return pdbl.retrieve_pdb_file(file_name, pdir='data', format=fmt)
 
-    # @unittest.skip('test_model_upload')
+    @unittest.skip('test_model_upload')
     def test_model_upload(self):
         ret = self.serviceImpl.import_model_pdb_file(
             self.ctx, {
@@ -180,21 +181,47 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     # @unittest.skip('test_model_upload2')
     def test_model_upload2(self):
+        fileName = '1fat.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
         ret = self.serviceImpl.import_model_pdb_file(
             self.ctx, {
-                'input_file_path': self.pdb_file_path,
+                'input_file_path': pdb_file_path,
                 'structure_name': 'import_model_pdb_test2',
                 'workspace_name': self.wsName,
             })[0]
         self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
 
-    # @unittest.skip('test_structure_to_pdb_file')
+        # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
+        pdb_obj_data = self.wsClient.get_objects2(
+            {'objects': [{'ref': ret['structure_obj_ref']}]})['data'][0]['data']
+        self.assertEqual(pdb_obj_data['name'], 'phytohemagglutinin-l')
+        self.assertEqual(pdb_obj_data['num_chains'], 4)
+        self.assertEqual(pdb_obj_data['num_residues'], 928)
+        self.assertEqual(pdb_obj_data['num_atoms'], 7248)
+        self.assertCountEqual(pdb_obj_data['proteins'][0].keys(), ['id', 'sequence', 'md5'])
+        self.assertCountEqual(pdb_obj_data['compound'].keys(),
+                              ['misc', 'molecule', 'chain', 'synonym'])
+        self.assertEqual(pdb_obj_data['compound']['molecule'], 'phytohemagglutinin-l')
+        self.assertEqual(pdb_obj_data['compound']['chain'], 'a, b, c, d')
+        self.assertEqual(pdb_obj_data['compound']['synonym'],
+                         'leucoagglutinating phytohemagglutinin, pha-l')
+        self.assertCountEqual(pdb_obj_data['source'].keys(),
+                              ['misc', 'organism_scientific',
+                               'organism_taxid', 'organ', 'other_details'])
+        self.assertEqual(pdb_obj_data['source']['organism_scientific'], 'phaseolus vulgaris')
+        self.assertEqual(pdb_obj_data['source']['organism_taxid'], '3885')
+        self.assertEqual(pdb_obj_data['source']['organ'], 'seed')
+        self.assertEqual(pdb_obj_data['source']['other_details'],
+                         'purified pha-l was purchased from sigma')
+
+    @unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
         ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_ref,
                                                                 'destination_dir': self.scratch})
         self.assertEqual(ret[0]['file_path'], os.path.join(self.scratch, '1nqg.pdb'))
 
-    # @unittest.skip('test_export_pdb_structure')
+    @unittest.skip('test_export_pdb_structure')
     def test_export_pdb_structure(self):
         ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_ref})
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
@@ -209,19 +236,36 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             })[0]
         self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
 
-    # @unittest.skip('test_structure_to_mmcif_file')
+        # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
+        pdb_obj_data = self.wsClient.get_objects2(
+            {'objects': [{'ref': ret['structure_obj_ref']}]})['data'][0]['data']
+        self.assertEqual(pdb_obj_data['name'], 'PHYTOHEMAGGLUTININ-L')
+        self.assertEqual(pdb_obj_data['head'], 'LECTIN')
+        self.assertEqual(pdb_obj_data['deposition_date'], '1996-06-12')
+        self.assertEqual(pdb_obj_data['resolution'], 2.8)
+        self.assertEqual(pdb_obj_data['structure_method'], 'X-RAY DIFFRACTION')
+        self.assertEqual(pdb_obj_data['compound'], {})
+        self.assertEqual(pdb_obj_data['source'], {})
+        self.assertCountEqual(pdb_obj_data['proteins'][0].keys(), ['id', 'sequence', 'md5'])
+        self.assertIn('mmcif_handle', pdb_obj_data.keys())
+        self.assertIn('pdb_handle', pdb_obj_data.keys())
+        self.assertIn('xml_handle', pdb_obj_data.keys())
+        self.assertIn('rcsb_id', pdb_obj_data.keys())
+        self.assertIn('release_date', pdb_obj_data.keys())
+
+    @unittest.skip('test_structure_to_mmcif_file')
     def test_structure_to_mmcif_file(self):
         ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_mmCif_ref,
                                                                 'destination_dir': self.scratch})
         self.assertEqual(ret[0]['file_path'], os.path.join(self.scratch, '1fat.cif'))
 
-    # @unittest.skip('test_export_structure')
+    @unittest.skip('test_export_structure')
     def test_export_mmcif_structure(self):
         ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_mmCif_ref})
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
 
     # Testing PDBUtils module functions
-    # @unittest.skip('test_model_file_to_data')
+    @unittest.skip('test_model_file_to_data')
     def test_model_file_to_data(self):
         fileName = '1fat.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -256,7 +300,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                                'gene', 'expression_system_taxid', 'expression_system_vector_type',
                                'organism_taxid', 'expression_system_vector'])
 
-    # @unittest.skip('test_exp_file_to_data')
+    @unittest.skip('test_exp_file_to_data')
     def test_exp_file_to_data(self):
         fileName = '1fat.cif'
         pdb_file_path = os.path.join(self.scratch, fileName)

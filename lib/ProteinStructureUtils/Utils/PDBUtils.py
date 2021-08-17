@@ -20,7 +20,7 @@ class PDBUtil:
     def _validate_import_pdb_file_params(self, params):
         """
             _validate_import_pdb_file_params:
-                validates input params to import_model_pdb_file and import_experiment_pdb_file methods
+                validates input params to import_model_pdb_file and import_experiment_pdb_file
         """
         # check for required parameters
         for p in ['structure_name', 'workspace_name']:
@@ -126,13 +126,13 @@ class PDBUtil:
             my_seq = pp.get_sequence()
             pp_list += str(my_seq)
         seq = ''.join(pp_list)
-
+        struc_name = structure.header.get('name', '')
         hd = self._upload_to_shock(file_path)
 
         (cpd, src) = self._get_compound_source(structure)
 
         mmcif_data = {
-            'name': structure.header.get('name', ''),
+            'name': struc_name,
             'head': structure.header.get('head', ''),
             'rcsb_id': structure.header.get('rcsb_id', ''),
             'deposition_date': structure.header.get('deposition_date', ''),
@@ -156,7 +156,7 @@ class PDBUtil:
             'mmcif_handle': hd,
             'xml_handle': hd,
             'proteins': [{
-                'id': os.path.basename(file_path),
+                'id': struc_name,
                 'sequence': seq,
                 'md5': hashlib.md5(seq.encode()).hexdigest()
             }]
