@@ -8,7 +8,10 @@ MAINTAINER KBase Developer
 
 # RUN apt-get update
 
-
+RUN pip install --upgrade pip \
+    && pip install biopython --upgrade \
+    && pip install wheel \
+    && pip install pandas
 # -----------------------------------------
 
 COPY ./ /kb/module

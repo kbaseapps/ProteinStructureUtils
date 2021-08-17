@@ -3,7 +3,7 @@ A KBase module: ProteinStructureUtils
 */
 
 module ProteinStructureUtils {
-    /* A boolean - 0 for false, 1 for true.
+  /* A boolean - 0 for false, 1 for true.
     @range (0, 1)
   */
   typedef int boolean;
@@ -32,7 +32,7 @@ module ProteinStructureUtils {
     obj_ref: generics object reference
   */
   typedef structure {
-      obj_ref obj_ref;
+      obj_ref input_ref;
   } ExportParams;
 
   typedef structure {
@@ -41,13 +41,12 @@ module ProteinStructureUtils {
 
   funcdef export_pdb (ExportParams params) returns (ExportOutput result) authentication required;
 
-  /* Input of the import_matrix_from_excel function
+  /* Input of the import_model_pdb_file and import_experiment_pdb_file functions
     input_shock_id: file shock id
     input_file_path: absolute file path
     input_staging_file_path: staging area file path
     structure_name: structure object name
     workspace_name: workspace name for object to be saved to
-
   */
   typedef structure {
       string input_shock_id;
@@ -66,5 +65,8 @@ module ProteinStructureUtils {
 
   /* import_model_pdb_file: import a ProteinStructure from PDB*/
   funcdef import_model_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
+
+  /* import_experiment_pdb_file: import a ProteinStructure from PDB*/
+  funcdef import_experiment_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
 
 };

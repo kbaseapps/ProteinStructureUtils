@@ -1,6 +1,6 @@
 {
   "ver" : "",
-  "authors" : ["jjeffryes"],
+  "authors" : ["jjeffryes", "qzhang"],
   "contact" : "http://kbase.us/contact-us/",
   "visible" : true,
   "categories" : ["upload"],
@@ -34,7 +34,7 @@
       "default_values" : [ "" ],
       "field_type" : "text",
       "text_options" : {
-        "valid_ws_types" : ["KBaseStructure.ModelProteinStructure"],
+        "valid_ws_types" : ["KBaseStructure.ExperimentalProteinStructure"],
         "is_output_name" : true
       }
     }
@@ -43,7 +43,7 @@
     "service-mapping" : {
       "url" : "",
       "name" : "ProteinStructureUtils",
-      "method" : "import_model_pdb_file",
+      "method" : "import_experiment_pdb_file",
       "input_mapping" : [
         {
           "narrative_system_variable": "workspace",
