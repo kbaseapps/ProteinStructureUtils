@@ -350,6 +350,10 @@ class Application(object):
                              name='ProteinStructureUtils.import_model_pdb_file',
                              types=[dict])
         self.method_authentication['ProteinStructureUtils.import_model_pdb_file'] = 'required'  # noqa
+        self.rpc_service.add(impl_ProteinStructureUtils.import_experiment_pdb_file,
+                             name='ProteinStructureUtils.import_experiment_pdb_file',
+                             types=[dict])
+        self.method_authentication['ProteinStructureUtils.import_experiment_pdb_file'] = 'required'  # noqa
         self.rpc_service.add(impl_ProteinStructureUtils.status,
                              name='ProteinStructureUtils.status',
                              types=[dict])
