@@ -75,7 +75,7 @@ module KBaseStructure {
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional mmcif_handle xml_handle
-    @optional compound source
+    @optional compound source model_id exact_match identity
   */
   typedef structure {
     /*Experimental header*/
@@ -87,6 +87,10 @@ module KBaseStructure {
     string structure_method;
     float resolution;
     string author;
+    int model_id;
+    bool exact_match;
+    float identity;
+
     mapping<string, string> compound;
     mapping<string, string> source;
 
@@ -113,7 +117,7 @@ module KBaseStructure {
     ModelProteinStructure
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
-    @optional compound source
+    @optional compound source model_id exact_match identity
   */
   typedef structure {
     string user_data;
@@ -121,6 +125,10 @@ module KBaseStructure {
     int num_chains;
     int num_residues;
     int num_atoms;
+    int model_id;
+    bool exact_match;
+    float identity;
+
     mapping<string, string> compound;
     mapping<string, string> source;
 
