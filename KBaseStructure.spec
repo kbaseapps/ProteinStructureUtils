@@ -74,7 +74,7 @@ module KBaseStructure {
     object_ref feature_ref: from a KBase feature
     object_type feature_type: from a KBase feature
     cds_id cds_id: from a KBase genome
-    int model_id: from PDB file
+    mod_id model_id: from PDB file
     mol_id chain_id: from PDB file
     float seq_identity: computed by comparing with KBase feature sequence
     bool exact_match: computed according to seq_identity
