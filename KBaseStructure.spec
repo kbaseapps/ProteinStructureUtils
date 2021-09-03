@@ -6,6 +6,17 @@ module KBaseStructure {
   typedef int bool;
 
   /*
+    Reference to KBase object
+    @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation KBaseGenomes.Feature etc.
+  */
+  typedef string object_ref;
+
+  /*
+    type of a KBase object (e.g., type of a KBaseGenomes.Feature object)
+  */
+  typedef string object_type;
+
+  /*
     Reference to KBase genome
     @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation
   */
@@ -36,6 +47,12 @@ module KBaseStructure {
   typedef string mol_id;
 
   /*
+    Model ID
+    @id external
+  */
+  typedef int mod_id;
+
+  /*
     Uniref ID
     @id external
   */
@@ -53,11 +70,17 @@ module KBaseStructure {
     string sequence: amino acid sequence
     string md5: hash of the amino acid sequence
     uniref_id uniref_id: from uniprot
-    genome_ref genome_ref: from a kbase genome
-    cds_id cds_id: from a kbase genome
+    genome_ref genome_ref: from a KBase genome
+    object_ref feature_ref: from a KBase feature
+    object_type feature_type: from a KBase feature
+    cds_id cds_id: from a KBase genome
+    int model_id: from PDB file
+    mol_id chain_id: from PDB file
+    float seq_identity: computed by comparing with KBase feature sequence
+    bool exact_match: computed according to seq_identity
 
-    @optional id uniref_id genome_ref cds_id
-    @optional metagenome_ref feature_set_ref
+    @optional id uniref_id cds_id model_id chain_id seq_identity exact_match
+    @optional  genome_ref metagenome_ref feature_ref feature_set_ref feature_type
   */
   typedef structure {
     mol_id id;
@@ -65,9 +88,17 @@ module KBaseStructure {
     string md5;
     uniref_id uniref_id;
     genome_ref genome_ref;
+    object_ref feature_ref;
+    object_type feature_type;
     cds_id cds_id;
     metagenome_ref metagenome_ref;
     feature_set_ref feature_set_ref;
+
+    /*Parsed from PDB data and computed by comparing to the KBase feature sequence*/
+    mod_id model_id;
+    mol_id chain_id;
+    float seq_identity;
+    bool exact_match;
   } ProteinData;
 
   /*
@@ -75,7 +106,7 @@ module KBaseStructure {
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional mmcif_handle xml_handle
-    @optional compound source model_id exact_match identity
+    @optional compound source
   */
   typedef structure {
     /*Experimental header*/
@@ -87,9 +118,6 @@ module KBaseStructure {
     string structure_method;
     float resolution;
     string author;
-    int model_id;
-    bool exact_match;
-    float identity;
 
     mapping<string, string> compound;
     mapping<string, string> source;
@@ -117,7 +145,7 @@ module KBaseStructure {
     ModelProteinStructure
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
-    @optional compound source model_id exact_match identity
+    @optional compound source
   */
   typedef structure {
     string user_data;
@@ -125,9 +153,6 @@ module KBaseStructure {
     int num_chains;
     int num_residues;
     int num_atoms;
-    int model_id;
-    bool exact_match;
-    float identity;
 
     mapping<string, string> compound;
     mapping<string, string> source;
