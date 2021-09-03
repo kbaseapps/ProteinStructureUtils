@@ -72,7 +72,7 @@ class PDBUtil:
         for pp in ppb.build_peptides(structure):
             pp_no += 1
             my_seq = pp.get_sequence()
-            pp_list += str(my_seq)
+            pp_list.append(str(my_seq))
         seq = ''.join(pp_list)
 
         (compound, source) = self._get_compound_source(structure)
@@ -85,7 +85,7 @@ class PDBUtil:
             'num_atoms': atom_no,
             'model_id': model.get_id(),
             'identity': seq_iden,
-            'exact_match': 1 if seq_iden == 1.0 else 0,
+            'exact_match': 1 if seq_iden > 0.99 else 0,
             'compound': compound,
             'source': source,
             'proteins': [{
@@ -102,19 +102,11 @@ class PDBUtil:
             _exp_file_to_data:
                 Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
         """
-        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
         parser = PDB.MMCIFParser()
         cif = file_path
         structure = parser.get_structure("PHA-L", cif)
         # create a dictionary that maps all mmCIF tags in an mmCIF file to their values
         # mmcif_dict = MMCIF2Dict(cif)  # TypeError: 'module' object is not callable
-        # print("The mmcif dictionary:*****************************************\n\n")
-        # E.g., get the solvent content from an mmCIF file:
-        # sc = mmcif_dict["_exptl_crystal.density_percent_sol"]
-        # print(f'_exptl_crystal.density_percent_sol: {sc}')
-        # get the list of the y coordinates of all atoms
-        # y_list = mmcif_dict["_atom_site.Cartn_y"]
-        # print(f'_atom_site.Cartn_y: {y_list}')
 
         ppb = PPBuilder()
         pp_list = []
@@ -157,7 +149,7 @@ class PDBUtil:
             'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
             'model_id': model_ids[0],
             'identity': seq_iden,
-            'exact_match': 1 if seq_iden == 1.0 else 0,
+            'exact_match': 1 if seq_iden > 0.99 else 0,
             'pdb_handle': hd,
             'mmcif_handle': hd,
             'xml_handle': hd,
@@ -364,45 +356,42 @@ class PDBUtil:
                 raise ValueError(f'"{p}" parameter is required, but missing')
 
         if params.get('metadata_staging_file_path'):
-            file_path = self.dfu.download_staging_file(
+            scratch_file_path = self.dfu.download_staging_file(
                 {'staging_file_subdir_path': params.get('metadata_staging_file_path')}
                  ).get('copy_file_path')
+            return (scratch_file_path, params['workspace_name'], params['structures_name'])
         else:
             error_msg = "Must supply a 'metadata_staging_file_path'"
             raise ValueError(error_msg)
 
-        return (params['metadata_staging_file_path'], params['workspace_name'],
-                params['structures_name'])
-
-    def _parse_metadata_file(self, metadata_staging_file_path):
+    def _parse_metadata_file(self, metadata_file_path):
         """
             _parse_metadata_file:
                 From metadata_file_path, a spreadsheet file, sort out the model_pdb_file_paths,
             exp_pdb_file_paths and the kbase_meta_data
 
-            return: lists model_pdb_file_paths and exp_pdb_file_paths and dict kbase_meta_data
+            return: lists model_pdb_file_paths, exp_pdb_file_paths and dict kbase_meta_data
         """
-        exp_pdb_file_paths = []
-        model_pdb_file_paths = []
-        kb_meta_data = dict()
+        exp_pdb_file_paths = list()
+        model_pdb_file_paths = list()
 
-        download_staging_file_params = {
-            'staging_file_subdir_path': metadata_staging_file_path
-        }
-        scratch_file_path = self.dfu.download_staging_file(
-                        download_staging_file_params).get('copy_file_path')
+        # read the data from metadata_file_path, assuming it is a .tsv file
+        # df_meta_data is a Panda DataFrame object
+        df_meta_data = pd.read_csv(metadata_file_path, sep='\t')
 
-        # read the data from scratch_file_path, assuming it is a .tsv file
-        tsv_df = pd.read_csv(scratch_file_path, sep='\t')  # tsv_read is a Panda DataFrame object
-        # print the first 10 records
-        print(tsv_df.head(10))
-        # TODO!!!: Handle the file parsing details, depending on the file
+        for i in range(len(df_meta_data['PDB filename'])):
+            f_path = df_meta_data['PDB filename'][i]
+            if not pd.isna(f_path):
+                if 'y' in df_meta_data['Is model'][i] or 'Y' in df_meta_data['Is model'][i]:
+                    model_pdb_file_paths.append(f_path)
+                else:
+                    exp_pdb_file_paths.append(f_path)
 
         if not model_pdb_file_paths and not exp_pdb_file_paths:
             error_msg = "At least one list of pdb file(s) should be provided!"
             raise ValueError(error_msg)
 
-        return (model_pdb_file_paths, exp_pdb_file_paths, kbase_meta_data)
+        return (model_pdb_file_paths, exp_pdb_file_paths, df_meta_data)
 
     def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
                                successful_paths, failed_paths):
@@ -410,7 +399,7 @@ class PDBUtil:
             _generate_batch_report: generate summary report for upload
         """
         output_html_files = self._generate_batch_report_html(structs_name,
-                                                            successful_paths, failed_paths)
+                                                             successful_paths, failed_paths)
 
         failed_files = ','.join(failed_paths)
         description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
@@ -586,7 +575,7 @@ class PDBUtil:
             report_ref: report reference (if any)
         """
 
-        (metadata_staging_file_path, workspace_name,
+        (metadata_file_path, workspace_name,
          structures_name) = self._validate_batch_import_pdbs_params(params)
 
         if not isinstance(workspace_name, int):
@@ -595,7 +584,7 @@ class PDBUtil:
             workspace_id = workspace_name
 
         (model_pdb_files, exp_pdb_files,
-         kbase_meta_data) = self._parse_metadata_file(metadata_staging_file_path)
+         kbase_meta_data) = self._parse_metadata_file(metadata_file_path)
 
         model_pdb_objects = list()
         exp_pdb_objects = list()
@@ -605,27 +594,22 @@ class PDBUtil:
         total_structures = 0
 
         # loop through the lists model_pdb_file_paths and exp_pdb_file_paths
-        if model_pdb_files:
-            for model_file in model_pdb_files:
-                model_pdb_ref = self.import_model_pdb_file(params, False)
-
-                if model_pdb_ref:
-                    model_pdb_objects.append(model_pdb_ref)
-                    successful_files.append(model_file)
-                    total_structures += 1
-                else:
-                    failed_files.append(model_file)
-
-        if exp_pdb_files:
-            for exp_file in exp_pdb_files:
-                exp_pdb_ref = self.import_experiment_pdb_file(params, False)
-
-                if exp_pdb_ref:
-                    exp_pdb_objects.append(exp_pdb_ref)
-                    successful_files.append(exp_file)
-                    total_structures += 1
-                else:
-                    failed_files.append(exp_file)
+        for model_file in model_pdb_files:
+            model_pdb_ref = self.import_model_pdb_file(params, False)
+            if model_pdb_ref:
+                model_pdb_objects.append(model_pdb_ref)
+                successful_files.append(model_file)
+                total_structures += 1
+            else:
+                failed_files.append(model_file)
+        for exp_file in exp_pdb_files:
+            exp_pdb_ref = self.import_experiment_pdb_file(params, False)
+            if exp_pdb_ref:
+                exp_pdb_objects.append(exp_pdb_ref)
+                successful_files.append(exp_file)
+                total_structures += 1
+            else:
+                failed_files.append(exp_file)
 
         if model_pdb_objects:
             protein_structures['model_structures'] = model_pdb_objects
@@ -634,7 +618,6 @@ class PDBUtil:
         protein_structures['total_structures'] = total_structures
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
-
         logging.info(protein_structures)
 
         info = self.dfu.save_objects({

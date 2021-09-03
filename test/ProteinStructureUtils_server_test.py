@@ -169,12 +169,22 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         pdbl = PDB.PDBList()
         return pdbl.retrieve_pdb_file(file_name, pdir='data', format=fmt)
 
-    @unittest.skip('test_model_upload')
-    def test_model_upload(self):
+    def mock_download_staging_file(params):
+        print('Mocking DataFileUtilClient.download_staging_file')
+        print(params)
+
+        pdb_filename = params.get('staging_file_subdir_path')
+        pdb_path = os.path.join('/kb/module/work/tmp', pdb_filename)
+        shutil.copy(os.path.join("data", pdb_filename), pdb_path)
+
+        return {'copy_file_path': pdb_path}
+
+    @unittest.skip('test_model_upload1')
+    def test_model_upload1(self):
         ret = self.serviceImpl.import_model_pdb_file(
             self.ctx, {
                 'input_file_path': self.pdb_file_path,
-                'structure_name': 'import_model_pdb_test',
+                'structure_name': 'import_model_pdb_test1',
                 'workspace_name': self.wsName,
             })[0]
         self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
