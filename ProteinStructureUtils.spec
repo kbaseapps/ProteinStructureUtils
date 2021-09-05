@@ -86,7 +86,7 @@ module ProteinStructureUtils {
       string report_ref;
   } BatchPDBImportOutput;
 
-  /* batch_import_pdb_files: import a batch of ProteinStructures from PDB files*/
+  /* batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files*/
   funcdef batch_import_pdbs_from_metafile (BatchPDBImportParams params) returns (BatchPDBImportOutput result) authentication required;
 
 };

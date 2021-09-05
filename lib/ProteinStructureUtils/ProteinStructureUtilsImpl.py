@@ -24,7 +24,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "630e7740d92b27dcff71a808ffb0a59fd9ed0d3d"
+    GIT_COMMIT_HASH = "a42ae2fa2bf37a44443c21e1b3196a8dd548d24f"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -184,7 +184,6 @@ class ProteinStructureUtils:
                              'result is not type dict as required.')
         # return the results
         return [result]
-
     def status(self, ctx):
         #BEGIN_STATUS
         returnVal = {'state': "OK",
