@@ -258,8 +258,125 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
 
     # Testing PDBUtils module functions
-    #@unittest.skip('test_incomplete_parse_metadata_files')
-    def test_parse_incomplete_metadata_files(self):
+    #@unittest.skip('test_validate_file')
+    def test_validate_file(self):
+        not_exist_file = 'abc.csv'
+        with self.assertRaisesRegex(
+                ValueError,
+                f'"{not_exist_file}" does not exist!'):
+            self.pdb_util._validate_file(not_exist_file)
+
+    #@unittest.skip('test_read_file_by_type_csv')
+    def test_read_file_by_type_csv(self):
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
+                         'PDB molecule', 'PDB filename']
+
+        metafile = 'pdb_metafile_sample1a.csv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 7)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 7)
+
+        required_cols.append('Is model')
+        metafile = 'pdb_metafile_sample1b.csv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 4)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 4)
+
+        metafile = 'pdb_metafile_sample2.csv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 4)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 4)
+
+    #@unittest.skip('test_read_file_by_type_tsv')
+    def test_read_file_by_type_tsv(self):
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
+                         'PDB molecule', 'PDB filename']
+
+        metafile = 'pdb_metafile_sample1a.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 7)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 7)
+
+        required_cols.append('Is model')
+        metafile = 'pdb_metafile_sample1c.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 4)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 4)
+
+        metafile = 'pdb_metafile_sample2.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 4)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 4)
+
+    #@unittest.skip('test_read_file_by_type_xlsx')
+    def test_read_file_by_type_xlsx(self):
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
+                         'PDB molecule', 'PDB filename']
+
+        metafile = 'pdb_metafile_sample1a.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 7)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 7)
+
+        required_cols.append('Is model')
+        metafile = 'pdb_metafile_sample1d.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 4)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 4)
+
+        metafile = 'pdb_metafile_sample2.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+
+        ret_df = self.pdb_util._read_file_by_type(meta_file_path)
+        self.assertCountEqual(ret_df.columns, required_cols)
+        for col in required_cols:
+            self.assertEqual(len(ret_df[col]), 4)
+            col_list = ret_df[col].values.tolist()
+            self.assertEqual(len(col_list), 4)
+
+    #@unittest.skip('test_incomplete_parse_metadata_csv_files')
+    def test_parse_incomplete_metadata_csv_files(self):
         metafile = 'pdb_metafile_sample1a.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
@@ -296,9 +413,117 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 "Please fill all the rows in column 'Object name'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-    #@unittest.skip('test_parse_complete_metadata_file')
-    def test_parse_complete_metadata_file(self):
+    #@unittest.skip('test_incomplete_parse_metadata_tsv_files')
+    def test_parse_incomplete_metadata_tsv_files(self):
+        metafile = 'pdb_metafile_sample1a.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Required column 'Is model' is missing!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        metafile = 'pdb_metafile_sample1b.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Please fill all the rows in column 'PDB molecule'!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        metafile = 'pdb_metafile_sample1c.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Please fill all the rows in column 'Feature ID'!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        metafile = 'pdb_metafile_sample1d.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Please fill all the rows in column 'Object name'!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+    #@unittest.skip('test_incomplete_parse_metadata_xlsx_files')
+    def test_parse_incomplete_metadata_xlsx_files(self):
+        metafile = 'pdb_metafile_sample1a.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Required column 'Is model' is missing!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        metafile = 'pdb_metafile_sample1b.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Please fill all the rows in column 'PDB molecule'!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        metafile = 'pdb_metafile_sample1c.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Please fill all the rows in column 'Feature ID'!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        metafile = 'pdb_metafile_sample1d.xlsx'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        print(f"Trying to parse metadata file '{metafile}'")
+        with self.assertRaisesRegex(
+                ValueError,
+                "Please fill all the rows in column 'Object name'!"):
+            self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+    #@unittest.skip('test_parse_complete_metadata_csv_file')
+    def test_parse_complete_metadata_csv_file(self):
         metafile = 'pdb_metafile_sample2.csv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        (pdb_data, genome_objs, feature_ids,
+            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        self.assertEqual(len(pdb_data), 4)
+        self.assertEqual(len(genome_objs), 4)
+        self.assertEqual(len(feature_ids), 4)
+        self.assertEqual(len(pdb_mols), 4)
+        self.assertCountEqual(
+            pdb_data[0].keys(),
+            ['file_path', 'is_model', 'genome_object', 'feature_id', 'pdb_molecule'])
+
+    #@unittest.skip('test_parse_complete_metadata_tsv_file')
+    def test_parse_complete_metadata_tsv_file(self):
+        metafile = 'pdb_metafile_sample2.tsv'
+        meta_file_path = os.path.join(self.scratch, metafile)
+        shutil.copy(os.path.join('data', metafile), meta_file_path)
+        (pdb_data, genome_objs, feature_ids,
+            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+
+        self.assertEqual(len(pdb_data), 4)
+        self.assertEqual(len(genome_objs), 4)
+        self.assertEqual(len(feature_ids), 4)
+        self.assertEqual(len(pdb_mols), 4)
+        self.assertCountEqual(
+            pdb_data[0].keys(),
+            ['file_path', 'is_model', 'genome_object', 'feature_id', 'pdb_molecule'])
+
+    #@unittest.skip('test_parse_complete_metadata_xlsx_file')
+    def test_parse_complete_metadata_xlsx_file(self):
+        metafile = 'pdb_metafile_sample2.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
         (pdb_data, genome_objs, feature_ids,

@@ -6,6 +6,7 @@ import uuid
 import errno
 import time
 import pandas as pd
+import pathlib
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
@@ -303,9 +304,10 @@ class PDBUtil:
             elif e.errno == errno.EACCES:  # Permission denied
                 raise ValueError(f'"{file_path}" cannot be read!')
             else:
-                raise ValueError(f'"{e.strerror}" occurred')
+                raise ValueError(f'"{e.strerror}" error occurred')
         else:
-            return fh
+            fh.close()
+            return True
 
     def _get_pdb_shock_id(self, obj_ref):
         """
@@ -399,6 +401,33 @@ class PDBUtil:
             error_msg = "Must supply a 'metadata_staging_file_path'"
             raise ValueError(error_msg)
 
+    def _read_file_by_type(self, file_path):
+        """
+            _read_file_by_type: read the file given by file_path depending on its type,
+                               return a DataFrame object
+        """
+        log(f'INFO--reading input from file: {file_path}...')
+
+        if not self._validate_file(file_path):
+            raise ValueError('Input file is invalid or not found')
+
+        file_ext = pathlib.Path(file_path).suffix
+        # read the data from file_path depending on its extension
+        if 'csv' in file_ext:
+            df = pd.read_csv(file_path)
+        elif 'tsv' in file_ext:
+            df = pd.read_csv(file_path, '\t')
+        elif 'xls' in file_ext or 'od' in file_ext:
+            # handle xls, xlsx, xlsm, xlsb, odf, ods and odt file extensions
+            df = pd.read_excel(file_path, index_col=None, engine='openpyxl')
+        else:  # invalid file type
+            error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted"
+            raise ValueError(error_msg)
+
+        # strip off the leading and trailing whitespaces of the column names
+        df.columns = df.columns.str.strip()
+        return df
+
     def _parse_metadata_file(self, metadata_file_path, ws_id):
         """
             _parse_metadata_file:
@@ -417,12 +446,9 @@ class PDBUtil:
         feature_ids = list()
         PDB_molecules = list()
 
-        # read the data from metadata_file_path, assuming it is a .tsv file
         # df_meta_data is a Panda DataFrame object
-        df_meta_data = pd.read_csv(metadata_file_path, sep=',')
-        # strip off the leading and trailing whitespaces of the column names
-        df_columns = df_meta_data.columns.str.strip()
-        df_col_list = df_columns.values.tolist()
+        df_meta_data = self._read_file_by_type(metadata_file_path)
+        df_col_list = df_meta_data.columns.values.tolist()
 
         # check if required columns are read in correctly
         for col in required_columns:
@@ -519,9 +545,11 @@ class PDBUtil:
         # Make report directory and copy over files
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
+
+        ## TODO: create a different template .html file for reporting multiple pdb files
         result_file_path = os.path.join(output_directory, 'viewer.html')
-        new_pdb_path = os.path.join(output_directory, os.path.basename(pdb_path))
-        shutil.copy(pdb_path, new_pdb_path)
+        new_pdb_path = os.path.join(output_directory, os.path.basename(succ_pdb_paths[0]))
+        shutil.copy(succ_pdb_paths[0], new_pdb_path)
 
         # Fill in template HTML--TODO: Need to create a new template.html for the batch report!!!!!
         with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html')
