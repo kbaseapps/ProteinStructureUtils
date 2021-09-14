@@ -4,16 +4,22 @@ import os
 import shutil
 import uuid
 import errno
+import time
 import pandas as pd
+import pathlib
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
-from Bio.PDB.MMCIF2Dict import MMCIF2Dict
+# from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 
 from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 
+
+def log(message, prefix_newline=False):
+    """Logging function, provides a hook to suppress or redirect log messages."""
+    print((('\n' if prefix_newline else '') + '{0:.2f}'.format(time.time()) + ': ' + str(message)))
 
 class PDBUtil:
 
@@ -44,92 +50,75 @@ class PDBUtil:
 
         return file_path, params.get('workspace_name'), params.get('structure_name')
 
-    def _model_file_to_data(self, file_path):
+    def _model_file_to_data(self, file_path, params):
         """
             _model_file_to_data:
                 Do the PDB conversion--parse the model pdb file for creating a pdb data object
         """
         parser = PDB.PDBParser(PERMISSIVE=1)
-        ppb = PPBuilder()
         pdb1 = file_path
         structure = parser.get_structure("test", pdb1)
-        model = structure[0]
-        chain_no = 0
-        res_no = 0
-        atom_no = 0
-        pp_list = []
-        pp_no = 0
-        for model in structure:
-            for chain in model:
-                chain_no += 1
-        for residue in model.get_residues():
-            if PDB.is_aa(residue):
-                res_no += 1
-            for atom in residue.get_atoms():
-                atom_no += 1
 
+        pp_no = 0
+        ppb = PPBuilder()
         for pp in ppb.build_peptides(structure):
             pp_no += 1
-            my_seq = pp.get_sequence()
-            pp_list += str(my_seq)
-        seq = ''.join(pp_list)
 
         (compound, source) = self._get_compound_source(structure)
+        (num_models, model_ids) = self._get_models_from_structure(structure)
+        (num_chains, chain_ids) = self._get_chains_from_structure(structure)
+        (num_residues, residue_ids) = self._get_residues_from_structure(structure)
+        (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
+        model = structure[0]
+        protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
+
+        genome_obj = params.get('genome_object', None)
+        feature_id = params.get('feature_id', None)
+        if genome_obj and feature_id:
+            protein_data = self._match_features(genome_obj, feature_id, protein_data)
 
         data = {
             'name': structure.header.get('name', ''),
-            'num_chains': chain_no,
-            'num_residues': res_no,
-            'num_atoms': atom_no,
+            'num_chains': num_chains,
+            'num_residues': num_residues,
+            'num_atoms': num_atoms,
             'compound': compound,
             'source': source,
-            'proteins': [{
-                'id': os.path.basename(file_path),
-                'sequence': seq,
-                'md5': hashlib.md5(seq.encode()).hexdigest()
-            }],
+            'proteins': protein_data
         }
 
         return data, pp_no
 
-    def _exp_file_to_data(self, file_path):
+    def _exp_file_to_data(self, file_path, params):
         """
             _exp_file_to_data:
                 Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
         """
-        # TODO: Figure out how to parse the experimental pdb file for an experimental data structure
         parser = PDB.MMCIFParser()
         cif = file_path
         structure = parser.get_structure("PHA-L", cif)
-        # structure.header = structure.header
-        # print(f'The mmcif structure header for {cif}*************************:\n\n')
-        # kwds = structure.header.get('keywords')
-        # print(f'Keywords: {kwds}')
-        # resl = structure.header.get('resolution')
-        # print(f'Resolution: {resl}')
-
         # create a dictionary that maps all mmCIF tags in an mmCIF file to their values
         # mmcif_dict = MMCIF2Dict(cif)  # TypeError: 'module' object is not callable
-        # print("The mmcif dictionary:*****************************************\n\n")
-        # E.g., get the solvent content from an mmCIF file:
-        # sc = mmcif_dict["_exptl_crystal.density_percent_sol"]
-        # print(f'_exptl_crystal.density_percent_sol: {sc}')
-        # get the list of the y coordinates of all atoms
-        # y_list = mmcif_dict["_atom_site.Cartn_y"]
-        # print(f'_atom_site.Cartn_y: {y_list}')
 
-        ppb = PPBuilder()
-        pp_list = []
         pp_no = 0
+        ppb = PPBuilder()
         for pp in ppb.build_peptides(structure):
             pp_no += 1
-            my_seq = pp.get_sequence()
-            pp_list += str(my_seq)
-        seq = ''.join(pp_list)
+
         struc_name = structure.header.get('name', '')
         hd = self._upload_to_shock(file_path)
 
         (cpd, src) = self._get_compound_source(structure)
+        (num_models, model_ids) = self._get_models_from_structure(structure)
+        (num_chains, chain_ids) = self._get_chains_from_structure(structure)
+        (num_residues, residue_ids) = self._get_residues_from_structure(structure)
+        (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
+        protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
+
+        genome_obj = params.get('genome_object', None)
+        feature_id = params.get('feature_id', None)
+        if genome_obj and feature_id:
+            protein_data = self._match_features(genome_obj, feature_id, protein_data)
 
         mmcif_data = {
             'name': struc_name,
@@ -144,10 +133,10 @@ class PDBUtil:
             'author': structure.header.get('author', ''),
             'compound': cpd,
             'source': src,
-            'num_models': structure.header.get('num_models', 0),
-            'num_chains': structure.header.get('num_chains', 0),
-            'num_residues': structure.header.get('residues', 0),
-            'num_atoms': structure.header.get('num_atoms', 0),
+            'num_models': num_models,
+            'num_chains': num_chains,
+            'num_residues': num_residues,
+            'num_atoms': num_atoms,
             'num_het_atoms': structure.header.get('num_het_atoms', 0),
             'num_water_atoms': structure.header.get('num_water_atoms', 0),
             'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
@@ -155,16 +144,115 @@ class PDBUtil:
             'pdb_handle': hd,
             'mmcif_handle': hd,
             'xml_handle': hd,
-            'proteins': [{
-                'id': struc_name,
-                'sequence': seq,
-                'md5': hashlib.md5(seq.encode()).hexdigest()
-            }]
+            'proteins': protein_data
         }
 
         return mmcif_data, pp_no
 
+    ## TODO!!!!
+    def _match_features(self, genome_obj, feature_id, protein_data):
+        """
+            _match_features: match the protein_translation in feature_ref with chain sequences in
+                             protein_data and compute the seq_identity and determine the exact_match
+            example (in appdev):
+                    genome_obj = '42297/29/1', genome_name = 'OntSer_GCF_001699635_Feb20b'
+                    feature_id = 'GCF_001699635.1.CDS.1_CDS', feature_type = 'CDS'
+        """
+        # 1. TODO!!!! From the given feature_id, get the protein_translation, use dummy as of now
+        feature_seq = 'TGTGACTA'
+
+        # 2. Call self._compute_sequence_identity to get the seq_identity and exact_match
+        for prot in protein_data:
+            seq_iden = self._compute_sequence_identity(feature_seq, prot['sequence'])
+            prot['seq_identity'] = seq_iden
+            prot['exact_match'] = 1 if seq_iden > 0.99 else 0
+
+        return protein_data
+
+    def _compute_sequence_identity(self, seq1, seq2):
+        """
+            _compute_sequence_identity: Given two input sequences, do a pairwise comparison and then
+                                        compute and return the matching percentage.
+        """
+        AA_Match = 0.0
+        for k in range(len(seq1)):
+            if(seq1[k] == "-" or seq2[k] == "-"):
+                continue
+
+            if(seq1[k] == seq2[k]):
+                AA_Match += 1.0
+
+        seq1 = seq1.replace('-', '')
+        seq2 = seq2.replace('-', '')
+
+        ID1 = AA_Match / len(seq1)
+        ID2 = AA_Match / len(seq2)
+
+        return round((ID1 + ID2) / 2.0, 6)
+
+    def _get_atoms_from_structure(self, pdb_structure):
+        """
+            _get_atoms_from_structure: Given a pdb_structure object, parse atoms into a list of
+                                        atoms and return it
+        """
+        atom_ids = []
+        num_atoms = 0
+        my_residues = pdb_structure.get_residues()
+        for r_ele in my_residues:
+            for a_ele in r_ele.get_atoms():
+                num_atoms += 1
+                atom_ids.append(a_ele.get_id())
+
+        return (num_atoms, atom_ids)
+
+    def _get_residues_from_structure(self, pdb_structure):
+        """
+            _get_residues_from_structure: Given a pdb_structure object, parse residues into a list
+                                          and return it
+        """
+        res_ids = []
+        num_res = 0
+        my_res = pdb_structure.get_residues()
+        for r_ele in my_res:
+            if PDB.is_aa(r_ele):
+                num_res += 1
+                res_ids.append(r_ele.get_id())
+
+        return (num_res, res_ids)
+
+    def _get_chains_from_structure(self, pdb_structure):
+        """
+            _get_chains: Given a pdb_structure object, parse chain ids into a list and return it
+        """
+        chain_ids = []
+        num_chains = 0
+        my_chains = pdb_structure.get_chains()
+        for c_ele in my_chains:
+            if(c_ele):
+                num_chains += 1
+                chain_ids.append(c_ele.get_id())
+
+        return (num_chains, chain_ids)
+
+    def _get_models_from_structure(self, pdb_structure):
+        """
+            _get_models_from_structure: Given a pdb_structure object, parse model ids into a list
+                                        and return it
+        """
+        model_ids = []
+        num_models = 0
+        my_models = pdb_structure.get_models()
+        for m_ele in my_models:
+            if(m_ele):
+                num_models += 1
+                model_ids.append(m_ele.get_id())
+
+        return (num_models, model_ids)
+
     def _get_compound_source(self, structure):
+        """
+            _get_compound_source: Parse data from given structure for compound and source
+        """
         cpd_dict = dict()
         cpd = structure.header.get('compound', {})
         # print(f'Compound:\n {cpd}')
@@ -179,6 +267,31 @@ class PDBUtil:
 
         return (cpd_dict, src_dict)
 
+    def _get_proteins_by_structure(self, pdb_structure, model, file_path):
+        """
+            _get_proteins_by_structure: Given a pdb_structure, parse the essential protein data
+        """
+        ppb = PPBuilder()
+        protein_data = []
+
+        # Parse for the chain_id and chain sequence
+        for c_ele in pdb_structure.get_chains():
+            if(c_ele):
+                c_ppd_list = []
+                for c_ppd in ppb.build_peptides(c_ele):
+                    c_pp_seq = str(c_ppd.get_sequence())
+                    c_ppd_list.append(c_pp_seq)
+                c_seq = ''.join(c_ppd_list)
+                protein_data.append({
+                    'id': os.path.basename(file_path),
+                    'model_id': model,
+                    'chain_id': c_ele.get_id(),
+                    'sequence': c_seq,
+                    'md5': hashlib.md5(c_seq.encode()).hexdigest()
+                })
+
+        return protein_data
+
     def _validate_file(self, file_path):
         """
             _validate_file: Check if file_path is accessable, if yes, return the handle
@@ -191,9 +304,10 @@ class PDBUtil:
             elif e.errno == errno.EACCES:  # Permission denied
                 raise ValueError(f'"{file_path}" cannot be read!')
             else:
-                raise ValueError(f'"{e.strerror}" occurred')
+                raise ValueError(f'"{e.strerror}" error occurred')
         else:
-            return fh
+            fh.close()
+            return True
 
     def _get_pdb_shock_id(self, obj_ref):
         """
@@ -268,6 +382,191 @@ class PDBUtil:
 
         return report_output
 
+    def _validate_batch_import_pdbs_params(self, params):
+        """
+            _validate_batch_import_pdbs_params:
+                validates params passed to batch_import_pdbs method
+        """
+        # check for required parameters
+        for p in ['structures_name', 'workspace_name', 'metadata_staging_file_path']:
+            if p not in params:
+                raise ValueError(f'"{p}" parameter is required, but missing')
+
+        if params.get('metadata_staging_file_path'):
+            scratch_file_path = self.dfu.download_staging_file(
+                {'staging_file_subdir_path': params.get('metadata_staging_file_path')}
+                 ).get('copy_file_path')
+            return (scratch_file_path, params['workspace_name'], params['structures_name'])
+        else:
+            error_msg = "Must supply a 'metadata_staging_file_path'"
+            raise ValueError(error_msg)
+
+    def _read_file_by_type(self, file_path):
+        """
+            _read_file_by_type: read the file given by file_path depending on its type,
+                               return a DataFrame object
+        """
+        log(f'INFO--reading input from file: {file_path}...')
+
+        if not self._validate_file(file_path):
+            raise ValueError('Input file is invalid or not found')
+
+        file_ext = pathlib.Path(file_path).suffix
+        # read the data from file_path depending on its extension
+        if 'csv' in file_ext:
+            df = pd.read_csv(file_path)
+        elif 'tsv' in file_ext:
+            df = pd.read_csv(file_path, '\t')
+        elif 'xls' in file_ext or 'od' in file_ext:
+            # handle xls, xlsx, xlsm, xlsb, odf, ods and odt file extensions
+            df = pd.read_excel(file_path, index_col=None, engine='openpyxl')
+        else:  # invalid file type
+            error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted"
+            raise ValueError(error_msg)
+
+        # strip off the leading and trailing whitespaces of the column names
+        df.columns = df.columns.str.strip()
+        return df
+
+    def _parse_metadata_file(self, metadata_file_path, ws_id):
+        """
+            _parse_metadata_file:
+                From metadata_file_path, a spreadsheet file, sort out the model_pdb_file_paths,
+            exp_pdb_file_paths and the kbase_meta_data
+
+            return: lists model_pdb_file_paths, exp_pdb_file_paths and dict kbase_meta_data
+        """
+        log(f'INFO--parsing metadata from input file {metadata_file_path}...')
+
+        required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
+                            'PDB molecule', 'PDB filename', 'Is model']
+
+        pdb_file_paths = list()
+        genome_objects = list()
+        feature_ids = list()
+        PDB_molecules = list()
+
+        # df_meta_data is a Panda DataFrame object
+        df_meta_data = self._read_file_by_type(metadata_file_path)
+        df_col_list = df_meta_data.columns.values.tolist()
+
+        # check if required columns are read in correctly
+        for col in required_columns:
+            if col not in df_col_list:
+                missing_required = f"Required column '{col}' is missing!"
+                raise ValueError(missing_required)
+
+        df_indexes = df_meta_data.columns
+        for i in range(len(df_meta_data[df_indexes[0]])):
+            genome_obj = ''
+            feat_id = ''
+            pdb_mol = ''
+
+            narr_id = df_meta_data[df_indexes[0]][i]
+            obj_name = df_meta_data[df_indexes[1]][i]
+            if not pd.isna(obj_name):
+                if not pd.isna(narr_id):
+                    genome_obj = '/'.join([str(narr_id), obj_name])
+                else:  # Use the current workspace id
+                    genome_obj = '/'.join([ws_id, obj_name])
+                genome_objects.append(genome_obj)
+            else:
+                #missing_obj_name = f"Please fill all the rows in column '{required_columns[1]}'!"
+                missing_obj_name = f"Please fill all the rows in column 'Object name'!"
+                raise ValueError(missing_obj_name)
+
+            feat_id = df_meta_data[df_indexes[2]][i]
+            if not pd.isna(feat_id):
+                feature_ids.append(feat_id)
+            else:
+                missing_feature_id = f"Please fill all the rows in column '{required_columns[2]}'!"
+                raise ValueError(missing_feature_id)
+
+            pdb_mol = df_meta_data[df_indexes[3]][i]
+            if not pd.isna(pdb_mol):
+                PDB_molecules.append(pdb_mol)
+            else:
+                missing_pdb_molecule = f"Please fill all the rows in column '{required_columns[3]}'!"
+                raise ValueError(missing_pdb_molecule)
+
+            f_path = df_meta_data[df_indexes[4]][i]
+            is_model = df_meta_data[df_indexes[5]][i]
+            if not pd.isna(f_path) and not pd.isna(is_model):
+                pdb_file_paths.append(
+                    {'file_path': f_path,
+                     'is_model': 'y' in is_model or 'Y' in is_model,
+                     'genome_object': genome_obj,
+                     'feature_id': feat_id,
+                     'pdb_molecule': pdb_mol}
+                )
+            else:
+                missing_pdb_file = f"Please fill all the rows in columns '{required_columns[4]}' " \
+                                  f"and '{required_columns[5]}'!"
+                raise ValueError(missing_pdb_file)
+
+        if not pdb_file_paths:
+            error_msg = "At least pdb file(s) should be provided!"
+            raise ValueError(error_msg)
+
+        return (pdb_file_paths, genome_objects, feature_ids, PDB_molecules)
+
+    def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
+                               successful_paths, failed_paths):
+        """
+            _generate_batch_report: generate summary report for upload
+        """
+        output_html_files = self._generate_batch_report_html(structs_name,
+                                                             successful_paths, failed_paths)
+
+        failed_files = ','.join(failed_paths)
+        description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
+                       f'with files "{failed_files}" failed to load.')
+        report_params = {'message': f'You uploaded a batch of PDB files into {structs_name}.',
+                         'html_links': output_html_files,
+                         'direct_html_link_index': 0,
+                         'objects_created': [{'ref': structs_ref,
+                                              'description': description}],
+                         'workspace_name': workspace_name,
+                         'report_object_name': 'batch_import_pdb_files_report_' + str(uuid.uuid4())}
+
+        kbase_report_client = KBaseReport(self.callback_url, token=self.token)
+        output = kbase_report_client.create_extended_report(report_params)
+
+        report_output = {'report_name': output['name'], 'report_ref': output['ref']}
+
+        return report_output
+
+    def _generate_batch_report_html(self, pdb_name, succ_pdb_paths, fail_pdb_paths):
+        """
+            _generate_batch_report_html: generates the HTML for the upload report
+        """
+        html_report = list()
+
+        # Make report directory and copy over files
+        output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
+        os.mkdir(output_directory)
+
+        ## TODO: create a different template .html file for reporting multiple pdb files
+        result_file_path = os.path.join(output_directory, 'viewer.html')
+        new_pdb_path = os.path.join(output_directory, os.path.basename(succ_pdb_paths[0]))
+        shutil.copy(succ_pdb_paths[0], new_pdb_path)
+
+        # Fill in template HTML--TODO: Need to create a new template.html for the batch report!!!!!
+        with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html')
+                  ) as report_template_file:
+            report_template = report_template_file.read()\
+                .replace('*PDB_NAME*', pdb_name)\
+                .replace('*PDB_PATH*', os.path.basename(pdb_path))
+
+        with open(result_file_path, 'w') as result_file:
+            result_file.write(report_template)
+
+        html_report.append({'path': output_directory,
+                            'name': os.path.basename(result_file_path),
+                            'description': 'HTML report for PDB upload'})
+
+        return html_report
+
     def __init__(self, config):
         self.callback_url = config['SDK_CALLBACK_URL']
         self.scratch = config['scratch']
@@ -288,7 +587,7 @@ class PDBUtil:
         else:
             workspace_id = workspace_name
 
-        data, n_polypeptides = self._model_file_to_data(file_path)
+        data, n_polypeptides = self._model_file_to_data(file_path, params)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
         logging.info(data)
@@ -325,7 +624,7 @@ class PDBUtil:
             workspace_id = workspace_name
 
         # Parse the experimental pdb file for an experimental data structure
-        data, n_polypeptides,  = self._exp_file_to_data(file_path)
+        data, n_polypeptides,  = self._exp_file_to_data(file_path, params)
         logging.info(data)
 
         info = self.dfu.save_objects({
@@ -373,3 +672,96 @@ class PDBUtil:
         })['file_path']
 
         return {'file_path': file_path}
+
+    def batch_import_pdbs(self, params):
+        """
+            batch_import_pdbs: upload two sets of pdb files and create a
+                                   KBaseStructure.ProteinStructures object
+
+            1. call _validate_batch_import_pdbs_params to validate input params
+            2. call _parse_metadata to parse for model_pdb_files, exp_pdb_files and kbase_meta_data
+            3. call import_model_pdb_file on each entry in model_pdb_paths, and
+               call import_experiment_pdb_file on each entry in exp_pdb_paths
+            4. assemble the data for a ProteinStructures and save the data object
+            5. call _generate_batch_report to generate a report for batch_import_pdbs' result
+
+            required params: metadata_staging_file_path, a file path in the staging area
+                e.g., /data/bulk/user_name/metadata_file_path
+                      staging_file_subdir_path is metadata_staging_file_path
+            return:
+            structures_ref: return ProteinStructures object reference
+            report_name: name of generated report (if any)
+            report_ref: report reference (if any)
+        """
+
+        (metadata_file_path, workspace_name,
+         structures_name) = self._validate_batch_import_pdbs_params(params)
+
+        if not isinstance(workspace_name, int):
+            workspace_id = self.dfu.ws_name_to_id(workspace_name)
+        else:
+            workspace_id = workspace_name
+        params['workspace_id'] = workspace_id
+
+        (pdb_file_paths, genome_objects,
+         feature_ids, PDB_molecules) = self._parse_metadata_file(metadata_file_path, workspace_id)
+
+        model_pdb_objects = list()
+        exp_pdb_objects = list()
+        successful_files = list()
+        failed_files = list()
+        protein_structures = dict()
+        total_structures = 0
+
+        # loop through the list of pdb_file_paths
+        for pdb_file in pdb_file_paths:
+            params['input_staging_file_path'] = os.path.join('/data/bulk/user_name/',
+                                                             pdb_file['file_path'])
+            params['input_file_path'] = None
+            params['input_shock_id'] = None
+            params['genome_object'] = pdb_file['genome_object']
+            params['feature_id'] = pdb_file['feature_id']
+            params['pdb_molecule'] = pdb_file['pdb_molecule']
+            if pdb_file['is_model']:
+                model_pdb_ref = self.import_model_pdb_file(params, False)
+                if model_pdb_ref:
+                    model_pdb_objects.append(model_pdb_ref)
+                    successful_files.append(pdb_file)
+                    total_structures += 1
+                else:
+                    failed_files.append(pdb_file)
+            else:
+                exp_pdb_ref = self.import_experiment_pdb_file(params, False)
+                if exp_pdb_ref:
+                    exp_pdb_objects.append(exp_pdb_ref)
+                    successful_files.append(pdb_file)
+                    total_structures += 1
+                else:
+                    failed_files.append(pdb_file)
+
+        if model_pdb_objects:
+            protein_structures['model_structures'] = model_pdb_objects
+        if exp_pdb_objects:
+            protein_structures['experimental_structures'] = exp_pdb_objects
+        protein_structures['total_structures'] = total_structures
+        protein_structures['description'] = (f'Created {total_structures} '
+                                             f'structures in {structures_name}')
+        logging.info(protein_structures)
+
+        info = self.dfu.save_objects({
+            'id': workspace_id,
+            'objects': [
+                {'type': 'KBaseStructure.ProteinStructures',
+                 'name': structures_name,
+                 'data': protein_structures}]
+        })[0]
+        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+
+        returnVal = {'structures_obj_ref': obj_ref}
+
+        report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
+                                                    successful_files, failed_files)
+
+        returnVal.update(report_output)
+
+        return returnVal

@@ -23,8 +23,8 @@ class ProteinStructureUtils:
     # the latter method is running.
     ######################################### noqa
     VERSION = "0.0.2"
-    GIT_URL = "https://github.com/qzzhang/ProteinStructureUtils.git"
-    GIT_COMMIT_HASH = "48d0e649c9b29b6036e062b5ab85861f9cebc717"
+    GIT_URL = ""
+    GIT_COMMIT_HASH = "a42ae2fa2bf37a44443c21e1b3196a8dd548d24f"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -43,6 +43,7 @@ class ProteinStructureUtils:
         self.pdb_util = PDBUtil(self.config)
         #END_CONSTRUCTOR
         pass
+
 
     def structure_to_pdb_file(self, ctx, params):
         """
@@ -151,6 +152,35 @@ class ProteinStructureUtils:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method import_experiment_pdb_file return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def batch_import_pdbs_from_metafile(self, ctx, params):
+        """
+        batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files
+        :param params: instance of type "BatchPDBImportParams" (Input of the
+           batch_import_pdbs_from_metafile structures_name: Proteinstructures
+           object name workspace_name: workspace name for object to be saved
+           to metadata_staging_file_path: path to a spreadsheet file that
+           lists the metadata of PDB files and their KBase metadata) ->
+           structure: parameter "metadata_staging_file_path" of String,
+           parameter "structures_name" of String, parameter "workspace_name"
+           of type "workspace_name" (workspace name of the object)
+        :returns: instance of type "BatchPDBImportOutput" -> structure:
+           parameter "structures_ref" of String, parameter "report_name" of
+           String, parameter "report_ref" of String
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN batch_import_pdbs_from_metafile
+        logging.info('Starting batch_import_pdbs_from_metafile with params:\n{}'.format(params))
+        result = self.pdb_util.batch_import_pdbs(params)
+        #END batch_import_pdbs_from_metafile
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method batch_import_pdbs_from_metafile return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]

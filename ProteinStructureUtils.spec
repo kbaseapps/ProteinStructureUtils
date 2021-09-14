@@ -69,4 +69,24 @@ module ProteinStructureUtils {
   /* import_experiment_pdb_file: import a ProteinStructure from PDB*/
   funcdef import_experiment_pdb_file (ImportPDBParams params) returns (ImportPDBOutput result) authentication required;
 
+  /* Input of the batch_import_pdbs_from_metafile
+    structures_name: Proteinstructures object name
+    workspace_name: workspace name for object to be saved to
+    metadata_staging_file_path: path to a spreadsheet file that lists the metadata of PDB files and their KBase metadata
+  */
+  typedef structure {
+      string metadata_staging_file_path;
+      string structures_name;
+      workspace_name workspace_name;
+  } BatchPDBImportParams;
+
+  typedef structure {
+      string structures_ref;
+      string report_name;
+      string report_ref;
+  } BatchPDBImportOutput;
+
+  /* batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files*/
+  funcdef batch_import_pdbs_from_metafile (BatchPDBImportParams params) returns (BatchPDBImportOutput result) authentication required;
+
 };

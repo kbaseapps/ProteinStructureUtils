@@ -11,7 +11,8 @@ MAINTAINER KBase Developer
 RUN pip install --upgrade pip \
     && pip install biopython --upgrade \
     && pip install wheel \
-    && pip install pandas
+    && pip install pandas \
+    && pip install openpyxl
 # -----------------------------------------
 
 COPY ./ /kb/module
