@@ -1,16 +1,23 @@
 import hashlib
 import logging
 import os
+import sys
 import shutil
 import uuid
 import errno
 import time
 import pandas as pd
 import pathlib
+import subprocess
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
 # from Bio.PDB.MMCIF2Dict import MMCIF2Dict
+
+from Bio.Blast import NCBIXML
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio import SeqIO
 
 from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
@@ -152,18 +159,21 @@ class PDBUtil:
     ## TODO!!!!
     def _match_features(self, genome_obj, feature_id, protein_data):
         """
-            _match_features: match the protein_translation in feature_ref with chain sequences in
+            _match_features: match the protein_translation in feature_id with chain sequences in
                              protein_data and compute the seq_identity and determine the exact_match
             example (in appdev):
-                    genome_obj = '42297/29/1', genome_name = 'OntSer_GCF_001699635_Feb20b'
-                    feature_id = 'GCF_001699635.1.CDS.1_CDS', feature_type = 'CDS'
+                    genome_obj = '57961/6/1', genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome'
+                    feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
+                    feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
         # 1. TODO!!!! From the given feature_id, get the protein_translation, use dummy as of now
         feature_seq = 'TGTGACTA'
+        # 1. Get the genome info/data for the given genome_obj, get its features and then compare
+        #    with the sequence of the pdb proteins' translations to compute identity and matches.
 
         # 2. Call self._compute_sequence_identity to get the seq_identity and exact_match
         for prot in protein_data:
-            seq_iden = self._compute_sequence_identity(feature_seq, prot['sequence'])
+            seq_iden = self._compute_sequence_identity(feature_seq, prot.get('sequence', ''))
             prot['seq_identity'] = seq_iden
             prot['exact_match'] = 1 if seq_iden > 0.99 else 0
 
@@ -171,24 +181,76 @@ class PDBUtil:
 
     def _compute_sequence_identity(self, seq1, seq2):
         """
-            _compute_sequence_identity: Given two input sequences, do a pairwise comparison and then
-                                        compute and return the matching percentage.
+            _compute_sequence_identity: Given two input sequences, do a blast identity check and
+                                        then compute and return the matching percentage.
         """
-        AA_Match = 0.0
-        for k in range(len(seq1)):
-            if(seq1[k] == "-" or seq2[k] == "-"):
-                continue
+        # Create two sequence files
+        Seq1 = SeqRecord(Seq(seq1), id="query_seq")
+        Seq2 = SeqRecord(Seq(seq2), id="subject_seq")
 
-            if(seq1[k] == seq2[k]):
-                AA_Match += 1.0
+        blast_dir = os.path.join(self.scratch, str(uuid.uuid4()))
+        os.mkdir(blast_dir)
+        query_seq = os.path.join(blast_dir, 'seq_qry.fasta')
+        subject_seq = os.path.join(blast_dir, 'seq_sbj.fasta')
+        SeqIO.write(Seq1, query_seq, "fasta")
+        SeqIO.write(Seq2, subject_seq, "fasta")
 
-        seq1 = seq1.replace('-', '')
-        seq2 = seq2.replace('-', '')
+        # on my laptop: blastp_path = '/Users/qzhang/miniconda3/bin/blastp'
+        blastp_path = 'blastp'
+        output_file_path = os.path.join(blast_dir, 'blast_output.xml')
 
-        ID1 = AA_Match / len(seq1)
-        ID2 = AA_Match / len(seq2)
+        # Build the BLASTp command
+        blastp_cmd = [blastp_path]
+        blastp_cmd.append('-out')
+        blastp_cmd.append(output_file_path)
+        blastp_cmd.append('-outfmt')
+        blastp_cmd.append('5')
+        blastp_cmd.append('-query')
+        blastp_cmd.append(query_seq)
+        blastp_cmd.append('-subject')
+        blastp_cmd.append(subject_seq)
 
-        return round((ID1 + ID2) / 2.0, 6)
+        # Run BLASTp and parse the output as XML
+        exact_matches = []
+        iden = 0.0
+        try:
+            p = subprocess.Popen(blastp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                 universal_newlines=True)
+            output, errors = p.communicate()
+            if not output:
+                print('BLASTp returned: ', p.returncode)
+                print('OK> output ', output)
+            if errors:
+                e = subprocess.CalledProcessError(p.returncode, blastp_cmd, output=output)
+                raise e
+        except OSError as e:
+            print('OSError > ', e.errno)
+            print('OSError > ', e.strerror)
+            print('OSError > ', e.filename)
+        except subprocess.CalledProcessError as e:
+            print('CalledError > ', e.returncode)
+            print('CalledError > ', e.output)
+        except:
+            print('Unexpected error > ', sys.exc_info()[0])
+        else:
+            with open(output_file_path) as blast_fhd:
+                blast_result_record = NCBIXML.read(blast_fhd)
+                for alignment in blast_result_record.alignments:
+                    for hsp in alignment.hsps:
+                        print('****Alignment****')
+                        print('sequence:', alignment.title)
+                        print('length:', alignment.length)
+                        print('e value:', hsp.expect)
+                        print(hsp.query)
+                        print(hsp.match)
+                        print(hsp.sbjct)
+                        print(hsp.identities)
+                        print(hsp.positives)
+                        iden = round(hsp.identities/hsp.positives, 6)
+                        print(f'identity of {seq1} to {seq2}={iden}')
+                        if hsp.positives == hsp.identities:
+                            exact_matches.append(alignment.title)
+        return iden
 
     def _get_atoms_from_structure(self, pdb_structure):
         """
@@ -472,7 +534,7 @@ class PDBUtil:
                 genome_objects.append(genome_obj)
             else:
                 #missing_obj_name = f"Please fill all the rows in column '{required_columns[1]}'!"
-                missing_obj_name = f"Please fill all the rows in column 'Object name'!"
+                missing_obj_name = "Please fill all the rows in column 'Object name'!"
                 raise ValueError(missing_obj_name)
 
             feat_id = df_meta_data[df_indexes[2]][i]
