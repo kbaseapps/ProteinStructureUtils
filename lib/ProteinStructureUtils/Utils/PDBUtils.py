@@ -22,7 +22,9 @@ from Bio import SeqIO
 from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
+from installed_clients.WorkspaceClient import Workspace
 
+E_VALUE_THRESH = 1e-20
 
 def log(message, prefix_newline=False):
     """Logging function, provides a hook to suppress or redirect log messages."""
@@ -79,10 +81,11 @@ class PDBUtil:
         model = structure[0]
         protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
 
-        genome_obj = params.get('genome_object', None)
+        narr_id = params.get('narrative_id', None)
+        genome_name = params.get('genome_name', None)
         feature_id = params.get('feature_id', None)
-        if genome_obj and feature_id:
-            protein_data = self._match_features(genome_obj, feature_id, protein_data)
+        if narr_id and genome_name and feature_id:
+            protein_data = self._match_features(narr_id, genome_name, feature_id, protein_data)
 
         data = {
             'name': structure.header.get('name', ''),
@@ -122,10 +125,11 @@ class PDBUtil:
         (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
         protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
 
-        genome_obj = params.get('genome_object', None)
+        narr_id = params.get('narrative_id', None)
+        genome_name = params.get('genome_name', None)
         feature_id = params.get('feature_id', None)
-        if genome_obj and feature_id:
-            protein_data = self._match_features(genome_obj, feature_id, protein_data)
+        if narr_id and genome_name and feature_id:
+            protein_data = self._match_features(narr_id, genome_name, feature_id, protein_data)
 
         mmcif_data = {
             'name': struc_name,
@@ -156,26 +160,43 @@ class PDBUtil:
 
         return mmcif_data, pp_no
 
-    ## TODO!!!!
-    def _match_features(self, genome_obj, feature_id, protein_data):
+    def _match_features(self, narrative_id, genome_name, feature_id, protein_data):
         """
             _match_features: match the protein_translation in feature_id with chain sequences in
                              protein_data and compute the seq_identity and determine the exact_match
             example (in appdev):
-                    genome_obj = '57961/6/1', genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome'
+                    genome_obj = '57196/6/1', genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome'
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
-        # 1. TODO!!!! From the given feature_id, get the protein_translation, use dummy as of now
-        feature_seq = 'TGTGACTA'
-        # 1. Get the genome info/data for the given genome_obj, get its features and then compare
+        feat_prot_seq = ''
+        # 1. Get the genome info/data for the given genome_name, get its features and then compare
         #    with the sequence of the pdb proteins' translations to compute identity and matches.
+        genome_data = self.ws_client.get_objects2(
+            {'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
+        genome_features = genome_data['features']
+        print(f'There are {len(genome_features)} features in {genome_name}')
+        for feat in genome_features:
+            # print(f'genome feature id={feat["id"]}')
+            if feat['id'] == feature_id:
+                print(f'Found feature match for {feature_id}')
+                prot_trans = feat['protein_translation']
+                # print(f'Matched protein translation is:\n{prot_trans}')
+                feat_prot_seq = prot_trans
+                break
 
         # 2. Call self._compute_sequence_identity to get the seq_identity and exact_match
-        for prot in protein_data:
-            seq_iden = self._compute_sequence_identity(feature_seq, prot.get('sequence', ''))
-            prot['seq_identity'] = seq_iden
-            prot['exact_match'] = 1 if seq_iden > 0.99 else 0
+        if feat_prot_seq:
+            for prot in protein_data:
+                seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
+                                                                      prot.get('sequence', ''))
+                if seq_idens:
+                    seq_idens.sort()
+                    max_iden = seq_idens.pop()
+                    prot['seq_identity'] = max_iden
+                    prot['exact_match'] = 1 if max_iden > 0.99 else 0
+        else:
+            print(f'Found NO feature match for {feature_id}')
 
         return protein_data
 
@@ -210,9 +231,9 @@ class PDBUtil:
         blastp_cmd.append('-subject')
         blastp_cmd.append(subject_seq)
 
-        # Run BLASTp and parse the output as XML
+        # Run BLASTp and parse the output as XML and then parse the xml file for identity matches
         exact_matches = []
-        iden = 0.0
+        idens = []
         try:
             p = subprocess.Popen(blastp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                  universal_newlines=True)
@@ -234,23 +255,27 @@ class PDBUtil:
             print('Unexpected error > ', sys.exc_info()[0])
         else:
             with open(output_file_path) as blast_fhd:
-                blast_result_record = NCBIXML.read(blast_fhd)
-                for alignment in blast_result_record.alignments:
-                    for hsp in alignment.hsps:
-                        print('****Alignment****')
-                        print('sequence:', alignment.title)
-                        print('length:', alignment.length)
-                        print('e value:', hsp.expect)
-                        print(hsp.query)
-                        print(hsp.match)
-                        print(hsp.sbjct)
-                        print(hsp.identities)
-                        print(hsp.positives)
-                        iden = round(hsp.identities/hsp.positives, 6)
-                        print(f'identity of {seq1} to {seq2}={iden}')
-                        if hsp.positives == hsp.identities:
-                            exact_matches.append(alignment.title)
-        return iden
+                blast_record = NCBIXML.read(blast_fhd)
+                if blast_record:
+                    print("query: %s" % blast_record.query[:100])
+                    for alignment in blast_record.alignments:
+                        for hsp in alignment.hsps:
+                            if hsp.expect < E_VALUE_THRESH:
+                                print('****Alignment****')
+                                print('sequence:', alignment.title)
+                                print('length:', alignment.length)
+                                print('e value:', hsp.expect)
+                                print(hsp.query)
+                                print(hsp.match)
+                                print(hsp.sbjct)
+                                print(hsp.identities)
+                                print(hsp.positives)
+                                iden = round(hsp.identities/hsp.positives, 6)
+                                print(f'identity={iden}')
+                                idens.append(iden)
+                                if hsp.positives == hsp.identities:
+                                    exact_matches.append(alignment.title[:100])
+        return idens, exact_matches
 
     def _get_atoms_from_structure(self, pdb_structure):
         """
@@ -504,7 +529,8 @@ class PDBUtil:
                             'PDB molecule', 'PDB filename', 'Is model']
 
         pdb_file_paths = list()
-        genome_objects = list()
+        narrative_ids = list()
+        genome_names = list()
         feature_ids = list()
         PDB_molecules = list()
 
@@ -520,20 +546,17 @@ class PDBUtil:
 
         df_indexes = df_meta_data.columns
         for i in range(len(df_meta_data[df_indexes[0]])):
-            genome_obj = ''
-            feat_id = ''
-            pdb_mol = ''
-
             narr_id = df_meta_data[df_indexes[0]][i]
+            if not pd.isna(narr_id):
+                narrative_ids.append(int(narr_id))
+            else:
+                missing_narr_id = "Please fill all the rows in column 'Narrative ID'!"
+                raise ValueError(missing_narr_id)
+
             obj_name = df_meta_data[df_indexes[1]][i]
             if not pd.isna(obj_name):
-                if not pd.isna(narr_id):
-                    genome_obj = '/'.join([str(narr_id), obj_name])
-                else:  # Use the current workspace id
-                    genome_obj = '/'.join([ws_id, obj_name])
-                genome_objects.append(genome_obj)
+                genome_names.append(obj_name)
             else:
-                #missing_obj_name = f"Please fill all the rows in column '{required_columns[1]}'!"
                 missing_obj_name = "Please fill all the rows in column 'Object name'!"
                 raise ValueError(missing_obj_name)
 
@@ -557,7 +580,8 @@ class PDBUtil:
                 pdb_file_paths.append(
                     {'file_path': f_path,
                      'is_model': 'y' in is_model or 'Y' in is_model,
-                     'genome_object': genome_obj,
+                     'narrative_id': narr_id,
+                     'genome_name': obj_name,
                      'feature_id': feat_id,
                      'pdb_molecule': pdb_mol}
                 )
@@ -570,7 +594,7 @@ class PDBUtil:
             error_msg = "At least pdb file(s) should be provided!"
             raise ValueError(error_msg)
 
-        return (pdb_file_paths, genome_objects, feature_ids, PDB_molecules)
+        return (pdb_file_paths, narrative_ids, genome_names, feature_ids, PDB_molecules)
 
     def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
                                successful_paths, failed_paths):
@@ -635,6 +659,7 @@ class PDBUtil:
         self.token = config['KB_AUTH_TOKEN']
         self.dfu = DataFileUtil(self.callback_url)
         self.hs = AbstractHandle(config['handle-service-url'])
+        self.ws_client = Workspace(config['workspace-url'])
 
     def import_model_pdb_file(self, params, create_report=True):
         """
@@ -661,7 +686,7 @@ class PDBUtil:
                  'name': pdb_name,
                  'data': data}]
         })[0]
-        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+        obj_ref = f'{info[6]}/{info[0]}/{info[4]}'
 
         returnVal = {'structure_obj_ref': obj_ref}
 
@@ -765,7 +790,7 @@ class PDBUtil:
             workspace_id = workspace_name
         params['workspace_id'] = workspace_id
 
-        (pdb_file_paths, genome_objects,
+        (pdb_file_paths, narrative_ids, genome_names,
          feature_ids, PDB_molecules) = self._parse_metadata_file(metadata_file_path, workspace_id)
 
         model_pdb_objects = list()
@@ -781,9 +806,11 @@ class PDBUtil:
                                                              pdb_file['file_path'])
             params['input_file_path'] = None
             params['input_shock_id'] = None
-            params['genome_object'] = pdb_file['genome_object']
+            params['narrative_id'] = pdb_file['narrative_id']
+            params['genome_name'] = pdb_file['genome_name']
             params['feature_id'] = pdb_file['feature_id']
             params['pdb_molecule'] = pdb_file['pdb_molecule']
+
             if pdb_file['is_model']:
                 model_pdb_ref = self.import_model_pdb_file(params, False)
                 if model_pdb_ref:

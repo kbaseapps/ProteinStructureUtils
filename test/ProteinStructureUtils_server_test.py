@@ -14,6 +14,8 @@ from installed_clients.WorkspaceClient import Workspace
 
 from ProteinStructureUtils.Utils.PDBUtils import PDBUtil
 
+from Bio import PDB
+from Bio.PDB.Polypeptide import PPBuilder
 
 class ProteinStructureUtilsTest(unittest.TestCase):
 
@@ -584,43 +586,84 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             pdb_data[0].keys(),
             ['file_path', 'is_model', 'genome_object', 'feature_id', 'pdb_molecule'])
 
-    #@unittest.skip('test_compute_sequence_identity')
+    @unittest.skip('test_compute_sequence_identity')
     def test_compute_sequence_identity(self):
         seq1 = 'TGTGACTA'
         seq2 = 'CATGGTCA'
-        iden = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        iden, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(iden, 0.0)
+        self.assertTrue(not exact_mat)
 
         seq1 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
         seq2 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        iden = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        iden, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(iden, 1.0)
+        self.assertTrue(exact_mat)
 
         seq1 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNL'
         seq2 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        iden = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        iden, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(iden, 1.0)
+        self.assertTrue(exact_mat)
 
-        seq1 = 'NDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        seq2 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        iden = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        seq1 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
+        seq2 = 'NDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
+        iden, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(iden, 1.0)
+        self.assertTrue(exact_mat)
 
         seq1 = 'FQTWEEFSRAAEKLYLADPMKVRVVLKYRHVDGNLCIKVTDDLVCLVYRTDQAQDVKKIEKF'
         seq2 = 'FQTWEEFSRAEKLYLADPMKVRVVLRYRHVDGNLCIKVTDDLICLVYRTDQAQDVKKIEKF'
-        iden = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        iden, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
         expected_iden = 0.967213
         self.assertEqual(iden, expected_iden)
+        self.assertTrue(not exact_mat)
 
-    @unittest.skip('test_model_file_to_data')
-    def test_model_file_to_data(self):
-        fileName = '1fat.pdb'
-
+    @unittest.skip('test_match_features')  # Note the genome is from an Appdev narrative 57196
+    def test_match_features(self):
+        fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
+
+        parser = PDB.PDBParser(PERMISSIVE=1)
+        structure = parser.get_structure("test", pdb_file_path)
+        model = structure[0]
+        protein_data1 = self.pdb_util._get_proteins_by_structure(structure, model.get_id(),
+                                                                 pdb_file_path)
+        self.assertCountEqual(protein_data1[0].keys(),
+                              ['id', 'model_id', 'chain_id', 'sequence', 'md5'])
+        # A genome that has matching features to the pdb protein
+        narr_id = 57196
+        genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome'
+        feat_id = 'JCVISYN3_0004'
+        protein_data1 = self.pdb_util._match_features(narr_id, genome_name, feat_id, protein_data1)
+        self.assertCountEqual(protein_data1[0].keys(),
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id',
+                               'seq_identity', 'exact_match'])
+
+        # A genome that has NO matching features to the pdb protein
+        narr_id = 42297
+        genome_name = 'OntSer_GCF_001699635_Feb20b'
+        feat_id = 'GCF_001699635.1.CDS.1'
+        protein_data2 = self.pdb_util._get_proteins_by_structure(structure, model.get_id(),
+                                                                 pdb_file_path)
+        protein_data2 = self.pdb_util._match_features(narr_id, genome_name, feat_id, protein_data2)
+        self.assertCountEqual(protein_data2[0].keys(),
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
+
+    @unittest.skip('test_model_file_to_data')  # Note the genome is from an Appdev narrative 42297
+    def test_model_file_to_data(self):
+        fileName = '1fat.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+        narr_id = 42297
+        genome_name = 'OntSer_GCF_001699635_Feb20b'
+        feat_id = 'GCF_001699635.1.CDS.1'
+
         params = {
-                'genome_object': '42297/29/1',
-                'feature_id': 'GCF_001699635.1.CDS.1_CDS',
+                'narrative_id': narr_id,
+                'genome_name': genome_name,
+                'feature_id': feat_id
         }
         (data1, pp_no1) = self.pdb_util._model_file_to_data(pdb_file_path, params)
 
@@ -631,12 +674,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(data1['num_atoms'], 7248)
         self.assertEqual(len(data1['proteins']), data1['num_chains'])
         self.assertCountEqual(data1['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id',
-                               'seq_identity', 'exact_match'])
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
         self.assertCountEqual(data1['compound'].keys(), ['misc', 'molecule', 'chain', 'synonym'])
         self.assertCountEqual(data1['source'].keys(),
                               ['misc', 'organism_scientific',
                                'organism_taxid', 'organ', 'other_details'])
+
         fileName = '5o5y.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
@@ -651,8 +694,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(data2['num_atoms'], 8013)
         self.assertEqual(len(data2['proteins']), data2['num_chains'])
         self.assertCountEqual(data2['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id',
-                               'seq_identity', 'exact_match'])
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
         self.assertCountEqual(data2['compound'].keys(),
                               ['misc', 'molecule', 'chain', 'synonym', 'ec_number', 'ec',
                                'engineered'])
@@ -661,16 +703,52 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                                'gene', 'expression_system_taxid', 'expression_system_vector_type',
                                'organism_taxid', 'expression_system_vector'])
 
+        fileName = '6ift.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+        narr_id = 57196
+        genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome'
+        feat_id = 'JCVISYN3_0004'
+        params = {
+                'narrative_id': narr_id,
+                'genome_name': genome_name,
+                'feature_id': feat_id
+        }
+        (data3, pp_no3) = self.pdb_util._model_file_to_data(pdb_file_path, params)
+
+        self.assertEqual(pp_no3, 1)
+        self.assertEqual(
+            data3['name'],
+            'ksga from bacillus subtilis in complex with sam')
+        self.assertEqual(data3['num_chains'], 1)
+        self.assertEqual(data3['num_residues'], 292)
+        self.assertEqual(data3['num_atoms'], 2508)
+        self.assertEqual(len(data3['proteins']), data3['num_chains'])
+        self.assertCountEqual(data3['proteins'][0].keys(),
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id',
+                               'seq_identity', 'exact_match'])
+        self.assertCountEqual(data3['compound'].keys(),
+                              ['misc', 'molecule', 'chain', 'synonym', 'ec_number', 'ec',
+                               'engineered'])
+        self.assertEqual(data3['compound']['ec_number'], '2.1.1.182')
+        self.assertCountEqual(data3['source'].keys(),
+                              ['misc', 'organism_scientific', 'expression_system', 'gene',
+                               'expression_system_taxid', 'strain', 'organism_taxid'])
+
     @unittest.skip('test_exp_file_to_data')
     def test_exp_file_to_data(self):
         fileName = '1fat.cif'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
-        params = {
-                'genome_object': '42297/29/1',
-                'feature_id': 'GCF_001699635.1.CDS.1_CDS',
-        }
+        narr_id = 42297
+        genome_name = 'OntSer_GCF_001699635_Feb20b'
+        feat_id = 'GCF_001699635.1.CDS.1'
 
+        params = {
+                'narrative_id': narr_id,
+                'genome_name': genome_name,
+                'feature_id': feat_id
+        }
         (data, pp_no) = self.pdb_util._exp_file_to_data(pdb_file_path, params)
 
         self.assertEqual(pp_no, 7)
@@ -686,19 +764,17 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertTrue('pdb_handle' in data.keys())
         self.assertEqual(len(data['proteins']), data['num_chains'])
         self.assertCountEqual(data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id',
-                               'seq_identity', 'exact_match'])
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
         self.assertEqual(data['num_chains'], 4)
         self.assertEqual(data['num_residues'], 928)
         self.assertEqual(data['num_atoms'], 7248)
         self.assertEqual(len(data['proteins']), data['num_chains'])
         self.assertCountEqual(data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id',
-                               'seq_identity', 'exact_match'])
+                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
         self.assertCountEqual(data['compound'].keys(), [])
         self.assertCountEqual(data['source'].keys(), [])
 
-    @unittest.skip('test_import_model_pdb_file')
+    #@unittest.skip('test_import_model_pdb_file')
     def test_import_model_pdb_file(self):
         fileName = '1fat.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -707,7 +783,27 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'input_shock_id': '',
             'input_file_path': pdb_file_path,
             'input_staging_file_path': '',
-            'structure_name': 'test_pdb_structure_name',
+            'structure_name': 'test_pdb_structure_1fat',
+            'description': 'for test PDBUtils.import_model_pdb_file',
+            'workspace_name': self.wsName
+        }
+        ret = self.pdb_util.import_model_pdb_file(params, False)
+        self.assertIn('structure_obj_ref', ret)
+
+        fileName = '6ift.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+        narr_id = 42297
+        genome_name = 'OntSer_GCF_001699635_Feb20b'
+        feat_id = 'GCF_001699635.1.CDS.1'
+        params = {
+            'input_shock_id': '',
+            'input_file_path': pdb_file_path,
+            'input_staging_file_path': '',
+            'structure_name': 'test_pdb_structure_6ift',
+            'narrative_id': narr_id,
+            'genome_name': genome_name,
+            'feature_id': feat_id,
             'description': 'for test PDBUtils.import_model_pdb_file',
             'workspace_name': self.wsName
         }
