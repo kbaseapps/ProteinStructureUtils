@@ -174,8 +174,8 @@ module KBaseStructure {
     @optional experimental_structures description
   */
   typedef structure {
-    list<ModelProteinStructure> model_structures;
-    list<ExperimentalProteinStructure> experimental_structures;
+    list<object_ref> model_structures;
+    list<object_ref> experimental_structures;
     int total_structures;
     string description;
   } ProteinStructures;
