@@ -7,7 +7,7 @@ module KBaseStructure {
 
   /*
     Reference to KBase object
-    @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation KBaseGenomes.Feature etc.
+    @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation KBaseGenomes.Feature
   */
   typedef string object_ref;
 
@@ -21,6 +21,12 @@ module KBaseStructure {
     @id ws KBaseGenomes.Genome KBaseGenomeAnnotations.GenomeAnnotation
   */
   typedef string genome_ref;
+
+  /*
+    Reference to KBaseStructure objects
+    @id ws KBaseStructure.ExperimentalProteinStructure KBaseStructure.ModelProteinStructure
+  */
+  typedef string structure_ref;
 
   /*
     Reference to KBase metagenome
@@ -174,8 +180,8 @@ module KBaseStructure {
     @optional experimental_structures description
   */
   typedef structure {
-    list<object_ref> model_structures;
-    list<object_ref> experimental_structures;
+    list<structure_ref> model_structures;
+    list<structure_ref> experimental_structures;
     int total_structures;
     string description;
   } ProteinStructures;
