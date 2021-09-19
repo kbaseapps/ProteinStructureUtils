@@ -168,8 +168,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(params)
 
         staging_file_name = params.get('staging_file_subdir_path')
-        staging_file_subdir_path = os.path.join('/kb/module/test/data', staging_file_name)
         file_name = os.path.basename(staging_file_name)
+        staging_file_subdir_path = os.path.join('/kb/module/test/data', file_name)
         file_path = os.path.join('/kb/module/work/tmp', file_name)
         shutil.copy(staging_file_subdir_path, file_path)
 
@@ -896,8 +896,19 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
         params = {
             'metadata_staging_file_path': metafile,
-            'structures_name': 'batch_test_structures',
+            'structures_name': 'batch1_test_structures',
             'workspace_name': self.wsName
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret.keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret[0].keys(), ["structures_ref"])  #, "report_ref", "report_name"])
+
+        metafile = 'pdb_metafile_sample2.csv'
+        metafile = os.path.join('/kb/module/test/data', metafile)
+
+        params = {
+            'metadata_staging_file_path': metafile,
+            'structures_name': 'batch2_test_structures',
+            'workspace_name': self.wsName
+        }
+        ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
+        self.assertCountEqual(ret[0].keys(), ["structures_ref"])  #, "report_ref", "report_name"])

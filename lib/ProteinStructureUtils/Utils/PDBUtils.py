@@ -481,7 +481,8 @@ class PDBUtil:
             if p not in params:
                 raise ValueError(f'"{p}" parameter is required, but missing')
 
-        if params.get('metadata_staging_file_path'):
+        # metadata_staging_file_path must be from the staging area--must have the staging dir prefix
+        if params.get('metadata_staging_file_path', None):
             staging_file_path = self.dfu.download_staging_file(
                 {'staging_file_subdir_path': params.get('metadata_staging_file_path')}
                  ).get('copy_file_path')
@@ -500,21 +501,25 @@ class PDBUtil:
         if not self._validate_file(file_path):
             raise ValueError('Input file is invalid or not found')
 
+        df = None
         file_ext = pathlib.Path(file_path).suffix
-        # read the data from file_path depending on its extension
-        if 'csv' in file_ext:
-            df = pd.read_csv(file_path)
-        elif 'tsv' in file_ext:
-            df = pd.read_csv(file_path, '\t')
-        elif 'xls' in file_ext or 'od' in file_ext:
-            # handle xls, xlsx, xlsm, xlsb, odf, ods and odt file extensions
-            df = pd.read_excel(file_path, index_col=None, engine='openpyxl')
-        else:  # invalid file type
-            error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted"
-            raise ValueError(error_msg)
-
-        # strip off the leading and trailing whitespaces of the column names
-        df.columns = df.columns.str.strip()
+        try:  # read the data from file_path depending on its extension
+            if 'csv' in file_ext:
+                df = pd.read_csv(file_path)
+            elif 'tsv' in file_ext:
+                df = pd.read_csv(file_path, '\t')
+            elif 'xls' in file_ext or 'od' in file_ext:
+                # handle xls, xlsx, xlsm, xlsb, odf, ods and odt file extensions
+                df = pd.read_excel(file_path, index_col=None, engine='openpyxl')
+            else:  # invalid file type
+                error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted"
+                raise ValueError(error_msg)
+            # strip off the leading and trailing whitespaces of the column names
+            df.columns = df.columns.str.strip()
+        except WorkspaceError as e:
+            logging.info(
+                f'Reading file {file_path} errored with message: {e.message} and data: {e.data}')
+            raise
         return df
 
     def _parse_metadata_file(self, metadata_file_path, ws_id):
@@ -576,13 +581,13 @@ class PDBUtil:
                 missing_pdb_molecule = f"Please fill all the rows in column '{required_columns[3]}'!"
                 raise ValueError(missing_pdb_molecule)
 
-            f_path = df_meta_data[df_indexes[4]][i]
+            f_path = df_meta_data[df_indexes[4]][i]  # f_path does not have staging dir prefix
             f_name = os.path.basename(f_path)
             (struct_name, ext) = os.path.splitext(f_name)
             is_model = df_meta_data[df_indexes[5]][i]
             if not pd.isna(f_path) and not pd.isna(is_model):
                 pdb_file_paths.append(
-                    {'file_path': f_path,  # self._get_staging_file_path(self.user_id, f_path),
+                    {'file_path': self._get_staging_file_path(self.user_id, f_path),
                      'structure_name': struct_name,
                      'is_model': 'y' in is_model or 'Y' in is_model,
                      'narrative_id': narr_id,
@@ -703,23 +708,26 @@ class PDBUtil:
         data['user_data'] = params.get('description', '')
         logging.info(data)
 
-        info = self.dfu.save_objects({
-            'id': workspace_id,
-            'objects': [
-                {'type': 'KBaseStructure.ModelProteinStructure',
-                 'name': pdb_name,
-                 'data': data}]
-        })[0]
-        obj_ref = f'{info[6]}/{info[0]}/{info[4]}'
-
-        returnVal = {'structure_obj_ref': obj_ref}
-
-        if create_report:
-            report_output = self._generate_report('import_model_pdb_file', obj_ref, workspace_name,
-                                                  n_polypeptides, pdb_name, file_path)
-            returnVal.update(report_output)
-
-        return returnVal
+        try:
+            info = self.dfu.save_objects({
+                'id': workspace_id,
+                'objects': [
+                    {'type': 'KBaseStructure.ModelProteinStructure',
+                     'name': pdb_name,
+                     'data': data}]
+            })[0]
+        except WorkspaceError as e:
+            logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
+            raise
+        else:
+            obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+            returnVal = {'structure_obj_ref': obj_ref}
+            if create_report:
+                report_output = self._generate_report('import_model_pdb_file', obj_ref,
+                                                      workspace_name, n_polypeptides,
+                                                      pdb_name, file_path)
+                returnVal.update(report_output)
+            return returnVal
 
     def import_experiment_pdb_file(self, params, create_report=True):
         """
@@ -738,24 +746,26 @@ class PDBUtil:
         data, n_polypeptides,  = self._exp_file_to_data(file_path, params)
         logging.info(data)
 
-        info = self.dfu.save_objects({
-            'id': workspace_id,
-            'objects': [
-                {'type': 'KBaseStructure.ExperimentalProteinStructure',
-                 'name': mmcif_name,
-                 'data': data}]
-        })[0]
-        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
-
-        returnVal = {'structure_obj_ref': obj_ref}
-
-        if create_report:
-            report_output = self._generate_report('import_experiment_pdb_file', obj_ref,
-                                                  workspace_name, n_polypeptides,
-                                                  mmcif_name, file_path)
-            returnVal.update(report_output)
-
-        return returnVal
+        try:
+            info = self.dfu.save_objects({
+                'id': workspace_id,
+                'objects': [
+                    {'type': 'KBaseStructure.ExperimentalProteinStructure',
+                     'name': mmcif_name,
+                     'data': data}]
+            })[0]
+        except WorkspaceError as e:
+            logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
+            raise
+        else:
+            obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+            returnVal = {'structure_obj_ref': obj_ref}
+            if create_report:
+                report_output = self._generate_report('import_experiment_pdb_file', obj_ref,
+                                                      workspace_name, n_polypeptides,
+                                                      mmcif_name, file_path)
+                returnVal.update(report_output)
+            return returnVal
 
     def export_pdb(self, params):
         """
@@ -877,11 +887,10 @@ class PDBUtil:
         else:
             obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
 
-        returnVal = {'structures_obj_ref': obj_ref}
+        returnVal = {'structures_ref': obj_ref}
 
-        report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
-                                                    successful_files, failed_files)
-
-        returnVal.update(report_output)
+        #report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
+        #                                            successful_files, failed_files)
+        #returnVal.update(report_output)
 
         return returnVal
