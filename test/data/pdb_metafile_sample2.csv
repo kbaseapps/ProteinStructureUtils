@@ -1,5 +1,5 @@
 Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB molecule,PDB filename,Is model
-50569,JCVI_Syn3.kbase,JCVISYN3_0001,A,1fat.pdb,yes
+50569,JCVI_Syn3.kbase,JCVISYN3_0001,A,5o5y.pdb,yes
 50569,JCVI_Syn3.kbase,JCVISYN3_0002,B,1nqg.pdb,yes
 50569,JCVI_Syn3.kbase,JCVISYN3_0003,C,1fat.cif,no
-50569,JCVI_Syn3.kbase,JCVISYN3_0004,D,5o5y.pdb,yes
+50569,JCVI_Syn3.kbase,JCVISYN3_0004,D,6ift.pdb,yes

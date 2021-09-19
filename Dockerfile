@@ -12,6 +12,7 @@ RUN pip install --upgrade pip \
     && pip install biopython --upgrade \
     && pip install wheel \
     && pip install pandas \
+    && pip install mock==4.0.3 \
     && pip install openpyxl
 
 RUN apt-get update \

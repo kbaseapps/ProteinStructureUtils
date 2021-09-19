@@ -4,6 +4,7 @@ import shutil
 import time
 import unittest
 from configparser import ConfigParser
+from mock import patch
 
 from ProteinStructureUtils.ProteinStructureUtilsImpl import ProteinStructureUtils
 from ProteinStructureUtils.ProteinStructureUtilsServer import MethodContext
@@ -46,6 +47,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         cls.wsURL = cls.cfg['workspace-url']
         cls.wsClient = Workspace(cls.wsURL)
         cls.serviceImpl = ProteinStructureUtils(cls.cfg)
+        cls.cfg['USER_ID'] = cls.ctx['user_id']
         cls.pdb_util = PDBUtil(cls.cfg)
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
@@ -160,6 +162,18 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         if hasattr(cls, 'wsName'):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
+
+    def mock_download_staging_file(params):
+        print('Mocking DataFileUtilClient.download_staging_file')
+        print(params)
+
+        staging_file_name = params.get('staging_file_subdir_path')
+        staging_file_subdir_path = os.path.join('/kb/module/test/data', staging_file_name)
+        file_name = os.path.basename(staging_file_name)
+        file_path = os.path.join('/kb/module/work/tmp', file_name)
+        shutil.copy(staging_file_subdir_path, file_path)
+
+        return {'copy_file_path': file_path}
 
     # Testing self.serviceImpl functions
     @unittest.skip('test_model_upload1')
@@ -774,14 +788,14 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(data['compound'].keys(), [])
         self.assertCountEqual(data['source'].keys(), [])
 
-    #@unittest.skip('test_import_model_pdb_file')
-    def test_import_model_pdb_file(self):
+    @unittest.skip('test_import_model_pdb_file_nopatch')
+    def test_import_model_pdb_file_nopatch(self):
         fileName = '1fat.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
         params = {
             'input_shock_id': '',
-            'input_file_path': pdb_file_path,
+            'input_file_path': fileName,
             'input_staging_file_path': '',
             'structure_name': 'test_pdb_structure_1fat',
             'description': 'for test PDBUtils.import_model_pdb_file',
@@ -798,7 +812,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         feat_id = 'GCF_001699635.1.CDS.1'
         params = {
             'input_shock_id': '',
-            'input_file_path': pdb_file_path,
+            'input_file_path': fileName,
             'input_staging_file_path': '',
             'structure_name': 'test_pdb_structure_6ift',
             'narrative_id': narr_id,
@@ -810,8 +824,41 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret = self.pdb_util.import_model_pdb_file(params, False)
         self.assertIn('structure_obj_ref', ret)
 
-    @unittest.skip('test_import_experiment_pdb_file')
-    def test_import_experiment_pdb_file(self):
+    @unittest.skip('test_import_model_pdb_file_patched')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_import_model_pdb_file_patched(self, download_staging_file):
+        fileName = '1fat.pdb'
+        params = {
+            'input_shock_id': '',
+            'input_file_path': '',
+            'input_staging_file_path': fileName,
+            'structure_name': 'test_pdb_structure_1fat',
+            'description': 'for test PDBUtils.import_model_pdb_file',
+            'workspace_name': self.wsName
+        }
+        ret = self.pdb_util.import_model_pdb_file(params, False)
+        self.assertIn('structure_obj_ref', ret)
+
+        fileName = '6ift.pdb'
+        narr_id = 42297
+        genome_name = 'OntSer_GCF_001699635_Feb20b'
+        feat_id = 'GCF_001699635.1.CDS.1'
+        params = {
+            'input_shock_id': '',
+            'input_file_path': '',
+            'input_staging_file_path': fileName,
+            'structure_name': 'test_pdb_structure_6ift',
+            'narrative_id': narr_id,
+            'genome_name': genome_name,
+            'feature_id': feat_id,
+            'description': 'for test PDBUtils.import_model_pdb_file',
+            'workspace_name': self.wsName
+        }
+        ret = self.pdb_util.import_model_pdb_file(params, False)
+        self.assertIn('structure_obj_ref', ret)
+
+    @unittest.skip('test_import_experiment_pdb_file_nopatch')
+    def test_import_experiment_pdb_file_nopatch(self):
         fileName = '1fat.cif'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
@@ -826,14 +873,29 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret = self.pdb_util.import_experiment_pdb_file(params, False)
         self.assertIn('structure_obj_ref', ret)
 
-    # !!!TOBEtested when the pdb_util._match_features() is completely implemented and tested
-    @unittest.skip('test_batch_import_pdbs_from_metafile')
-    def test_batch_import_pdbs_from_metafile(self):
-        metafile = 'pdb_metafile_sample2.csv'
-        meta_file_path = os.path.join(self.scratch, metafile)
-        shutil.copy(os.path.join('data', metafile), meta_file_path)
+    @unittest.skip('test_import_experiment_pdb_file_pathched')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_import_experiment_pdb_file_patched(self, download_staging_file):
+        fileName = '1fat.cif'
         params = {
-            'metadata_staging_file_path': meta_file_path,
+            'input_shock_id': '',
+            'input_file_path': '',
+            'input_staging_file_path': fileName,
+            'structure_name': 'test_pdb_structure_name',
+            'description': 'for test PDBUtils.import_exp_pdb_file',
+            'workspace_name': self.wsName
+        }
+        ret = self.pdb_util.import_experiment_pdb_file(params, False)
+        self.assertIn('structure_obj_ref', ret)
+
+    #@unittest.skip('test_batch_import_pdbs_from_metafile')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_batch_import_pdbs_from_metafile(self, download_staging_file):
+        metafile = 'pdb_metafile_sample1.csv'
+        metafile = os.path.join('/kb/module/test/data', metafile)
+
+        params = {
+            'metadata_staging_file_path': metafile,
             'structures_name': 'batch_test_structures',
             'workspace_name': self.wsName
         }

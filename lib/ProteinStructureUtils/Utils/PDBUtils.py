@@ -24,13 +24,14 @@ from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 from installed_clients.WorkspaceClient import Workspace
 
-E_VALUE_THRESH = 1e-20
-
-def log(message, prefix_newline=False):
-    """Logging function, provides a hook to suppress or redirect log messages."""
-    print((('\n' if prefix_newline else '') + '{0:.2f}'.format(time.time()) + ': ' + str(message)))
 
 class PDBUtil:
+
+    E_VALUE_THRESH = 1e-20
+    # staging file prefix
+    STAGING_GLOBAL_FILE_PREFIX = '/data/bulk/'
+    STAGING_USER_FILE_PREFIX = '/staging/'
+    PDB_FILE_EXT = ['pdb', 'cif']
 
     def _validate_import_pdb_file_params(self, params):
         """
@@ -169,11 +170,14 @@ class PDBUtil:
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
+        logging.info(f'INFO--Matching features in genome: {genome_name} to feature {feature_id}')
+
         feat_prot_seq = ''
         # 1. Get the genome info/data for the given genome_name, get its features and then compare
         #    with the sequence of the pdb proteins' translations to compute identity and matches.
         genome_data = self.ws_client.get_objects2(
-            {'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
+            {'objects': [{'ref': '57196/6/1'}]})['data'][0]['data']
+            #{'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
         genome_features = genome_data['features']
         print(f'There are {len(genome_features)} features in {genome_name}')
         for feat in genome_features:
@@ -260,7 +264,7 @@ class PDBUtil:
                     print("query: %s" % blast_record.query[:100])
                     for alignment in blast_record.alignments:
                         for hsp in alignment.hsps:
-                            if hsp.expect < E_VALUE_THRESH:
+                            if hsp.expect < self.E_VALUE_THRESH:
                                 print('****Alignment****')
                                 print('sequence:', alignment.title)
                                 print('length:', alignment.length)
@@ -407,7 +411,7 @@ class PDBUtil:
         """
             _upload_to_shock: upload target file to shock using DataFileUtil
         """
-        logging.info('Start uploading file to shock: {}'.format(file_path))
+        logging.info(f'Start uploading file to shock: {file_path}')
 
         file_to_shock_params = {
             'file_path': file_path,
@@ -480,10 +484,10 @@ class PDBUtil:
                 raise ValueError(f'"{p}" parameter is required, but missing')
 
         if params.get('metadata_staging_file_path'):
-            scratch_file_path = self.dfu.download_staging_file(
+            staging_file_path = self.dfu.download_staging_file(
                 {'staging_file_subdir_path': params.get('metadata_staging_file_path')}
                  ).get('copy_file_path')
-            return (scratch_file_path, params['workspace_name'], params['structures_name'])
+            return (staging_file_path, params['workspace_name'], params['structures_name'])
         else:
             error_msg = "Must supply a 'metadata_staging_file_path'"
             raise ValueError(error_msg)
@@ -493,7 +497,7 @@ class PDBUtil:
             _read_file_by_type: read the file given by file_path depending on its type,
                                return a DataFrame object
         """
-        log(f'INFO--reading input from file: {file_path}...')
+        logging.info(f'INFO--reading input from file: {file_path}...')
 
         if not self._validate_file(file_path):
             raise ValueError('Input file is invalid or not found')
@@ -523,7 +527,7 @@ class PDBUtil:
 
             return: lists model_pdb_file_paths, exp_pdb_file_paths and dict kbase_meta_data
         """
-        log(f'INFO--parsing metadata from input file {metadata_file_path}...')
+        logging.info(f'INFO--parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
                             'PDB molecule', 'PDB filename', 'Is model']
@@ -575,10 +579,13 @@ class PDBUtil:
                 raise ValueError(missing_pdb_molecule)
 
             f_path = df_meta_data[df_indexes[4]][i]
+            f_name = os.path.basename(f_path)
+            (struct_name, ext) = os.path.splitext(f_name)
             is_model = df_meta_data[df_indexes[5]][i]
             if not pd.isna(f_path) and not pd.isna(is_model):
                 pdb_file_paths.append(
-                    {'file_path': f_path,
+                    {'file_path': f_path,  # self._get_staging_file_path(self.user_id, f_path),
+                     'structure_name': struct_name,
                      'is_model': 'y' in is_model or 'Y' in is_model,
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
@@ -595,6 +602,24 @@ class PDBUtil:
             raise ValueError(error_msg)
 
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids, PDB_molecules)
+
+    def _get_staging_file_path(self, token_user, staging_file_subdir_path):
+        """
+            _get_staging_file_path: return staging area file path
+            directory pattern:
+            perfered to return user specific path: /staging/sub_dir/file_name
+            If this path is not visible to user, use global bulk path:
+                        /data/bulk/user_name/sub_dir/file_name
+        """
+        user_path = os.path.join(self.STAGING_USER_FILE_PREFIX, staging_file_subdir_path.strip('/'))
+
+        if os.path.exists(user_path):
+            self.staging_path_prefix = self.STAGING_USER_FILE_PREFIX
+            return user_path
+        else:
+            self.staging_path_prefix = os.path.join(self.STAGING_GLOBAL_FILE_PREFIX, token_user)
+            return os.path.join(self.STAGING_GLOBAL_FILE_PREFIX, token_user,
+                                staging_file_subdir_path.strip('/'))
 
     def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
                                successful_paths, failed_paths):
@@ -642,7 +667,7 @@ class PDBUtil:
                   ) as report_template_file:
             report_template = report_template_file.read()\
                 .replace('*PDB_NAME*', pdb_name)\
-                .replace('*PDB_PATH*', os.path.basename(pdb_path))
+                .replace('*PDB_PATH*', os.path.basename(pdb_name))
 
         with open(result_file_path, 'w') as result_file:
             result_file.write(report_template)
@@ -657,6 +682,7 @@ class PDBUtil:
         self.callback_url = config['SDK_CALLBACK_URL']
         self.scratch = config['scratch']
         self.token = config['KB_AUTH_TOKEN']
+        self.user_id = config['USER_ID']
         self.dfu = DataFileUtil(self.callback_url)
         self.hs = AbstractHandle(config['handle-service-url'])
         self.ws_client = Workspace(config['workspace-url'])
@@ -764,6 +790,17 @@ class PDBUtil:
         """
             batch_import_pdbs: upload two sets of pdb files and create a
                                    KBaseStructure.ProteinStructures object
+            required params:
+                metadata_staging_file_path: a metafile from the user's staging area that must be a
+                    subdirectory file path in staging area,
+                    e.g., /data/bulk/user_name/metadata_staging_file_path
+                          staging_file_subdir_path is metadata_staging_file_path
+                structures_name: name of the ProteinStructures object to be generated
+                workspace_name: workspace name that the protein structure(s) will be saved
+            return:
+                structures_ref: return ProteinStructures object reference
+                report_name: name of generated report (if any)
+                report_ref: report reference (if any)
 
             1. call _validate_batch_import_pdbs_params to validate input params
             2. call _parse_metadata to parse for model_pdb_files, exp_pdb_files and kbase_meta_data
@@ -771,14 +808,6 @@ class PDBUtil:
                call import_experiment_pdb_file on each entry in exp_pdb_paths
             4. assemble the data for a ProteinStructures and save the data object
             5. call _generate_batch_report to generate a report for batch_import_pdbs' result
-
-            required params: metadata_staging_file_path, a file path in the staging area
-                e.g., /data/bulk/user_name/metadata_file_path
-                      staging_file_subdir_path is metadata_staging_file_path
-            return:
-            structures_ref: return ProteinStructures object reference
-            report_name: name of generated report (if any)
-            report_ref: report reference (if any)
         """
 
         (metadata_file_path, workspace_name,
@@ -802,19 +831,19 @@ class PDBUtil:
 
         # loop through the list of pdb_file_paths
         for pdb_file in pdb_file_paths:
-            params['input_staging_file_path'] = os.path.join('/data/bulk/user_name/',
-                                                             pdb_file['file_path'])
+            params['input_staging_file_path'] = pdb_file['file_path']
             params['input_file_path'] = None
             params['input_shock_id'] = None
             params['narrative_id'] = pdb_file['narrative_id']
             params['genome_name'] = pdb_file['genome_name']
             params['feature_id'] = pdb_file['feature_id']
             params['pdb_molecule'] = pdb_file['pdb_molecule']
+            params['structure_name'] = pdb_file['structure_name']
 
             if pdb_file['is_model']:
                 model_pdb_ref = self.import_model_pdb_file(params, False)
                 if model_pdb_ref:
-                    model_pdb_objects.append(model_pdb_ref)
+                    model_pdb_objects.append(model_pdb_ref['structure_obj_ref'])
                     successful_files.append(pdb_file)
                     total_structures += 1
                 else:
@@ -822,7 +851,7 @@ class PDBUtil:
             else:
                 exp_pdb_ref = self.import_experiment_pdb_file(params, False)
                 if exp_pdb_ref:
-                    exp_pdb_objects.append(exp_pdb_ref)
+                    exp_pdb_objects.append(exp_pdb_ref['structure_obj_ref'])
                     successful_files.append(pdb_file)
                     total_structures += 1
                 else:
