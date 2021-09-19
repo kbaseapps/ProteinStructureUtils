@@ -5,7 +5,6 @@ import sys
 import shutil
 import uuid
 import errno
-import time
 import pandas as pd
 import pathlib
 import subprocess
@@ -23,6 +22,7 @@ from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 from installed_clients.WorkspaceClient import Workspace
+from installed_clients.baseclient import ServerError as WorkspaceError
 
 
 class PDBUtil:
@@ -176,16 +176,14 @@ class PDBUtil:
         # 1. Get the genome info/data for the given genome_name, get its features and then compare
         #    with the sequence of the pdb proteins' translations to compute identity and matches.
         genome_data = self.ws_client.get_objects2(
-            {'objects': [{'ref': '57196/6/1'}]})['data'][0]['data']
-            #{'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
+            {'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
+            #{'objects': [{'ref': '57196/6/1'}]})['data'][0]['data']
         genome_features = genome_data['features']
         print(f'There are {len(genome_features)} features in {genome_name}')
         for feat in genome_features:
-            # print(f'genome feature id={feat["id"]}')
             if feat['id'] == feature_id:
                 print(f'Found feature match for {feature_id}')
                 prot_trans = feat['protein_translation']
-                # print(f'Matched protein translation is:\n{prot_trans}')
                 feat_prot_seq = prot_trans
                 break
 
@@ -550,9 +548,9 @@ class PDBUtil:
 
         df_indexes = df_meta_data.columns
         for i in range(len(df_meta_data[df_indexes[0]])):
-            narr_id = df_meta_data[df_indexes[0]][i]
+            narr_id = int(df_meta_data[df_indexes[0]][i])
             if not pd.isna(narr_id):
-                narrative_ids.append(int(narr_id))
+                narrative_ids.append(narr_id)
             else:
                 missing_narr_id = "Please fill all the rows in column 'Narrative ID'!"
                 raise ValueError(missing_narr_id)
@@ -865,15 +863,19 @@ class PDBUtil:
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
         logging.info(protein_structures)
-
-        info = self.dfu.save_objects({
-            'id': workspace_id,
-            'objects': [
-                {'type': 'KBaseStructure.ProteinStructures',
-                 'name': structures_name,
-                 'data': protein_structures}]
-        })[0]
-        obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+        try:
+            info = self.dfu.save_objects({
+                'id': workspace_id,
+                'objects': [
+                    {'type': 'KBaseStructure.ProteinStructures',
+                     'name': structures_name,
+                     'data': protein_structures}]
+            })[0]
+        except WorkspaceError as e:
+            logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
+            raise
+        else:
+            obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
 
         returnVal = {'structures_obj_ref': obj_ref}
 
