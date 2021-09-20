@@ -65,6 +65,8 @@ class PDBUtil:
             _model_file_to_data:
                 Do the PDB conversion--parse the model pdb file for creating a pdb data object
         """
+        logging.info(f'Parsing pdb file {file_path} to a pdb structure with params: {params}')
+
         parser = PDB.PDBParser(PERMISSIVE=1)
         pdb1 = file_path
         structure = parser.get_structure("test", pdb1)
@@ -105,6 +107,8 @@ class PDBUtil:
             _exp_file_to_data:
                 Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
         """
+        logging.info(f'Parsing pdb file {file_path} to a pdb structure with params: {params}')
+
         parser = PDB.MMCIFParser()
         cif = file_path
         structure = parser.get_structure("PHA-L", cif)
@@ -170,24 +174,25 @@ class PDBUtil:
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
-        logging.info(f'INFO--Matching features in genome: {genome_name} to feature {feature_id}')
+        logging.info(f'Matching feature {feature_id} in genome: {genome_name}')
 
-        feat_prot_seq = ''
-        # 1. Get the genome info/data for the given genome_name, get its features and then compare
-        #    with the sequence of the pdb proteins' translations to compute identity and matches.
+        # 1. Get the genome info/data for the given genome_name, get its features
         genome_data = self.ws_client.get_objects2(
             {'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
-            #{'objects': [{'ref': '57196/6/1'}]})['data'][0]['data']
         genome_features = genome_data['features']
-        print(f'There are {len(genome_features)} features in {genome_name}')
+        logging.info(f'There are {len(genome_features)} features in {genome_name}')
+
+        # 2. Match the genome features with the specified feature_id to obtain teh feature sequence
+        feat_prot_seq = ''
         for feat in genome_features:
             if feat['id'] == feature_id:
-                print(f'Found feature match for {feature_id}')
+                logging.info(f'Found feature match for {feature_id}')
                 prot_trans = feat['protein_translation']
                 feat_prot_seq = prot_trans
                 break
 
-        # 2. Call self._compute_sequence_identity to get the seq_identity and exact_match
+        # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
+        # proteins' translationsto to get the seq_identity and exact_match
         if feat_prot_seq:
             for prot in protein_data:
                 seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
@@ -198,7 +203,7 @@ class PDBUtil:
                     prot['seq_identity'] = max_iden
                     prot['exact_match'] = 1 if max_iden > 0.99 else 0
         else:
-            print(f'Found NO feature match for {feature_id}')
+            logging.info(f'Found NO feature in {genome_name} match with {feature_id}')
 
         return protein_data
 
@@ -241,39 +246,39 @@ class PDBUtil:
                                  universal_newlines=True)
             output, errors = p.communicate()
             if not output:
-                print('BLASTp returned: ', p.returncode)
-                print('OK> output ', output)
+                logging.info(f'BLASTp returned: {p.returncode}')
+                logging.info(f'OK> output: {output}')
             if errors:
                 e = subprocess.CalledProcessError(p.returncode, blastp_cmd, output=output)
                 raise e
         except OSError as e:
-            print('OSError > ', e.errno)
-            print('OSError > ', e.strerror)
-            print('OSError > ', e.filename)
+            logging.info(f'OSError > {e.errno}')
+            logging.info(f'OSError > {e.strerror}')
+            logging.info(f'OSError > {e.filename}')
         except subprocess.CalledProcessError as e:
-            print('CalledError > ', e.returncode)
-            print('CalledError > ', e.output)
+            logging.info(f'CalledError > {e.returncode}')
+            logging.info(f'CalledError > {e.output}')
         except:
-            print('Unexpected error > ', sys.exc_info()[0])
+            logging.info(f'Unexpected error > {sys.exc_info()[0]}')
         else:
             with open(output_file_path) as blast_fhd:
                 blast_record = NCBIXML.read(blast_fhd)
                 if blast_record:
-                    print("query: %s" % blast_record.query[:100])
+                    logging.info(f'query: {blast_record.query[:100]}')
                     for alignment in blast_record.alignments:
                         for hsp in alignment.hsps:
                             if hsp.expect < self.E_VALUE_THRESH:
-                                print('****Alignment****')
-                                print('sequence:', alignment.title)
-                                print('length:', alignment.length)
-                                print('e value:', hsp.expect)
-                                print(hsp.query)
-                                print(hsp.match)
-                                print(hsp.sbjct)
-                                print(hsp.identities)
-                                print(hsp.positives)
+                                logging.info('****Alignment****')
+                                logging.info(f'sequence: {alignment.title}')
+                                logging.info(f'length: {alignment.length}')
+                                logging.info(f'e value: {hsp.expect}')
+                                logging.info(f'hsp query: {hsp.query}')
+                                logging.info(f'hsp match: {hsp.match}')
+                                logging.info(f'hsp subject: {hsp.sbjct}')
+                                logging.info(f'hsp identities: {hsp.identities}')
+                                logging.info(f'hsp positives: {hsp.positives}')
                                 iden = round(hsp.identities/hsp.positives, 6)
-                                print(f'identity={iden}')
+                                logging.info(f'identity={iden}')
                                 idens.append(iden)
                                 if hsp.positives == hsp.identities:
                                     exact_matches.append(alignment.title[:100])
@@ -344,13 +349,13 @@ class PDBUtil:
         """
         cpd_dict = dict()
         cpd = structure.header.get('compound', {})
-        # print(f'Compound:\n {cpd}')
+        # logging.info(f'Compound:\n {cpd}')
         if cpd and cpd.get('1'):
             cpd_dict = cpd.get('1')
 
         src_dict = dict()
         src = structure.header.get('source', {})
-        # print(f'Source:\n {src}')
+        # logging.info(f'Source:\n {src}')
         if src and src.get('1'):
             src_dict = src.get('1')
 
@@ -695,6 +700,7 @@ class PDBUtil:
             import_model_pdb_file: upload an experiment pdb file and convert into a
                                   KBaseStructure.ModelProteinStructure object
         """
+        logging.info(f'Importing pdb file to a pdb structure with params: {params}')
 
         file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
 

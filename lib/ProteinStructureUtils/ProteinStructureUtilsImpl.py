@@ -56,6 +56,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN structure_to_pdb_file
         logging.info('Starting structure_to_pdb_file with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.structure_to_pdb_file(params)
         #END structure_to_pdb_file
 
@@ -79,6 +81,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN export_pdb
         logging.info('Starting export_pdb with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.export_pdb(params)
         #END export_pdb
 
@@ -111,9 +115,9 @@ class ProteinStructureUtils:
         # ctx is the context object
         # return variables are: result
         #BEGIN import_model_pdb_file
+        logging.info('Starting import_model_pdb_file with params:\n{}'.format(params))
         self.config['USER_ID'] = ctx['user_id']
         self.pdb_util = PDBUtil(self.config)
-        logging.info('Starting import_model_pdb_file with params:\n{}'.format(params))
         result = self.pdb_util.import_model_pdb_file(params)
         #END import_model_pdb_file
 
