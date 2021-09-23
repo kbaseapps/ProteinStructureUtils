@@ -507,22 +507,26 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                                                                  pdb_file_path)
         self.assertCountEqual(protein_data1[0].keys(),
                               ['id', 'model_id', 'chain_id', 'sequence', 'md5'])
-        # A genome that has matching features to the pdb protein
-        narr_id = 57196
-        genome_name = 'Synthetic_bacterium_JCVI_Syn3_genome'
-        feat_id = 'JCVISYN3_0004'
-        protein_data1 = self.pdb_util._match_features(narr_id, genome_name, feat_id, protein_data1)
+        # A genome that has a matching feature to the pdb protein
+        params = {
+            'narrative_id': 57196,
+            'genome_name': 'Synthetic_bacterium_JCVI_Syn3_genome',
+            'feature_id': 'JCVISYN3_0004'
+        }
+        protein_data1 = self.pdb_util._match_features(params, protein_data1)
         self.assertCountEqual(protein_data1[0].keys(),
                               ['id', 'sequence', 'md5', 'model_id', 'chain_id',
-                               'seq_identity', 'exact_match'])
+                               'seq_identity', 'exact_match', 'genome_ref'])
 
-        # A genome that has NO matching features to the pdb protein
-        narr_id = 42297
-        genome_name = 'OntSer_GCF_001699635_Feb20b'
-        feat_id = 'GCF_001699635.1.CDS.1'
+        # A genome that has NO matching feature to the pdb protein
+        params = {
+            'narrative_id': 42297,
+            'genome_name': 'OntSer_GCF_001699635_Feb20b',
+            'feature_id': 'GCF_001699635.1.CDS.1'
+        }
         protein_data2 = self.pdb_util._get_proteins_by_structure(structure, model.get_id(),
                                                                  pdb_file_path)
-        protein_data2 = self.pdb_util._match_features(narr_id, genome_name, feat_id, protein_data2)
+        protein_data2 = self.pdb_util._match_features(params, protein_data2)
         self.assertCountEqual(protein_data2[0].keys(),
                               ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
 
@@ -601,7 +605,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(data3['proteins']), data3['num_chains'])
         self.assertCountEqual(data3['proteins'][0].keys(),
                               ['id', 'sequence', 'md5', 'model_id', 'chain_id',
-                               'seq_identity', 'exact_match'])
+                               'seq_identity', 'exact_match', 'genome_ref'])
         self.assertCountEqual(data3['compound'].keys(),
                               ['misc', 'molecule', 'chain', 'synonym', 'ec_number', 'ec',
                                'engineered'])

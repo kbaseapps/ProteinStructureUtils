@@ -83,12 +83,7 @@ class PDBUtil:
         (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
         model = structure[0]
         protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
-
-        narr_id = params.get('narrative_id', None)
-        genome_name = params.get('genome_name', None)
-        feature_id = params.get('feature_id', None)
-        if narr_id and genome_name and feature_id:
-            protein_data = self._match_features(narr_id, genome_name, feature_id, protein_data)
+        protein_data = self._match_features(params, protein_data)
 
         data = {
             'name': structure.header.get('name', ''),
@@ -129,12 +124,7 @@ class PDBUtil:
         (num_residues, residue_ids) = self._get_residues_from_structure(structure)
         (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
         protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
-
-        narr_id = params.get('narrative_id', None)
-        genome_name = params.get('genome_name', None)
-        feature_id = params.get('feature_id', None)
-        if narr_id and genome_name and feature_id:
-            protein_data = self._match_features(narr_id, genome_name, feature_id, protein_data)
+        protein_data = self._match_features(params, protein_data)
 
         mmcif_data = {
             'name': struc_name,
@@ -165,7 +155,7 @@ class PDBUtil:
 
         return mmcif_data, pp_no
 
-    def _match_features(self, narrative_id, genome_name, feature_id, protein_data):
+    def _match_features(self, params, protein_data):
         """
             _match_features: match the protein_translation in feature_id with chain sequences in
                              protein_data and compute the seq_identity and determine the exact_match
@@ -174,22 +164,23 @@ class PDBUtil:
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
-        logging.info(f'Matching feature {feature_id} in genome: {genome_name}')
+        genome_name = params.get('genome_name', None)
+        narr_id = params.get('narrative_id', None)
+        feature_id = params.get('feature_id', None)
 
-        # 1. Get the genome info/data for the given genome_name, get its features
-        genome_data = self.ws_client.get_objects2(
-            {'objects': [{'wsid': narrative_id, 'name': genome_name}]})['data'][0]['data']
-        genome_features = genome_data['features']
-        logging.info(f'There are {len(genome_features)} features in {genome_name}')
-
-        # 2. Match the genome features with the specified feature_id to obtain teh feature sequence
         feat_prot_seq = ''
-        for feat in genome_features:
-            if feat['id'] == feature_id:
-                logging.info(f'Found feature match for {feature_id}')
-                prot_trans = feat['protein_translation']
-                feat_prot_seq = prot_trans
-                break
+        if narr_id and genome_name and feature_id:
+            logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
+            # 1. Get the genome's features
+            (genome_ref, genome_features) = self._get_genome_info_data(narr_id, genome_name)
+
+            # 2. Match the genome features with the specified feature_id to obtain feature sequence
+            for feat in genome_features:
+                if feat['id'] == feature_id:
+                    logging.info(f'Found genome feature match for {feature_id}')
+                    prot_trans = feat['protein_translation']
+                    feat_prot_seq = prot_trans
+                    break
 
         # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
         # proteins' translationsto to get the seq_identity and exact_match
@@ -202,8 +193,9 @@ class PDBUtil:
                     max_iden = seq_idens.pop()
                     prot['seq_identity'] = max_iden
                     prot['exact_match'] = 1 if max_iden > 0.99 else 0
+                    prot['genome_ref'] = genome_ref
         else:
-            logging.info(f'Found NO feature in {genome_name} match with {feature_id}')
+            logging.info(f'Found NO feature in genome that matches with {feature_id}')
 
         return protein_data
 
@@ -283,6 +275,24 @@ class PDBUtil:
                                 if hsp.positives == hsp.identities:
                                     exact_matches.append(alignment.title[:100])
         return idens, exact_matches
+
+    def _get_genome_info_data(self, narr_id, genome_name):
+        """
+            _get_genome_info_data: Get the genome info/data for the given genome_name
+        """
+        genome_ref = ''
+        genome_features = []
+        if narr_id and genome_name:
+            genome_data_res = self.ws_client.get_objects2(
+                {'objects': [{'wsid': narr_id, 'name': genome_name}]})['data'][0]
+            genome_info = genome_data_res['info']
+            genome_data = genome_data_res['data']
+            genome_ref = '/'.join([str(narr_id), str(genome_info[0]), str(genome_info[4])])
+            logging.info(f"Genome's ref: {genome_ref}")
+            genome_features = genome_data['features']
+            logging.info(f'There are {len(genome_features)} features in {genome_name}')
+
+        return (genome_ref, genome_features)
 
     def _get_atoms_from_structure(self, pdb_structure):
         """
@@ -665,13 +675,13 @@ class PDBUtil:
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
 
-        ## TODO: create a different template .html file for reporting multiple pdb files
-        result_file_path = os.path.join(output_directory, 'viewer.html')
+        ## TODO: create a different template html file for reporting multiple pdb files
+        result_file_path = os.path.join(output_directory, 'batch_pdb_viewer.html')
         new_pdb_path = os.path.join(output_directory, os.path.basename(succ_pdb_paths[0]))
         shutil.copy(succ_pdb_paths[0], new_pdb_path)
 
         # Fill in template HTML--TODO: Need to create a new template.html for the batch report!!!!!
-        with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html')
+        with open(os.path.join(os.path.dirname(__file__), 'templates', 'batch_pdb_viewer.html')
                   ) as report_template_file:
             report_template = report_template_file.read()\
                 .replace('*PDB_NAME*', pdb_name)\
@@ -848,8 +858,8 @@ class PDBUtil:
             params['input_staging_file_path'] = pdb_file['file_path']
             params['input_file_path'] = None
             params['input_shock_id'] = None
-            params['narrative_id'] = pdb_file['narrative_id']
             params['genome_name'] = pdb_file['genome_name']
+            params['narrative_id'] = pdb_file['narrative_id']
             params['feature_id'] = pdb_file['feature_id']
             params['pdb_molecule'] = pdb_file['pdb_molecule']
             params['structure_name'] = pdb_file['structure_name']
