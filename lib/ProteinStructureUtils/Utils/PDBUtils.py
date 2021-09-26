@@ -83,7 +83,7 @@ class PDBUtil:
         (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
         model = structure[0]
         protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
-        protein_data = self._match_features(params, protein_data)
+        (protein_data, params) = self._match_features(params, protein_data)
 
         data = {
             'name': structure.header.get('name', ''),
@@ -95,7 +95,7 @@ class PDBUtil:
             'proteins': protein_data
         }
 
-        return data, pp_no
+        return data, pp_no, params
 
     def _exp_file_to_data(self, file_path, params):
         """
@@ -124,7 +124,7 @@ class PDBUtil:
         (num_residues, residue_ids) = self._get_residues_from_structure(structure)
         (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
         protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
-        protein_data = self._match_features(params, protein_data)
+        (protein_data, params) = self._match_features(params, protein_data)
 
         mmcif_data = {
             'name': struc_name,
@@ -153,7 +153,7 @@ class PDBUtil:
             'proteins': protein_data
         }
 
-        return mmcif_data, pp_no
+        return mmcif_data, pp_no, params
 
     def _match_features(self, params, protein_data):
         """
@@ -164,40 +164,48 @@ class PDBUtil:
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
-        genome_name = params.get('genome_name', None)
-        narr_id = params.get('narrative_id', None)
-        feature_id = params.get('feature_id', None)
+        pdb_info = params.get('pdb_info', None)
+        if pdb_info:
+            feature_type = ''
+            feat_prot_seq = ''
+            genome_name = pdb_info['genome_name']
+            narr_id = pdb_info['narrative_id']
+            feature_id = pdb_info['feature_id']
 
-        feat_prot_seq = ''
-        if narr_id and genome_name and feature_id:
             logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
             # 1. Get the genome's features
-            (genome_ref, genome_features) = self._get_genome_info_data(narr_id, genome_name)
+            (gn_ref, gn_features) = self._get_genome_ref_features(narr_id, genome_name)
 
             # 2. Match the genome features with the specified feature_id to obtain feature sequence
-            for feat in genome_features:
+            for feat in gn_features:
                 if feat['id'] == feature_id:
                     logging.info(f'Found genome feature match for {feature_id}')
                     prot_trans = feat['protein_translation']
                     feat_prot_seq = prot_trans
+                    feature_type = feat.get('type', '')
                     break
 
-        # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
-        # proteins' translationsto to get the seq_identity and exact_match
-        if feat_prot_seq:
-            for prot in protein_data:
-                seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
-                                                                      prot.get('sequence', ''))
-                if seq_idens:
-                    seq_idens.sort()
-                    max_iden = seq_idens.pop()
-                    prot['seq_identity'] = max_iden
-                    prot['exact_match'] = 1 if max_iden > 0.99 else 0
-                    prot['genome_ref'] = genome_ref
-        else:
-            logging.info(f'Found NO feature in genome that matches with {feature_id}')
+            # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
+            # proteins' translationsto to get the seq_identity and exact_match
+            if feat_prot_seq:
+                for prot in protein_data:
+                    seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
+                                                                          prot.get('sequence', ''))
+                    if seq_idens:
+                        seq_idens.sort()
+                        max_iden = seq_idens.pop()
+                        prot['seq_identity'] = max_iden
+                        prot['exact_match'] = 1 if max_iden > 0.99 else 0
+                        prot['genome_ref'] = gn_ref
+                        prot['feature_id'] = feature_id
+                        prot['feature_type'] = feature_type
+                        pdb_info['genome_ref'] = gn_ref
+                        pdb_info['feature_id'] = feature_id
+                        pdb_info['feature_type'] = feature_type
+            else:
+                logging.info(f'Found NO feature in genome that matches with {feature_id}')
 
-        return protein_data
+        return protein_data, params
 
     def _compute_sequence_identity(self, seq1, seq2):
         """
@@ -276,23 +284,33 @@ class PDBUtil:
                                     exact_matches.append(alignment.title[:100])
         return idens, exact_matches
 
-    def _get_genome_info_data(self, narr_id, genome_name):
+    def _get_genome_ref_features(self, narr_id, genome_name):
         """
-            _get_genome_info_data: Get the genome info/data for the given genome_name
+            _get_genome_ref_features: Get the genome reference and features for the given genome_name
         """
         genome_ref = ''
         genome_features = []
-        if narr_id and genome_name:
-            genome_data_res = self.ws_client.get_objects2(
-                {'objects': [{'wsid': narr_id, 'name': genome_name}]})['data'][0]
-            genome_info = genome_data_res['info']
-            genome_data = genome_data_res['data']
-            genome_ref = '/'.join([str(narr_id), str(genome_info[0]), str(genome_info[4])])
-            logging.info(f"Genome's ref: {genome_ref}")
-            genome_features = genome_data['features']
-            logging.info(f'There are {len(genome_features)} features in {genome_name}')
+        (genome_info, genome_data) = self._get_object_info_data(narr_id, genome_name)
+        genome_ref = '/'.join([str(narr_id), str(genome_info[0]), str(genome_info[4])])
+        logging.info(f"Genome {genome_name}'s ref: {genome_ref}")
+        genome_features = genome_data['features']
+        logging.info(f'There are {len(genome_features)} features in {genome_name}')
 
         return (genome_ref, genome_features)
+
+    def _get_object_info_data(self, narr_id, obj_name):
+        """
+            _get_object_info_data: Get the object info/data with given obj_name in narrative narr_id
+        """
+        obj_info = None
+        obj_data = None
+        if narr_id and obj_name:
+            obj_data_res = self.ws_client.get_objects2(
+                {'objects': [{'wsid': narr_id, 'name': obj_name}]})['data'][0]
+            obj_info = obj_data_res['info']
+            obj_data = obj_data_res['data']
+
+        return (obj_info, obj_data)
 
     def _get_atoms_from_structure(self, pdb_structure):
         """
@@ -511,7 +529,7 @@ class PDBUtil:
             _read_file_by_type: read the file given by file_path depending on its type,
                                return a DataFrame object
         """
-        logging.info(f'INFO--reading input from file: {file_path}...')
+        logging.info(f'Reading input from file: {file_path}...')
 
         if not self._validate_file(file_path):
             raise ValueError('Input file is invalid or not found')
@@ -545,7 +563,7 @@ class PDBUtil:
 
             return: lists model_pdb_file_paths, exp_pdb_file_paths and dict kbase_meta_data
         """
-        logging.info(f'INFO--parsing metadata from input file {metadata_file_path}...')
+        logging.info(f'parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
                             'PDB molecule', 'PDB filename', 'Is model']
@@ -644,8 +662,7 @@ class PDBUtil:
         """
             _generate_batch_report: generate summary report for upload
         """
-        output_html_files = self._generate_batch_report_html(structs_name,
-                                                             successful_paths, failed_paths)
+        output_html_files = self._generate_batch_report_html(structs_name, successful_paths)
 
         failed_files = ','.join(failed_paths)
         description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
@@ -719,7 +736,7 @@ class PDBUtil:
         else:
             workspace_id = workspace_name
 
-        data, n_polypeptides = self._model_file_to_data(file_path, params)
+        (data, n_polypeptides, params) = self._model_file_to_data(file_path, params)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
         logging.info(data)
@@ -738,6 +755,9 @@ class PDBUtil:
         else:
             obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
             returnVal = {'structure_obj_ref': obj_ref}
+            if params.get('pdb_info'):
+                returnVal['pdb_info'] = params.get('pdb_info')
+
             if create_report:
                 report_output = self._generate_report('import_model_pdb_file', obj_ref,
                                                       workspace_name, n_polypeptides,
@@ -759,7 +779,7 @@ class PDBUtil:
             workspace_id = workspace_name
 
         # Parse the experimental pdb file for an experimental data structure
-        data, n_polypeptides,  = self._exp_file_to_data(file_path, params)
+        (data, n_polypeptides, params) = self._exp_file_to_data(file_path, params)
         logging.info(data)
 
         try:
@@ -776,6 +796,9 @@ class PDBUtil:
         else:
             obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
             returnVal = {'structure_obj_ref': obj_ref}
+            if params.get('pdb_info'):
+                returnVal['pdb_info'] = params.get('pdb_info')
+
             if create_report:
                 report_output = self._generate_report('import_experiment_pdb_file', obj_ref,
                                                       workspace_name, n_polypeptides,
@@ -853,30 +876,29 @@ class PDBUtil:
         protein_structures = dict()
         total_structures = 0
 
+        pdb_params = {}
         # loop through the list of pdb_file_paths
         for pdb_file in pdb_file_paths:
-            params['input_staging_file_path'] = pdb_file['file_path']
-            params['input_file_path'] = None
-            params['input_shock_id'] = None
-            params['genome_name'] = pdb_file['genome_name']
-            params['narrative_id'] = pdb_file['narrative_id']
-            params['feature_id'] = pdb_file['feature_id']
-            params['pdb_molecule'] = pdb_file['pdb_molecule']
-            params['structure_name'] = pdb_file['structure_name']
+            pdb_params['input_staging_file_path'] = pdb_file['file_path']
+            pdb_params['input_file_path'] = None
+            pdb_params['input_shock_id'] = None
+            pdb_params['workspace_name'] = workspace_name
+            pdb_params['structure_name'] = pdb_file['structure_name']
+            pdb_params['pdb_info'] = pdb_file
 
             if pdb_file['is_model']:
-                model_pdb_ref = self.import_model_pdb_file(params, False)
-                if model_pdb_ref:
-                    model_pdb_objects.append(model_pdb_ref['structure_obj_ref'])
-                    successful_files.append(pdb_file)
+                model_pdb_ret = self.import_model_pdb_file(pdb_params, False)
+                if model_pdb_ret:
+                    model_pdb_objects.append(model_pdb_ret['structure_obj_ref'])
+                    successful_files.append(model_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
                     failed_files.append(pdb_file)
             else:
-                exp_pdb_ref = self.import_experiment_pdb_file(params, False)
-                if exp_pdb_ref:
-                    exp_pdb_objects.append(exp_pdb_ref['structure_obj_ref'])
-                    successful_files.append(pdb_file)
+                exp_pdb_ret = self.import_experiment_pdb_file(pdb_params, False)
+                if exp_pdb_ret:
+                    exp_pdb_objects.append(exp_pdb_ret['structure_obj_ref'])
+                    successful_files.append(exp_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
                     failed_files.append(pdb_file)
@@ -906,7 +928,8 @@ class PDBUtil:
         returnVal = {'structures_ref': obj_ref}
 
         #report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
-        #                                            successful_files, failed_files)
+        #                                            protein_structures, successful_files,
+        #                                            failed_files)
         #returnVal.update(report_output)
 
         return returnVal
