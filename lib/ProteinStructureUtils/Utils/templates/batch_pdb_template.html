@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width" initial-scale=1">
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+        
+        /* Float 3 columns side by side */
+        .column {
+          float: left;
+          width: 33%;
+          padding: 0 5px;
+        }
+        
+        /* Remove extra left and right margins, due to padding */
+        .row {margin: 0 -5px;}
+        
+        /* Clear floats after the columns */
+        .row:after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+        
+        /* Responsive columns */
+        @media screen and (max-width: 600px) {
+          .column {
+            width: 100%;
+            display: block;
+            margin-bottom: 20px;
+          }
+        }
+        
+        /* Style the counter cards */
+        .card {
+          box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+          padding: 10px;
+          text-align: center;
+          background-color: #f1f1f1;
+        }
+    
+        .viewer_3Dmoljs {
+            height: 400px;
+            width: 100%;
+            position: relative;
+        } 
+    </style>
+</head>
+<body>
+    <!--Begin PDBs successfully uploaded-->
+    <!--replace this content--> 
+    <!--End PDBs successfully uploaded-->
+ 
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    
+</body>
+</html> 
