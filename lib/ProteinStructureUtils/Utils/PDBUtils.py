@@ -688,7 +688,7 @@ class PDBUtil:
                        f'named {structs_name}')
         if failed_files:
             description += f', with files "{failed_files}" failed to load.'
-        report_params = {'message': f'You uploaded a batch of PDB files into {structs_name}.',
+        report_params = {'message': f'You have uploaded a batch of PDB files into {structs_name}.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
                          'objects_created': [{'ref': structs_ref,
@@ -776,8 +776,7 @@ class PDBUtil:
 
         with open(batch_html_report_path, 'w') as html_report_file:
             html_report_file.write(batch_html_report)
-        print(f'Full batch_html_report: {batch_html_report} has been written to '
-              f'{batch_html_report_path}')
+        print(f'Full batch_html_report has been written to {batch_html_report_path}')
 
         html_report.append({'path': output_directory,
                             'name': os.path.basename(batch_html_report_path),
@@ -1007,5 +1006,4 @@ class PDBUtil:
         report_output = self._generate_batch_report(workspace_name, structs_ref, structures_name,
                                                     successful_files, failed_files)
         returnVal.update(report_output)
-
         return returnVal

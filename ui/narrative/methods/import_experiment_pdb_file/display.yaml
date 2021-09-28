@@ -1,6 +1,6 @@
 name     : Import ExperimentalProteinStructure from PDB File in Staging Area
-subtitle : Import a PDB file from your staging area into your Narrative as an ExperimentalProteinStructure
-tooltip  : Import a PDB file from your staging area into your Narrative as an ExperimentalProteinStructure
+subtitle : Import a PDB file from your staging area into your narrative into an ExperimentalProteinStructure
+tooltip  : Import a PDB file from your staging area into your narrative into an ExperimentalProteinStructure
 
 icon: data-blue.png
 
@@ -25,9 +25,9 @@ parameters :
         ui-name : |
             File Path
         short-hint : |
-            Recognized extensions for the input file is .pdb
+            Recognized extensions for the input file is .pdb or .cif
         long-hint  : |
-            Recognized extensions for the input file is .pdb
+            Recognized extensions for the input file is .pdb or .cif
 
     description:
       ui-name : |
@@ -41,11 +41,11 @@ parameters :
         ui-name : |
             Object Name
         short-hint : |
-            Provide a name for the ProteinStructure that will be created by this importer
+            Provide a name for the ExperimentalProteinStructure that will be created by this importer
         long-hint : |
-            Provide a name for the ProteinStructure that will be created by this importer
+            Provide a name for the ExperimentalProteinStructure that will be created by this importer
 
 
 description : |
-    <p> Import an PDB file from your staging area into your Narrative as an ProteinStructure data object.
+    <p> Import an PDB file from your staging area into your narrative as an ExperimentalProteinStructure data object.
     Please see the <a href="http://kbase.us/data-upload-download-guide/">Data Upload/Download Guide</a> for more information. </p>

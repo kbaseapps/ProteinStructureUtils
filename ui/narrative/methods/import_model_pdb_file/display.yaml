@@ -1,6 +1,6 @@
-name     : Import ModelProteinStructure from PDB File in Staging Area
-subtitle : Import a PDB file from your staging area into your Narrative as an ModelProteinStructure
-tooltip  : Import a PDB file from your staging area into your Narrative as an ModelProteinStructure
+name     : Import ModelProteinStructure from a PDB File in Staging Area
+subtitle : Import a PDB file from your staging area into your narrative into a ModelProteinStructure
+tooltip  : Import a PDB file from your staging area into your narrative into a ModelProteinStructure
 
 icon: data-blue.png
 
@@ -41,11 +41,11 @@ parameters :
         ui-name : |
             Object Name
         short-hint : |
-            Provide a name for the ProteinStructure that will be created by this importer
+            Provide a name for the ModelProteinStructure that will be created by this importer
         long-hint : |
-            Provide a name for the ProteinStructure that will be created by this importer
+            Provide a name for the ModelProteinStructure that will be created by this importer
 
 
 description : |
-    <p> Import an PDB file from your staging area into your Narrative as an ProteinStructure data object.
+    <p> Import an PDB file from your staging area into your narrative as a ModelProteinStructure data object.
     Please see the <a href="http://kbase.us/data-upload-download-guide/">Data Upload/Download Guide</a> for more information. </p>
