@@ -12,7 +12,20 @@ RUN pip install --upgrade pip \
     && pip install biopython --upgrade \
     && pip install wheel \
     && pip install pandas \
+    && pip install mock==4.0.3 \
     && pip install openpyxl
+
+RUN apt-get update \
+    && apt-get -y install wget
+
+ENV BLAST_VERSION='2.12.0'
+
+RUN cd /opt \
+    && wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz \
+    && tar zxvpf ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz \
+    && rm ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz
+
+ENV PATH $PATH:/opt/ncbi-blast-${BLAST_VERSION}+/bin
 # -----------------------------------------
 
 COPY ./ /kb/module

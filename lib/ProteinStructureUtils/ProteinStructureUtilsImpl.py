@@ -40,7 +40,6 @@ class ProteinStructureUtils:
         self.config['SDK_CALLBACK_URL'] = os.environ['SDK_CALLBACK_URL']
         self.config['KB_AUTH_TOKEN'] = os.environ['KB_AUTH_TOKEN']
         self.scratch = config['scratch']
-        self.pdb_util = PDBUtil(self.config)
         #END_CONSTRUCTOR
         pass
 
@@ -57,6 +56,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN structure_to_pdb_file
         logging.info('Starting structure_to_pdb_file with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.structure_to_pdb_file(params)
         #END structure_to_pdb_file
 
@@ -80,6 +81,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN export_pdb
         logging.info('Starting export_pdb with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.export_pdb(params)
         #END export_pdb
 
@@ -113,6 +116,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN import_model_pdb_file
         logging.info('Starting import_model_pdb_file with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.import_model_pdb_file(params)
         #END import_model_pdb_file
 
@@ -146,6 +151,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN import_experiment_pdb_file
         logging.info('Starting import_experiment_pdb_file with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.import_experiment_pdb_file(params)
         #END import_experiment_pdb_file
 
@@ -175,6 +182,8 @@ class ProteinStructureUtils:
         # return variables are: result
         #BEGIN batch_import_pdbs_from_metafile
         logging.info('Starting batch_import_pdbs_from_metafile with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.batch_import_pdbs(params)
         #END batch_import_pdbs_from_metafile
 
