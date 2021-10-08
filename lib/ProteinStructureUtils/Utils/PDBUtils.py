@@ -585,13 +585,13 @@ class PDBUtil:
         logging.info(f'parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                            'PDB molecule', 'PDB filename', 'Is model']
+                            'PDB filename', 'Is model']
 
         pdb_file_paths = list()
         narrative_ids = list()
         genome_names = list()
         feature_ids = list()
-        PDB_molecules = list()
+        PDB_filenames = list()
 
         # df_meta_data is a Panda DataFrame object
         df_meta_data = self._read_file_by_type(metadata_file_path)
@@ -626,37 +626,34 @@ class PDBUtil:
                 missing_feature_id = f"Please fill all the rows in column '{required_columns[2]}'!"
                 raise ValueError(missing_feature_id)
 
-            pdb_mol = df_meta_data[df_indexes[3]][i]
-            if not pd.isna(pdb_mol):
-                PDB_molecules.append(pdb_mol)
+            pdb_fn = df_meta_data[df_indexes[3]][i]  # pdb_fn does not have staging dir prefix
+            if not pd.isna(pdb_fn):
+                PDB_filenames.append(pdb_fn)
             else:
-                missing_pdb_molecule = f"Please fill all the rows in column '{required_columns[3]}'!"
-                raise ValueError(missing_pdb_molecule)
+                missing_pdb_file = f"Please fill all the rows in column '{required_columns[3]}'!"
+                raise ValueError(missing_pdb_file)
 
-            f_path = df_meta_data[df_indexes[4]][i]  # f_path does not have staging dir prefix
-            f_name = os.path.basename(f_path)
+            f_name = os.path.basename(pdb_fn)
             (struct_name, ext) = os.path.splitext(f_name)
-            is_model = df_meta_data[df_indexes[5]][i]
-            if not pd.isna(f_path) and not pd.isna(is_model):
+            is_model = df_meta_data[df_indexes[4]][i]
+            if not pd.isna(is_model):
                 pdb_file_paths.append(
-                    {'file_path': self._get_staging_file_path(self.user_id, f_path),
+                    {'file_path': self._get_staging_file_path(self.user_id, pdb_fn),
                      'structure_name': struct_name,
                      'is_model': 'y' in is_model or 'Y' in is_model,
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
-                     'feature_id': feat_id,
-                     'pdb_molecule': pdb_mol}
+                     'feature_id': feat_id}
                 )
             else:
-                missing_pdb_file = f"Please fill all the rows in columns '{required_columns[4]}' " \
-                                  f"and '{required_columns[5]}'!"
-                raise ValueError(missing_pdb_file)
+                missing_pdb_md = f"Please fill all the rows in columns '{required_columns[4]}'!"
+                raise ValueError(missing_pdb_md)
 
         if not pdb_file_paths:
-            error_msg = "At least pdb file(s) should be provided!"
+            error_msg = "No PDB file info is provided!"
             raise ValueError(error_msg)
 
-        return (pdb_file_paths, narrative_ids, genome_names, feature_ids, PDB_molecules)
+        return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
     def _get_staging_file_path(self, token_user, staging_file_subdir_path):
         """
@@ -939,7 +936,7 @@ class PDBUtil:
         params['workspace_id'] = workspace_id
 
         (pdb_file_paths, narrative_ids, genome_names,
-         feature_ids, PDB_molecules) = self._parse_metadata_file(metadata_file_path, workspace_id)
+         feature_ids) = self._parse_metadata_file(metadata_file_path, workspace_id)
 
         model_pdb_objects = list()
         exp_pdb_objects = list()

@@ -186,8 +186,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_read_file_by_type_csv')
     def test_read_file_by_type_csv(self):
-        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                         'PDB molecule', 'PDB filename']
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
+                         'Feature ID', 'PDB filename']
 
         metafile = 'pdb_metafile_sample1a.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -222,8 +222,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_read_file_by_type_tsv')
     def test_read_file_by_type_tsv(self):
-        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                         'PDB molecule', 'PDB filename']
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
+                         'Feature ID', 'PDB filename']
 
         metafile = 'pdb_metafile_sample1a.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -258,8 +258,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_read_file_by_type_xlsx')
     def test_read_file_by_type_xlsx(self):
-        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                         'PDB molecule', 'PDB filename']
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
+                         'Feature ID', 'PDB filename']
 
         metafile = 'pdb_metafile_sample1a.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -310,7 +310,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB molecule'!"):
+                "Please fill all the rows in column 'PDB filename'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.csv'
@@ -348,7 +348,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB molecule'!"):
+                "Please fill all the rows in column 'PDB filename'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.tsv'
@@ -386,7 +386,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB molecule'!"):
+                "Please fill all the rows in column 'PDB filename'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.xlsx'
@@ -412,53 +412,47 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         metafile = 'pdb_metafile_sample2.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
-        (pdb_data, narr_ids, genome_objs, feature_ids,
-            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+        (pdb_data, narr_ids, genome_objs,
+            feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 4)
         self.assertEqual(len(genome_objs), 4)
         self.assertEqual(len(feature_ids), 4)
-        self.assertEqual(len(pdb_mols), 4)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name',
-             'narrative_id', 'feature_id', 'pdb_molecule'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
     #@unittest.skip('test_parse_complete_metadata_tsv_file')
     def test_parse_complete_metadata_tsv_file(self):
         metafile = 'pdb_metafile_sample2.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
-        (pdb_data, narr_ids, genome_objs, feature_ids,
-            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+        (pdb_data, narr_ids, genome_objs,
+            feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 4)
         self.assertEqual(len(narr_ids), 4)
         self.assertEqual(len(genome_objs), 4)
         self.assertEqual(len(feature_ids), 4)
-        self.assertEqual(len(pdb_mols), 4)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name',
-             'narrative_id', 'feature_id', 'pdb_molecule'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
     #@unittest.skip('test_parse_complete_metadata_xlsx_file')
     def test_parse_complete_metadata_xlsx_file(self):
         metafile = 'pdb_metafile_sample2.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
-        (pdb_data, narr_ids, genome_objs, feature_ids,
-            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+        (pdb_data, narr_ids, genome_objs,
+            feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 4)
         self.assertEqual(len(narr_ids), 4)
         self.assertEqual(len(genome_objs), 4)
         self.assertEqual(len(feature_ids), 4)
-        self.assertEqual(len(pdb_mols), 4)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name',
-             'narrative_id', 'feature_id', 'pdb_molecule'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
     #@unittest.skip('test_compute_sequence_identity')
     def test_compute_sequence_identity(self):
