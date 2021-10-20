@@ -3,10 +3,150 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width" initial-scale=1">
-    <link rel="stylesheet" href="./modal.css">
-    <link rel="stylesheet" href="./pdb_style.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <script src="./modal.js"></script>
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Float 3 columns side by side */
+        .column {
+          float: left;
+          width: 33%;
+          padding: 0 5px;
+        }
+
+        /* Remove extra left and right margins, due to padding */
+        .row {margin: 0 -5px;}
+
+        /* Clear floats after the columns */
+        .row:after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+
+        /* Responsive columns */
+        @media screen and (max-width: 600px) {
+          .column {
+            width: 100%;
+            display: block;
+            margin-bottom: 20px;
+          }
+        }
+
+        /* Style the counter cards */
+        .card {
+          box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.5);
+          padding: 10px;
+          text-align: center;
+          background-color: #f1f1f1;
+          height: 230px;
+        }
+
+        /* Style the structure area */
+        .viewer_3Dmoljs {
+            height: 550px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Style the modal window */
+        .modal {
+          --gap: 15px;
+
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+          padding: var(--gap);
+          background: rgba(0, 0, 0, 0.5);
+          font-family: sans-serif;
+        }
+
+        .modal__inner {
+          background: #ffffff;
+          width: 100%;
+          max-width: 800px;
+          overflow: hidden;
+          border-radius: 4px;
+        }
+
+        .modal__top {
+          display: flex;
+          align-items: center;
+          background-color: #eeeeee;
+        }
+
+        .modal__title {
+          flex-grow: 1;
+          padding: 0 var(--gap);
+          font-size: 20px;
+        }
+
+        .modal__close {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          padding: var(--gap);
+          background: none;
+          border: none;
+          outline: none;
+        }
+
+        .modal__content {
+          padding: 0 var(--gap);
+          line-height: 1.5;
+        }
+
+        .modal__bottom {
+          text-align: right;
+          padding: 0 var(--gap) var(--gap) var(--gap);
+        }
+    </style>
+    <script>
+        function showModal(titleHtml, pdb_path, buttons=[]) {
+          const modal = document.createElement("div");
+          const contentHtml = `
+                <div class="viewer_3Dmoljs"
+                     data-backgroundcolor="0xffffff"
+                     data-style="cartoon:color=spectrum"
+                     data-href="${pdb_path}">
+                </div>
+          `;
+
+          modal.classList.add("modal");
+          modal.innerHTML = `
+                <div class="modal__inner">
+                    <div class="modal__top">
+                        <div class="modal__title">${titleHtml}</div>
+                        <button class="modal__close" type="button">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    <div class="modal__content">${contentHtml}</div>
+                </div>
+            `;
+            modal.querySelector(".modal__close").addEventListener("click", () => {
+            document.body.removeChild(modal);
+          });
+
+          const mol_script = document.createElement('script');
+          mol_script.setAttribute('src', 'https://3Dmol.csb.pitt.edu/build/3Dmol-min.js');
+          modal.appendChild(mol_script);
+
+          document.body.appendChild(modal);
+        }
+    </script>
 </head>
 <body>
     <!--Begin PDBs successfully uploaded-->
