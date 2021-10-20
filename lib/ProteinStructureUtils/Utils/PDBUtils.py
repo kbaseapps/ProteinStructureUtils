@@ -700,13 +700,13 @@ class PDBUtil:
 
         return report_output
 
-    def _write_pdb_html(self, output_dir, succ_pdb_paths):
-        # Write the batch pdb info in a 3 column table of 'cards' in HTML
+    def _write_pdb_htmls(self, output_dir, succ_pdb_paths):
+        """ Write the batch pdb info in a 3 column table of 'cards' into HTML files"""
         pdb_html = '<h2>PDBs successfully uploaded</h2>'
         row_html = ''
-        srv_domain = urlparse(self.shock_url).netloc
+        srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
         srv_base_url = f'https://{srv_domain}'
-        logging.info(f'Get the url for building the anchor: {srv_base_url}')
+        logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
         for i in range(len(succ_pdb_paths)):
             succ_pdb = succ_pdb_paths[i]
@@ -735,9 +735,9 @@ class PDBUtil:
 
             row_html += '<div class="column"><div class="card">'
             row_html += (f'<h3><a href="{srv_base_url}/#dataview/{struct_ref}" target="_blank">'
-                         f'{struct_name}</a></h3>'
-                         f'<p class="viewer_3Dmoljs" data-href="{new_pdb_path}" '
-                         f'data-backgroundcolor="0xffffff" data-style="cartoon:color=spectrum"></p>'
+                         f'{struct_name} Data View</a> or <a href="#" '
+                         f'onclick="showModal(\'{struct_name}\',\'{new_pdb_path}\');return false;">'
+                         f'Structure View</a></h3>'
                          f'<p>Genome: <a href="{srv_base_url}/#dataview/{genome_ref}"'
                          f' target="_blank">{genome_name}</a></p>'
                          f'<p>Feature: {feat_id}, type: {feat_type}</p>')
@@ -763,7 +763,7 @@ class PDBUtil:
         # Create the template html file for reporting batch-uploaded pdb files
         batch_html_report_path = os.path.join(output_directory, 'batch_pdb_viewer.html')
 
-        pdb_html = self._write_pdb_html(output_directory, succ_pdb_paths)
+        pdb_html = self._write_pdb_htmls(output_directory, succ_pdb_paths)
 
         # Fetch & fill in detailed info into template HTML
         with open(os.path.join(os.path.dirname(__file__), 'templates', 'batch_pdb_template.html')
