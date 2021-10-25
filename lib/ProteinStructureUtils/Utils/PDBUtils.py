@@ -711,6 +711,7 @@ class PDBUtil:
         for i in range(len(succ_pdb_paths)):
             succ_pdb = succ_pdb_paths[i]
             file_path = succ_pdb['file_path']
+            file_name = os.path.basename(file_path);
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(file_path, new_pdb_path)
             struct_name = succ_pdb['structure_name']
@@ -736,7 +737,7 @@ class PDBUtil:
             row_html += '<div class="column"><div class="card">'
             row_html += (f'<h3><a href="{srv_base_url}/#dataview/{struct_ref}" target="_blank">'
                          f'{struct_name} Data View</a> or <a href="#" '
-                         f'onclick="showModal(\'{struct_name}\',\'{new_pdb_path}\');return false;">'
+                         f'onclick="showModal(\'{struct_name}\',\'{file_name}\');return false;">'
                          f'Structure View</a></h3>'
                          f'<p>Genome: <a href="{srv_base_url}/#dataview/{genome_ref}"'
                          f' target="_blank">{genome_name}</a></p>'
