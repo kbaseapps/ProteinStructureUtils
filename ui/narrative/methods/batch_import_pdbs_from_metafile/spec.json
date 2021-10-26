@@ -1,0 +1,70 @@
+{
+  "ver" : "",
+  "authors" : ["qzhang"],
+  "contact" : "http://kbase.us/contact-us/",
+  "visible" : true,
+  "categories" : ["upload"],
+  "widgets": {
+    "input": "kbaseNarrativeMethodInput",
+    "output" : "no-display"
+  },
+  "parameters" : [
+    {
+      "id" : "metadata_staging_file_path",
+      "optional" : false,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "dynamic_dropdown",
+      "text_options" : {}
+    },
+    {
+      "id" : "structures_name",
+      "optional" : false,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+        "valid_ws_types" : ["KBaseStructure.ProteinStructures"],
+        "is_output_name" : true
+      }
+    }
+  ],
+  "behavior" : {
+    "service-mapping" : {
+      "url" : "",
+      "name" : "ProteinStructureUtils",
+      "method" : "batch_import_pdbs_from_metafile",
+      "input_mapping" : [
+        {
+          "narrative_system_variable": "workspace",
+          "target_property": "workspace_name"
+        },
+        {
+          "input_parameter": "metadata_staging_file_path",
+          "target_property": "metadata_staging_file_path"
+        },
+        {
+          "input_parameter": "structures_name",
+          "target_property": "structures_name"
+        }
+      ],
+      "output_mapping" : [
+        {
+            "service_method_output_path": [0, "report_name"],
+            "target_property": "report_name"
+        },
+        {
+            "service_method_output_path": [0, "report_ref"],
+            "target_property": "report_ref"
+        },
+        {
+            "constant_value": "16",
+            "target_property": "report_window_line_height"
+        }
+      ]
+    }
+  },
+  "job_id_output_field": "docker"
+}

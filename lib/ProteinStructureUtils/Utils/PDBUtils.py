@@ -8,6 +8,7 @@ import errno
 import pandas as pd
 import pathlib
 import subprocess
+from urllib.parse import urlparse
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
@@ -173,8 +174,9 @@ class PDBUtil:
             feature_id = pdb_info['feature_id']
 
             logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
-            # 1. Get the genome's features
+            # 1. Get the genome's features and reference
             (gn_ref, gn_features) = self._get_genome_ref_features(narr_id, genome_name)
+            pdb_info['genome_ref'] = gn_ref
 
             # 2. Match the genome features with the specified feature_id to obtain feature sequence
             for feat in gn_features:
@@ -182,12 +184,14 @@ class PDBUtil:
                     logging.info(f'Found genome feature match for {feature_id}')
                     prot_trans = feat['protein_translation']
                     feat_prot_seq = prot_trans
-                    feature_type = feat.get('type', '')
+                    feature_type = self._get_feature_type(feat)
                     break
+            pdb_info['feature_type'] = feature_type
 
             # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
             # proteins' translationsto to get the seq_identity and exact_match
             if feat_prot_seq:
+                pdb_info['protein_meta'] = []
                 for prot in protein_data:
                     seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
                                                                           prot.get('sequence', ''))
@@ -199,9 +203,11 @@ class PDBUtil:
                         prot['genome_ref'] = gn_ref
                         prot['feature_id'] = feature_id
                         prot['feature_type'] = feature_type
-                        pdb_info['genome_ref'] = gn_ref
-                        pdb_info['feature_id'] = feature_id
-                        pdb_info['feature_type'] = feature_type
+                        pdb_info['protein_meta'].append({
+                            'model_id': prot['model_id'],
+                            'chain_id': prot['chain_id'],
+                            'seq_identity': prot['seq_identity'],
+                            'exact_match': prot['exact_match']})
             else:
                 logging.info(f'Found NO feature in genome that matches with {feature_id}')
 
@@ -297,6 +303,19 @@ class PDBUtil:
         logging.info(f'There are {len(genome_features)} features in {genome_name}')
 
         return (genome_ref, genome_features)
+
+    def _get_feature_type(self, feature_obj):
+        """
+            _get_feature_type: Get the type for the feature object of given feature_obj
+        """
+        feat_type = feature_obj.get('type', '')
+        if not feat_type:
+            if feature_obj.get('protein_translation'):
+                feat_type = 'gene'
+            else:
+                feat_type = 'other'
+
+        return feat_type
 
     def _get_object_info_data(self, narr_id, obj_name):
         """
@@ -566,13 +585,13 @@ class PDBUtil:
         logging.info(f'parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                            'PDB molecule', 'PDB filename', 'Is model']
+                            'PDB filename', 'Is model']
 
         pdb_file_paths = list()
         narrative_ids = list()
         genome_names = list()
         feature_ids = list()
-        PDB_molecules = list()
+        PDB_filenames = list()
 
         # df_meta_data is a Panda DataFrame object
         df_meta_data = self._read_file_by_type(metadata_file_path)
@@ -607,37 +626,34 @@ class PDBUtil:
                 missing_feature_id = f"Please fill all the rows in column '{required_columns[2]}'!"
                 raise ValueError(missing_feature_id)
 
-            pdb_mol = df_meta_data[df_indexes[3]][i]
-            if not pd.isna(pdb_mol):
-                PDB_molecules.append(pdb_mol)
+            pdb_fn = df_meta_data[df_indexes[3]][i]  # pdb_fn does not have staging dir prefix
+            if not pd.isna(pdb_fn):
+                PDB_filenames.append(pdb_fn)
             else:
-                missing_pdb_molecule = f"Please fill all the rows in column '{required_columns[3]}'!"
-                raise ValueError(missing_pdb_molecule)
+                missing_pdb_file = f"Please fill all the rows in column '{required_columns[3]}'!"
+                raise ValueError(missing_pdb_file)
 
-            f_path = df_meta_data[df_indexes[4]][i]  # f_path does not have staging dir prefix
-            f_name = os.path.basename(f_path)
+            f_name = os.path.basename(pdb_fn)
             (struct_name, ext) = os.path.splitext(f_name)
-            is_model = df_meta_data[df_indexes[5]][i]
-            if not pd.isna(f_path) and not pd.isna(is_model):
+            is_model = df_meta_data[df_indexes[4]][i]
+            if not pd.isna(is_model):
                 pdb_file_paths.append(
-                    {'file_path': self._get_staging_file_path(self.user_id, f_path),
+                    {'file_path': self._get_staging_file_path(self.user_id, pdb_fn),
                      'structure_name': struct_name,
                      'is_model': 'y' in is_model or 'Y' in is_model,
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
-                     'feature_id': feat_id,
-                     'pdb_molecule': pdb_mol}
+                     'feature_id': feat_id}
                 )
             else:
-                missing_pdb_file = f"Please fill all the rows in columns '{required_columns[4]}' " \
-                                  f"and '{required_columns[5]}'!"
-                raise ValueError(missing_pdb_file)
+                missing_pdb_md = f"Please fill all the rows in columns '{required_columns[4]}'!"
+                raise ValueError(missing_pdb_md)
 
         if not pdb_file_paths:
-            error_msg = "At least pdb file(s) should be provided!"
+            error_msg = "No PDB file info is provided!"
             raise ValueError(error_msg)
 
-        return (pdb_file_paths, narrative_ids, genome_names, feature_ids, PDB_molecules)
+        return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
     def _get_staging_file_path(self, token_user, staging_file_subdir_path):
         """
@@ -657,7 +673,7 @@ class PDBUtil:
             return os.path.join(self.STAGING_GLOBAL_FILE_PREFIX, token_user,
                                 staging_file_subdir_path.strip('/'))
 
-    def _generate_batch_report(self, structs_ref, workspace_name, structs_name,
+    def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
                                successful_paths, failed_paths):
         """
             _generate_batch_report: generate summary report for upload
@@ -666,8 +682,10 @@ class PDBUtil:
 
         failed_files = ','.join(failed_paths)
         description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
-                       f'with files "{failed_files}" failed to load.')
-        report_params = {'message': f'You uploaded a batch of PDB files into {structs_name}.',
+                       f'named {structs_name}')
+        if failed_files:
+            description += f', with files "{failed_files}" failed to load.'
+        report_params = {'message': f'You have uploaded a batch of PDB files into {structs_name}.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
                          'objects_created': [{'ref': structs_ref,
@@ -682,33 +700,84 @@ class PDBUtil:
 
         return report_output
 
-    def _generate_batch_report_html(self, pdb_name, succ_pdb_paths, fail_pdb_paths):
+    def _write_pdb_htmls(self, output_dir, succ_pdb_paths):
+        """ Write the batch pdb info in a 3 column table of 'cards' into HTML files"""
+        pdb_html = '<h2>PDBs successfully uploaded</h2>'
+        row_html = ''
+        srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
+        srv_base_url = f'https://{srv_domain}'
+        logging.info(f'Get the url for building the anchors: {srv_base_url}')
+
+        for i in range(len(succ_pdb_paths)):
+            succ_pdb = succ_pdb_paths[i]
+            file_path = succ_pdb['file_path']
+            file_name = os.path.basename(file_path);
+            new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
+            shutil.copy(file_path, new_pdb_path)
+            struct_name = succ_pdb['structure_name']
+            struct_ref = succ_pdb['pdb_struct_ref']
+            genome_name = succ_pdb['genome_name']
+            genome_ref = succ_pdb['genome_ref']
+            feat_id = succ_pdb['feature_id']
+            feat_type = succ_pdb['feature_type']
+            print(succ_pdb)
+
+            pdb_chains = []
+            seq_idens = []
+            for prot in succ_pdb['protein_meta']:
+                pdb_chains.append(prot['chain_id'])
+                seq_idens.append(prot['seq_identity'])
+
+            col_count = 3
+            if i % col_count == 0:  # write col_count columns
+                if row_html:  # close the row tags before opening a new row tag
+                    row_html += '</div>'
+                row_html += '<div class="row">'
+
+            row_html += '<div class="column"><div class="card">'
+            row_html += (f'<h3><a href="{srv_base_url}/#dataview/{struct_ref}" target="_blank">'
+                         f'{struct_name} Data View</a> or <a href="#" '
+                         f'onclick="showModal(\'{struct_name}\',\'{file_name}\');return false;">'
+                         f'Structure View</a></h3>'
+                         f'<p>Genome: <a href="{srv_base_url}/#dataview/{genome_ref}"'
+                         f' target="_blank">{genome_name}</a></p>'
+                         f'<p>Feature: {feat_id}, type: {feat_type}</p>')
+            if pdb_chains:
+                row_html += f'<p>Chains: {pdb_chains}</p>'
+            if seq_idens:
+                row_html += f'<p>Sequence identity: {seq_idens}</p>'
+            row_html += '</div></div>'
+        row_html += '</div>'
+        pdb_html += row_html
+        return pdb_html
+
+    def _generate_batch_report_html(self, prot_structs_name, succ_pdb_paths):
         """
             _generate_batch_report_html: generates the HTML for the upload report
         """
         html_report = list()
 
-        # Make report directory and copy over files
+        # Make report directory and copy over uploaded pdb files
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
 
-        ## TODO: create a different template html file for reporting multiple pdb files
-        result_file_path = os.path.join(output_directory, 'batch_pdb_viewer.html')
-        new_pdb_path = os.path.join(output_directory, os.path.basename(succ_pdb_paths[0]))
-        shutil.copy(succ_pdb_paths[0], new_pdb_path)
+        # Create the template html file for reporting batch-uploaded pdb files
+        batch_html_report_path = os.path.join(output_directory, 'batch_pdb_viewer.html')
 
-        # Fill in template HTML--TODO: Need to create a new template.html for the batch report!!!!!
-        with open(os.path.join(os.path.dirname(__file__), 'templates', 'batch_pdb_viewer.html')
-                  ) as report_template_file:
-            report_template = report_template_file.read()\
-                .replace('*PDB_NAME*', pdb_name)\
-                .replace('*PDB_PATH*', os.path.basename(pdb_name))
+        pdb_html = self._write_pdb_htmls(output_directory, succ_pdb_paths)
 
-        with open(result_file_path, 'w') as result_file:
-            result_file.write(report_template)
+        # Fetch & fill in detailed info into template HTML
+        with open(os.path.join(os.path.dirname(__file__), 'templates', 'batch_pdb_template.html')
+                  ) as batch_template_html:
+            batch_html_report = batch_template_html.read()\
+                .replace('<!--replace this content-->', pdb_html)
+
+        with open(batch_html_report_path, 'w') as html_report_file:
+            html_report_file.write(batch_html_report)
+        print(f'Full batch_html_report has been written to {batch_html_report_path}')
 
         html_report.append({'path': output_directory,
-                            'name': os.path.basename(result_file_path),
+                            'name': os.path.basename(batch_html_report_path),
                             'description': 'HTML report for PDB upload'})
 
         return html_report
@@ -721,6 +790,7 @@ class PDBUtil:
         self.dfu = DataFileUtil(self.callback_url)
         self.hs = AbstractHandle(config['handle-service-url'])
         self.ws_client = Workspace(config['workspace-url'])
+        self.shock_url = config['shock-url']
 
     def import_model_pdb_file(self, params, create_report=True):
         """
@@ -796,7 +866,7 @@ class PDBUtil:
         else:
             obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
             returnVal = {'structure_obj_ref': obj_ref}
-            if params.get('pdb_info'):
+            if params.get('pdb_info', None):
                 returnVal['pdb_info'] = params.get('pdb_info')
 
             if create_report:
@@ -867,7 +937,7 @@ class PDBUtil:
         params['workspace_id'] = workspace_id
 
         (pdb_file_paths, narrative_ids, genome_names,
-         feature_ids, PDB_molecules) = self._parse_metadata_file(metadata_file_path, workspace_id)
+         feature_ids) = self._parse_metadata_file(metadata_file_path, workspace_id)
 
         model_pdb_objects = list()
         exp_pdb_objects = list()
@@ -889,7 +959,9 @@ class PDBUtil:
             if pdb_file['is_model']:
                 model_pdb_ret = self.import_model_pdb_file(pdb_params, False)
                 if model_pdb_ret:
-                    model_pdb_objects.append(model_pdb_ret['structure_obj_ref'])
+                    ret_strct_ref = model_pdb_ret['structure_obj_ref']
+                    model_pdb_objects.append(ret_strct_ref)
+                    model_pdb_ret['pdb_info']['pdb_struct_ref'] = ret_strct_ref
                     successful_files.append(model_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
@@ -897,7 +969,9 @@ class PDBUtil:
             else:
                 exp_pdb_ret = self.import_experiment_pdb_file(pdb_params, False)
                 if exp_pdb_ret:
-                    exp_pdb_objects.append(exp_pdb_ret['structure_obj_ref'])
+                    ret_strct_ref = exp_pdb_ret['structure_obj_ref']
+                    exp_pdb_objects.append(ret_strct_ref)
+                    exp_pdb_ret['pdb_info']['pdb_struct_ref'] = ret_strct_ref
                     successful_files.append(exp_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
@@ -923,13 +997,11 @@ class PDBUtil:
             logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
             raise
         else:
-            obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
+            structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
 
-        returnVal = {'structures_ref': obj_ref}
+        returnVal = {'structures_ref': structs_ref}
 
-        #report_output = self._generate_batch_report(obj_ref, workspace_name, structures_name,
-        #                                            protein_structures, successful_files,
-        #                                            failed_files)
-        #returnVal.update(report_output)
-
+        report_output = self._generate_batch_report(workspace_name, structs_ref, structures_name,
+                                                    successful_files, failed_files)
+        returnVal.update(report_output)
         return returnVal

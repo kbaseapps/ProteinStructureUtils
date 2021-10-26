@@ -1,5 +1,5 @@
-Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB molecule,PDB filename,Is model
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0001,A,5o5y.pdb,yes
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,B,1nqg.pdb,yes
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0003,C,1fat.cif,no
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,A,6ift.pdb,yes
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0001,5o5y.pdb,yes
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,1nqg.pdb,yes
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0003,1fat.cif,no
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ift.pdb,yes

@@ -1,0 +1,49 @@
+#
+# define display information
+#
+name     : Import ProteinStructures from a Metadata File in Staging Area
+subtitle : Import a set of PDBs from your staging area into your narrative into a ProteinStructures
+tooltip  : Import a set of PDBs from your staging area into your Narrative into a ProteinStructures
+
+icon: data-blue.png
+
+screenshots :
+    []
+
+suggestions :
+    apps:
+        related :
+            []
+        next :
+            []
+    methods:
+        related :
+            []
+        next :
+            []
+
+parameters :
+
+    metadata_staging_file_path :
+        ui-name : |
+            Metadata File Path
+        short-hint : |
+            A csv/tsv/xlsx file with metadata for pdb importing
+        long-hint  : |
+            A csv/tsv/xlsx file with metadata for pdb importing
+
+    structures_name :
+        ui-name : |
+            ProteinStructures object name
+        short-hint : |
+            Provide a name for the ProteinStructures that will be created by this importer
+        long-hint : |
+            Provide a name for the ProteinStructures that will be created by this importer
+
+
+description : |
+    <p> Import PDB files from your staging area into your narrative as ProteinStructures data object.
+    Please see the <a href="http://kbase.us/data-upload-download-guide/">Data Upload/Download Guide</a> for more information. </p>
+
+technical-description : none
+

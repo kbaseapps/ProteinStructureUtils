@@ -186,8 +186,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_read_file_by_type_csv')
     def test_read_file_by_type_csv(self):
-        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                         'PDB molecule', 'PDB filename']
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
+                         'Feature ID', 'PDB filename']
 
         metafile = 'pdb_metafile_sample1a.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -222,8 +222,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_read_file_by_type_tsv')
     def test_read_file_by_type_tsv(self):
-        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                         'PDB molecule', 'PDB filename']
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
+                         'Feature ID', 'PDB filename']
 
         metafile = 'pdb_metafile_sample1a.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -258,8 +258,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_read_file_by_type_xlsx')
     def test_read_file_by_type_xlsx(self):
-        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                         'PDB molecule', 'PDB filename']
+        required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
+                         'Feature ID', 'PDB filename']
 
         metafile = 'pdb_metafile_sample1a.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -310,7 +310,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB molecule'!"):
+                "Please fill all the rows in column 'PDB filename'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.csv'
@@ -348,7 +348,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB molecule'!"):
+                "Please fill all the rows in column 'PDB filename'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.tsv'
@@ -386,7 +386,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB molecule'!"):
+                "Please fill all the rows in column 'PDB filename'!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.xlsx'
@@ -412,53 +412,47 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         metafile = 'pdb_metafile_sample2.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
-        (pdb_data, narr_ids, genome_objs, feature_ids,
-            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+        (pdb_data, narr_ids, genome_objs,
+            feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 4)
         self.assertEqual(len(genome_objs), 4)
         self.assertEqual(len(feature_ids), 4)
-        self.assertEqual(len(pdb_mols), 4)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name',
-             'narrative_id', 'feature_id', 'pdb_molecule'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
     #@unittest.skip('test_parse_complete_metadata_tsv_file')
     def test_parse_complete_metadata_tsv_file(self):
         metafile = 'pdb_metafile_sample2.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
-        (pdb_data, narr_ids, genome_objs, feature_ids,
-            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+        (pdb_data, narr_ids, genome_objs,
+            feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 4)
         self.assertEqual(len(narr_ids), 4)
         self.assertEqual(len(genome_objs), 4)
         self.assertEqual(len(feature_ids), 4)
-        self.assertEqual(len(pdb_mols), 4)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name',
-             'narrative_id', 'feature_id', 'pdb_molecule'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
     #@unittest.skip('test_parse_complete_metadata_xlsx_file')
     def test_parse_complete_metadata_xlsx_file(self):
         metafile = 'pdb_metafile_sample2.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
-        (pdb_data, narr_ids, genome_objs, feature_ids,
-            pdb_mols) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
+        (pdb_data, narr_ids, genome_objs,
+            feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 4)
         self.assertEqual(len(narr_ids), 4)
         self.assertEqual(len(genome_objs), 4)
         self.assertEqual(len(feature_ids), 4)
-        self.assertEqual(len(pdb_mols), 4)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name',
-             'narrative_id', 'feature_id', 'pdb_molecule'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
     #@unittest.skip('test_compute_sequence_identity')
     def test_compute_sequence_identity(self):
@@ -518,9 +512,16 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                               ['id', 'sequence', 'md5', 'model_id', 'chain_id',
                                'seq_identity', 'exact_match', 'genome_ref',
                                'feature_id', 'feature_type'])
+        self.assertIn('genome_name', params1['pdb_info'])
         self.assertIn('genome_ref', params1['pdb_info'])
         self.assertIn('feature_id', params1['pdb_info'])
         self.assertIn('feature_type', params1['pdb_info'])
+        self.assertIn('protein_meta', params1['pdb_info'])
+        self.assertTrue(params1['pdb_info']['protein_meta'])
+        self.assertIn('model_id', params1['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_id', params1['pdb_info']['protein_meta'][0])
+        self.assertIn('seq_identity', params1['pdb_info']['protein_meta'][0])
+        self.assertIn('exact_match', params1['pdb_info']['protein_meta'][0])
 
         # A genome that has NO matching feature to the pdb protein
         pdb_info = {
@@ -534,9 +535,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         protein_data2, params2 = self.pdb_util._match_features(params, protein_data2)
         self.assertCountEqual(protein_data2[0].keys(),
                               ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
+        self.assertIn('protein_meta', params2['pdb_info'])
+        self.assertIn('genome_name', params2['pdb_info'])
+        self.assertIn('genome_ref', params2['pdb_info'])
         self.assertIn('feature_id', params2['pdb_info'])
-        self.assertNotIn('genome_ref', params2['pdb_info'])
-        self.assertNotIn('feature_type', params2['pdb_info'])
+        self.assertIn('feature_type', params2['pdb_info'])
+        self.assertFalse(params2['pdb_info']['protein_meta'])
 
     #@unittest.skip('test_model_file_to_data')  # Note the genome is from an Appdev narrative 42297
     def test_model_file_to_data(self):
@@ -568,9 +572,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                               ['misc', 'organism_scientific',
                                'organism_taxid', 'organ', 'other_details'])
         self.assertEqual(params1, params)
+        self.assertIn('genome_name', params1['pdb_info'])
+        self.assertIn('genome_ref', params1['pdb_info'])
         self.assertIn('feature_id', params1['pdb_info'])
-        self.assertNotIn('genome_ref', params1['pdb_info'])
-        self.assertNotIn('feature_type', params1['pdb_info'])
+        self.assertIn('feature_type', params1['pdb_info'])
+        self.assertFalse(params1['pdb_info']['protein_meta'])
 
         fileName = '5o5y.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -595,9 +601,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                                'gene', 'expression_system_taxid', 'expression_system_vector_type',
                                'organism_taxid', 'expression_system_vector'])
         self.assertEqual(params2, params)
+        self.assertIn('genome_name', params2['pdb_info'])
+        self.assertIn('genome_ref', params2['pdb_info'])
         self.assertIn('feature_id', params2['pdb_info'])
-        self.assertNotIn('genome_ref', params2['pdb_info'])
-        self.assertNotIn('feature_type', params2['pdb_info'])
+        self.assertIn('feature_type', params2['pdb_info'])
+        self.assertFalse(params2['pdb_info']['protein_meta'])
 
         fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -632,9 +640,16 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(data3['source'].keys(),
                               ['misc', 'organism_scientific', 'expression_system', 'gene',
                                'expression_system_taxid', 'strain', 'organism_taxid'])
+
+        self.assertIn('genome_name', params3['pdb_info'])
         self.assertIn('genome_ref', params3['pdb_info'])
         self.assertIn('feature_id', params3['pdb_info'])
         self.assertIn('feature_type', params3['pdb_info'])
+        self.assertTrue(params3['pdb_info']['protein_meta'])
+        self.assertIn('model_id', params3['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_id', params3['pdb_info']['protein_meta'][0])
+        self.assertIn('seq_identity', params3['pdb_info']['protein_meta'][0])
+        self.assertIn('exact_match', params3['pdb_info']['protein_meta'][0])
 
     #@unittest.skip('test_exp_file_to_data')
     def test_exp_file_to_data(self):
@@ -676,9 +691,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(data['compound'].keys(), [])
         self.assertCountEqual(data['source'].keys(), [])
 
+        self.assertIn('genome_name', params1['pdb_info'])
+        self.assertIn('genome_ref', params1['pdb_info'])
         self.assertIn('feature_id', params1['pdb_info'])
-        self.assertNotIn('genome_ref', params1['pdb_info'])
-        self.assertNotIn('feature_type', params1['pdb_info'])
+        self.assertIn('feature_type', params1['pdb_info'])
+        self.assertFalse(params1['pdb_info']['protein_meta'])
 
     #@unittest.skip('test_import_model_pdb_file_nopatch')
     def test_import_model_pdb_file_nopatch(self):
@@ -716,10 +733,15 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret = self.pdb_util.import_model_pdb_file(params, False)
         self.assertIn('structure_obj_ref', ret)
-        self.assertIn('pdb_info', ret)
+        self.assertIn('genome_name', ret['pdb_info'])
         self.assertIn('genome_ref', ret['pdb_info'])
         self.assertIn('feature_id', ret['pdb_info'])
         self.assertIn('feature_type', ret['pdb_info'])
+        self.assertTrue(ret['pdb_info']['protein_meta'])
+        self.assertIn('model_id', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_id', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('seq_identity', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('exact_match', ret['pdb_info']['protein_meta'][0])
 
     #@unittest.skip('test_import_model_pdb_file_patched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -754,10 +776,15 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret = self.pdb_util.import_model_pdb_file(params, False)
         self.assertIn('structure_obj_ref', ret)
-        self.assertIn('pdb_info', ret)
+        self.assertIn('genome_name', ret['pdb_info'])
         self.assertIn('genome_ref', ret['pdb_info'])
         self.assertIn('feature_id', ret['pdb_info'])
         self.assertIn('feature_type', ret['pdb_info'])
+        self.assertTrue(ret['pdb_info']['protein_meta'])
+        self.assertIn('model_id', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_id', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('seq_identity', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('exact_match', ret['pdb_info']['protein_meta'][0])
 
     #@unittest.skip('test_import_experiment_pdb_file_nopatch')
     def test_import_experiment_pdb_file_nopatch(self):
@@ -937,9 +964,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('rcsb_id', pdb_obj_data.keys())
         self.assertIn('release_date', pdb_obj_data.keys())
 
-    #@unittest.skip('test_batch_import_pdbs_from_metafile')
+    #@unittest.skip('test_batch_import_pdbs_from_metafile1')
+    @patch.object(PDBUtil, "STAGING_USER_FILE_PREFIX", new='/kb/module/test/data/')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
-    def test_batch_import_pdbs_from_metafile(self, download_staging_file):
+    def test_batch_import_pdbs_from_metafile1(self, download_staging_file):
         metafile = 'pdb_metafile_sample1.csv'
         metafile = os.path.join('/kb/module/test/data', metafile)
 
@@ -949,8 +977,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret[0].keys(), ["structures_ref"])  #, "report_ref", "report_name"])
+        self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
+    #@unittest.skip('test_batch_import_pdbs_from_metafile2')
+    @patch.object(PDBUtil, "STAGING_USER_FILE_PREFIX", new='/kb/module/test/data/')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_batch_import_pdbs_from_metafile2(self, download_staging_file):
         metafile = 'pdb_metafile_sample2.csv'
         metafile = os.path.join('/kb/module/test/data', metafile)
 
@@ -960,4 +992,4 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret[0].keys(), ["structures_ref"])  #, "report_ref", "report_name"])
+        self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
