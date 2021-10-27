@@ -714,9 +714,10 @@ class PDBUtil:
 
             pdb_chains = []
             seq_idens = []
-            for prot in succ_pdb['protein_meta']:
-                pdb_chains.append(prot['chain_id'])
-                seq_idens.append(prot['seq_identity'])
+            if 'protein_meta' in succ_pdb:
+                for prot in succ_pdb['protein_meta']:
+                    pdb_chains.append(prot['chain_id'])
+                    seq_idens.append(prot['seq_identity'])
 
             col_count = 3
             if i % col_count == 0:  # write col_count columns
@@ -983,14 +984,17 @@ class PDBUtil:
                 else:
                     failed_files.append(pdb_file)
 
-        if model_pdb_objects:
-            protein_structures['model_structures'] = model_pdb_objects
-        if exp_pdb_objects:
-            protein_structures['experimental_structures'] = exp_pdb_objects
+        if not model_pdb_objects:
+            logging.info("No model pdb structure was created/saved!")
+            return {}
+
+        protein_structures['model_structures'] = model_pdb_objects
+        protein_structures['experimental_structures'] = exp_pdb_objects
         protein_structures['total_structures'] = total_structures
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
         logging.info(protein_structures)
+        returnVal = {}
         try:
             info = self.dfu.save_objects({
                 'id': workspace_id,
@@ -1004,10 +1008,10 @@ class PDBUtil:
             raise
         else:
             structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
-
-        returnVal = {'structures_ref': structs_ref}
-
-        report_output = self._generate_batch_report(workspace_name, structs_ref, structures_name,
-                                                    successful_files, failed_files)
-        returnVal.update(report_output)
-        return returnVal
+            returnVal = {'structures_ref': structs_ref}
+            report_output = self._generate_batch_report(
+                        workspace_name, structs_ref, structures_name,
+                        successful_files, failed_files)
+            returnVal.update(report_output)
+        finally:
+            return returnVal
