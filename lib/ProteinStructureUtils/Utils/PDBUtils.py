@@ -29,10 +29,6 @@ from installed_clients.baseclient import ServerError as WorkspaceError
 class PDBUtil:
 
     E_VALUE_THRESH = 1e-20
-    # staging file prefix
-    STAGING_GLOBAL_FILE_PREFIX = '/data/bulk/'
-    STAGING_USER_FILE_PREFIX = '/staging/'
-    PDB_FILE_EXT = ['pdb', 'cif']
 
     def _validate_import_pdb_file_params(self, params):
         """
@@ -70,33 +66,40 @@ class PDBUtil:
 
         parser = PDB.PDBParser(PERMISSIVE=1)
         pdb1 = file_path
-        structure = parser.get_structure("test", pdb1)
-
         pp_no = 0
-        ppb = PPBuilder()
-        for pp in ppb.build_peptides(structure):
-            pp_no += 1
+        data = None
 
-        (compound, source) = self._get_compound_source(structure)
-        (num_models, model_ids) = self._get_models_from_structure(structure)
-        (num_chains, chain_ids) = self._get_chains_from_structure(structure)
-        (num_residues, residue_ids) = self._get_residues_from_structure(structure)
-        (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
-        model = structure[0]
-        protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
-        (protein_data, params) = self._match_features(params, protein_data)
+        try:
+            structure = parser.get_structure("test", pdb1)
+        except (RuntimeError, TypeError, KeyError, ValueError) as e:
+            logging.info(
+                f'PDBParser errored with message: {e.message}')
+            raise
+        else:
+            ppb = PPBuilder()
+            for pp in ppb.build_peptides(structure):
+                pp_no += 1
 
-        data = {
-            'name': structure.header.get('name', ''),
-            'num_chains': num_chains,
-            'num_residues': num_residues,
-            'num_atoms': num_atoms,
-            'compound': compound,
-            'source': source,
-            'proteins': protein_data
-        }
+            (compound, source) = self._get_compound_source(structure)
+            (num_models, model_ids) = self._get_models_from_structure(structure)
+            (num_chains, chain_ids) = self._get_chains_from_structure(structure)
+            (num_residues, residue_ids) = self._get_residues_from_structure(structure)
+            (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
+            model = structure[0]
+            protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
+            (protein_data, params) = self._match_features(params, protein_data)
 
-        return data, pp_no, params
+            data = {
+                'name': structure.header.get('name', ''),
+                'num_chains': num_chains,
+                'num_residues': num_residues,
+                'num_atoms': num_atoms,
+                'compound': compound,
+                'source': source,
+                'proteins': protein_data
+            }
+        finally:
+            return data, pp_no, params
 
     def _exp_file_to_data(self, file_path, params):
         """
@@ -107,54 +110,59 @@ class PDBUtil:
 
         parser = PDB.MMCIFParser()
         cif = file_path
-        structure = parser.get_structure("PHA-L", cif)
-        # create a dictionary that maps all mmCIF tags in an mmCIF file to their values
-        # mmcif_dict = MMCIF2Dict(cif)  # TypeError: 'module' object is not callable
-
         pp_no = 0
-        ppb = PPBuilder()
-        for pp in ppb.build_peptides(structure):
-            pp_no += 1
+        mmcif_data = None
 
-        struc_name = structure.header.get('name', '')
-        hd = self._upload_to_shock(file_path)
+        try:
+            structure = parser.get_structure("PHA-L", cif)
+        except (RuntimeError, TypeError, KeyError, ValueError) as e:
+            logging.info(
+                f'MMCIFParser errored with message: {e.message}')
+            raise
+        else:
+            ppb = PPBuilder()
+            for pp in ppb.build_peptides(structure):
+                pp_no += 1
 
-        (cpd, src) = self._get_compound_source(structure)
-        (num_models, model_ids) = self._get_models_from_structure(structure)
-        (num_chains, chain_ids) = self._get_chains_from_structure(structure)
-        (num_residues, residue_ids) = self._get_residues_from_structure(structure)
-        (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
-        protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
-        (protein_data, params) = self._match_features(params, protein_data)
+            struc_name = structure.header.get('name', '')
+            hd = self._upload_to_shock(file_path)
 
-        mmcif_data = {
-            'name': struc_name,
-            'head': structure.header.get('head', ''),
-            'rcsb_id': structure.header.get('rcsb_id', ''),
-            'deposition_date': structure.header.get('deposition_date', ''),
-            'release_date': structure.header.get('release_date', ''),
-            'structure_method': structure.header.get('structure_method', ''),
-            'resolution': structure.header.get('resolution', 0.0),
-            'structure_reference': structure.header.get('structure_reference', []),
-            'keywords': structure.header.get('keywords', ''),
-            'author': structure.header.get('author', ''),
-            'compound': cpd,
-            'source': src,
-            'num_models': num_models,
-            'num_chains': num_chains,
-            'num_residues': num_residues,
-            'num_atoms': num_atoms,
-            'num_het_atoms': structure.header.get('num_het_atoms', 0),
-            'num_water_atoms': structure.header.get('num_water_atoms', 0),
-            'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
-            'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
-            'pdb_handle': hd,
-            'mmcif_handle': hd,
-            'xml_handle': hd,
-            'proteins': protein_data
-        }
+            (cpd, src) = self._get_compound_source(structure)
+            (num_models, model_ids) = self._get_models_from_structure(structure)
+            (num_chains, chain_ids) = self._get_chains_from_structure(structure)
+            (num_residues, residue_ids) = self._get_residues_from_structure(structure)
+            (num_atoms, atom_ids) = self._get_atoms_from_structure(structure)
+            protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
+            (protein_data, params) = self._match_features(params, protein_data)
 
-        return mmcif_data, pp_no, params
+            mmcif_data = {
+                'name': struc_name,
+                'head': structure.header.get('head', ''),
+                'rcsb_id': structure.header.get('rcsb_id', ''),
+                'deposition_date': structure.header.get('deposition_date', ''),
+                'release_date': structure.header.get('release_date', ''),
+                'structure_method': structure.header.get('structure_method', ''),
+                'resolution': structure.header.get('resolution', 0.0),
+                'structure_reference': structure.header.get('structure_reference', []),
+                'keywords': structure.header.get('keywords', ''),
+                'author': structure.header.get('author', ''),
+                'compound': cpd,
+                'source': src,
+                'num_models': num_models,
+                'num_chains': num_chains,
+                'num_residues': num_residues,
+                'num_atoms': num_atoms,
+                'num_het_atoms': structure.header.get('num_het_atoms', 0),
+                'num_water_atoms': structure.header.get('num_water_atoms', 0),
+                'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
+                'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
+                'pdb_handle': hd,
+                'mmcif_handle': hd,
+                'xml_handle': hd,
+                'proteins': protein_data
+            }
+        finally:
+            return mmcif_data, pp_no, params
 
     def _match_features(self, params, protein_data):
         """
@@ -633,12 +641,11 @@ class PDBUtil:
                 missing_pdb_file = f"Please fill all the rows in column '{required_columns[3]}'!"
                 raise ValueError(missing_pdb_file)
 
-            f_name = os.path.basename(pdb_fn)
-            (struct_name, ext) = os.path.splitext(f_name)
+            (struct_name, ext) = os.path.splitext(os.path.basename(pdb_fn))
             is_model = df_meta_data[df_indexes[4]][i]
             if not pd.isna(is_model):
                 pdb_file_paths.append(
-                    {'file_path': self._get_staging_file_path(self.user_id, pdb_fn),
+                    {'file_path': pdb_fn,
                      'structure_name': struct_name,
                      'is_model': 'y' in is_model or 'Y' in is_model,
                      'narrative_id': narr_id,
@@ -654,24 +661,6 @@ class PDBUtil:
             raise ValueError(error_msg)
 
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
-
-    def _get_staging_file_path(self, token_user, staging_file_subdir_path):
-        """
-            _get_staging_file_path: return staging area file path
-            directory pattern:
-            perfered to return user specific path: /staging/sub_dir/file_name
-            If this path is not visible to user, use global bulk path:
-                        /data/bulk/user_name/sub_dir/file_name
-        """
-        user_path = os.path.join(self.STAGING_USER_FILE_PREFIX, staging_file_subdir_path.strip('/'))
-
-        if os.path.exists(user_path):
-            self.staging_path_prefix = self.STAGING_USER_FILE_PREFIX
-            return user_path
-        else:
-            self.staging_path_prefix = os.path.join(self.STAGING_GLOBAL_FILE_PREFIX, token_user)
-            return os.path.join(self.STAGING_GLOBAL_FILE_PREFIX, token_user,
-                                staging_file_subdir_path.strip('/'))
 
     def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
                                successful_paths, failed_paths):
@@ -711,9 +700,10 @@ class PDBUtil:
         for i in range(len(succ_pdb_paths)):
             succ_pdb = succ_pdb_paths[i]
             file_path = succ_pdb['file_path']
-            file_name = os.path.basename(file_path);
+            file_name = os.path.basename(file_path)
+            pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
-            shutil.copy(file_path, new_pdb_path)
+            shutil.copy(pdb_file_path, new_pdb_path)
             struct_name = succ_pdb['structure_name']
             struct_ref = succ_pdb['pdb_struct_ref']
             genome_name = succ_pdb['genome_name']
@@ -797,8 +787,9 @@ class PDBUtil:
             import_model_pdb_file: upload an experiment pdb file and convert into a
                                   KBaseStructure.ModelProteinStructure object
         """
-        logging.info(f'Importing pdb file to a pdb structure with params: {params}')
+        logging.info(f'import_model_pdb_file to a pdb structure with params: {params}')
 
+        # file_path is the pdb file's working area path (after dfu.download_staging_file call)
         file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
 
         if not isinstance(workspace_name, int):
@@ -807,9 +798,14 @@ class PDBUtil:
             workspace_id = workspace_name
 
         (data, n_polypeptides, params) = self._model_file_to_data(file_path, params)
+        if not data:
+            logging.info(f'PDB file {file_path} import with "Import ModelProteinStructure" failed!'
+                         f'You may try to import it with "Import ExperimentalProteinStructure"')
+            return {}
+
+        logging.info(data)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
-        logging.info(data)
 
         try:
             info = self.dfu.save_objects({
@@ -825,6 +821,7 @@ class PDBUtil:
         else:
             obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
             returnVal = {'structure_obj_ref': obj_ref}
+            returnVal['scratch_path'] = file_path
             if params.get('pdb_info'):
                 returnVal['pdb_info'] = params.get('pdb_info')
 
@@ -840,7 +837,9 @@ class PDBUtil:
             import_experiment_pdb_file: upload an experiment pdb file and convert into a
                                        KBaseStructure.ExperimentalProteinStructure object
         """
+        logging.info(f'import_experiment_pdb_file to a pdb structure with params: {params}')
 
+        # file_path is the pdb file's working area path (after dfu.download_staging_file call)
         file_path, workspace_name, mmcif_name = self._validate_import_pdb_file_params(params)
 
         if not isinstance(workspace_name, int):
@@ -850,8 +849,12 @@ class PDBUtil:
 
         # Parse the experimental pdb file for an experimental data structure
         (data, n_polypeptides, params) = self._exp_file_to_data(file_path, params)
-        logging.info(data)
+        if not data:
+            logging.info(f'Import {file_path} with "Import ExperimentalProteinStructure" failed!'
+                         f'You may try to import it with "Import ModelProteinStructure"')
+            return {}
 
+        logging.info(data)
         try:
             info = self.dfu.save_objects({
                 'id': workspace_id,
@@ -866,6 +869,7 @@ class PDBUtil:
         else:
             obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
             returnVal = {'structure_obj_ref': obj_ref}
+            returnVal['scratch_path'] = file_path
             if params.get('pdb_info', None):
                 returnVal['pdb_info'] = params.get('pdb_info')
 
@@ -962,6 +966,7 @@ class PDBUtil:
                     ret_strct_ref = model_pdb_ret['structure_obj_ref']
                     model_pdb_objects.append(ret_strct_ref)
                     model_pdb_ret['pdb_info']['pdb_struct_ref'] = ret_strct_ref
+                    model_pdb_ret['pdb_info']['scratch_path'] = model_pdb_ret['scratch_path']
                     successful_files.append(model_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
@@ -972,6 +977,7 @@ class PDBUtil:
                     ret_strct_ref = exp_pdb_ret['structure_obj_ref']
                     exp_pdb_objects.append(ret_strct_ref)
                     exp_pdb_ret['pdb_info']['pdb_struct_ref'] = ret_strct_ref
+                    exp_pdb_ret['pdb_info']['scratch_path'] = exp_pdb_ret['scratch_path']
                     successful_files.append(exp_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:

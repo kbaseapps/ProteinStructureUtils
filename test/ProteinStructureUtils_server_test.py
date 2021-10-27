@@ -850,7 +850,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_model_pdb_test1',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
+                                           "report_name", "scratch_path"])
 
     #@unittest.skip('test_model_upload2')
     def test_model_upload2(self):
@@ -863,7 +864,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_model_pdb_test2',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
+                                           "report_name", "scratch_path"])
 
         # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
         pdb_obj_data = self.wsClient.get_objects2(
@@ -900,7 +902,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_model_pdb_6ift',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
+                                           "report_name", "scratch_path"])
 
         # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
         pdb_obj_data = self.wsClient.get_objects2(
@@ -936,15 +939,26 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(pdb_obj_data['source']['expression_system_taxid'], '562')
         self.assertEqual(pdb_obj_data['source']['strain'], '168')
 
-    #@unittest.skip('experiment_upload')
-    def test_experiment_upload(self):
+    #@unittest.skip('test_model_upload4')
+    def test_model_upload4(self):
+        ret = self.serviceImpl.import_model_pdb_file(
+            self.ctx, {
+                'input_file_path': self.pdb_mmcif_file_path,
+                'structure_name': 'import_cif_as_pdb',
+                'workspace_name': self.wsName,
+            })[0]
+        self.assertFalse(ret)
+
+    #@unittest.skip('test_experiment_upload1')
+    def test_experiment_upload1(self):
         ret = self.serviceImpl.import_experiment_pdb_file(
             self.ctx, {
                 'input_file_path': self.pdb_mmcif_file_path,
                 'structure_name': 'import_mmcif_test',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
+                                           "report_name", "scratch_path"])
 
         # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
         pdb_obj_data = self.wsClient.get_objects2(
@@ -964,8 +978,20 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('rcsb_id', pdb_obj_data.keys())
         self.assertIn('release_date', pdb_obj_data.keys())
 
+    #@unittest.skip('test_experiment_upload2')
+    def test_experiment_upload2(self):
+        fileName = '1fat.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+        ret = self.serviceImpl.import_experiment_pdb_file(
+            self.ctx, {
+                'input_file_path': pdb_file_path,
+                'structure_name': 'import_pdb_as_exp',
+                'workspace_name': self.wsName,
+            })[0]
+        self.assertFalse(ret)
+
     #@unittest.skip('test_batch_import_pdbs_from_metafile1')
-    @patch.object(PDBUtil, "STAGING_USER_FILE_PREFIX", new='/kb/module/test/data/')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_from_metafile1(self, download_staging_file):
         metafile = 'pdb_metafile_sample1.csv'
@@ -980,7 +1006,6 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
     #@unittest.skip('test_batch_import_pdbs_from_metafile2')
-    @patch.object(PDBUtil, "STAGING_USER_FILE_PREFIX", new='/kb/module/test/data/')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_from_metafile2(self, download_staging_file):
         metafile = 'pdb_metafile_sample2.csv'
