@@ -691,13 +691,13 @@ class PDBUtil:
 
     def _write_pdb_htmls(self, output_dir, succ_pdb_paths):
         """ Write the batch pdb info in a 3 column table of 'cards' into HTML files"""
-        pdb_html = '<h2>PDBs successfully uploaded</h2>'
-        row_html = ''
+        pdb_html = ''
         srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
         srv_base_url = f'https://{srv_domain}'
         logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
         for i in range(len(succ_pdb_paths)):
+            row_html = '<tr>'
             succ_pdb = succ_pdb_paths[i]
             file_path = succ_pdb['file_path']
             file_name = os.path.basename(file_path)
@@ -710,7 +710,7 @@ class PDBUtil:
             genome_ref = succ_pdb['genome_ref']
             feat_id = succ_pdb['feature_id']
             feat_type = succ_pdb['feature_type']
-            print(succ_pdb)
+            #print(succ_pdb)
 
             pdb_chains = []
             seq_idens = []
@@ -719,27 +719,23 @@ class PDBUtil:
                     pdb_chains.append(prot['chain_id'])
                     seq_idens.append(prot['seq_identity'])
 
-            col_count = 3
-            if i % col_count == 0:  # write col_count columns
-                if row_html:  # close the row tags before opening a new row tag
-                    row_html += '</div>'
-                row_html += '<div class="row">'
-
-            row_html += '<div class="column"><div class="card">'
-            row_html += (f'<h3><a href="{srv_base_url}/#dataview/{struct_ref}" target="_blank">'
-                         f'{struct_name} Data View</a> or <a href="#" '
+            row_html += (f'<td>{struct_name}<a href="{srv_base_url}/#dataview/{struct_ref}"'
+                         f' target="_blank"> Data View</a> or <a href="#" '
                          f'onclick="showModal(\'{struct_name}\',\'{file_name}\');return false;">'
-                         f'Structure View</a></h3>'
-                         f'<p>Genome: <a href="{srv_base_url}/#dataview/{genome_ref}"'
-                         f' target="_blank">{genome_name}</a></p>'
-                         f'<p>Feature: {feat_id}, type: {feat_type}</p>')
+                         f'Structure View</a></td>')
+            row_html += (f'<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
+                         f' target="_blank">{genome_name}</a></td>'
+                         f'<td>{feat_id}</td><td>{feat_type}</td>')
             if pdb_chains:
-                row_html += f'<p>Chains: {pdb_chains}</p>'
+                row_html += f'<td>{pdb_chains}</td>'
+            else:
+                row_html += f'<td>[]</td>'
             if seq_idens:
-                row_html += f'<p>Sequence identity: {seq_idens}</p>'
-            row_html += '</div></div>'
-        row_html += '</div>'
-        pdb_html += row_html
+                row_html += f'<td>{seq_idens}</td>'
+            else:
+                row_html += f'<td>[]</td>'
+            row_html += '</tr>'
+            pdb_html += row_html
         return pdb_html
 
     def _generate_batch_report_html(self, prot_structs_name, succ_pdb_paths):
