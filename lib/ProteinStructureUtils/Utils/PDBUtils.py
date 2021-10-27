@@ -714,7 +714,7 @@ class PDBUtil:
 
             pdb_chains = []
             seq_idens = []
-            if succ_pdb['protein_meta']:
+            if 'protein_meta' in succ_pdb:
                 for prot in succ_pdb['protein_meta']:
                     pdb_chains.append(prot['chain_id'])
                     seq_idens.append(prot['seq_identity'])
