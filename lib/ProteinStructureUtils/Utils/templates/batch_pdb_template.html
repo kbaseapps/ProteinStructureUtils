@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width" initial-scale=1">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
     <style>
         * {
           box-sizing: border-box;
@@ -11,23 +12,6 @@
 
         body {
           font-family: Arial, Helvetica, sans-serif;
-        }
-
-        /* Float 3 columns side by side */
-        .column {
-          float: left;
-          width: 33%;
-          padding: 0 5px;
-        }
-
-        /* Remove extra left and right margins, due to padding */
-        .row {margin: 0 -5px;}
-
-        /* Clear floats after the columns */
-        .row:after {
-          content: "";
-          display: table;
-          clear: both;
         }
 
         /* Responsive columns */
@@ -39,20 +23,11 @@
           }
         }
 
-        /* Style the counter cards */
-        .card {
-          box-shadow: 0 0 8px 0 rgba(0, 0, 0, 0.5);
-          padding: 10px;
-          text-align: center;
-          background-color: #f1f1f1;
-          height: 230px;
-        }
-
         /* Style the structure area */
         .viewer_3Dmoljs {
-            height: 550px;
-            width: 100%;
-            position: relative;
+          height: 400px;
+          width: 100%;
+          position: relative;
         }
 
         /* Style the modal window */
@@ -113,6 +88,9 @@
           padding: 0 var(--gap) var(--gap) var(--gap);
         }
     </style>
+
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
     <script>
         function showModal(titleHtml, pdb_path) {
           const modal = document.createElement("div");
@@ -127,13 +105,13 @@
           modal.classList.add("modal");
           modal.innerHTML = `
                 <div class="modal__inner">
+                    <div class="modal__content">${contentHtml}</div>
                     <div class="modal__top">
                         <div class="modal__title">${titleHtml}</div>
                         <button class="modal__close" type="button">
                             <span class="material-icons">close</span>
                         </button>
                     </div>
-                    <div class="modal__content">${contentHtml}</div>
                 </div>
             `;
             modal.querySelector(".modal__close").addEventListener("click", () => {
@@ -146,11 +124,23 @@
 
           document.body.appendChild(modal);
         }
+
+        $(document).ready( function () {
+            $('#pdbs').DataTable();
+        });
     </script>
 </head>
 <body>
     <!--Begin PDBs successfully uploaded-->
-    <!--replace this content--> 
+    <h2>PDBs successfully uploaded</h2>
+    <table id="pdbs" class="display" style="width: 100%;">
+        <thead>
+            <tr><th>Structure</th><th>Genome</th><th>Feature</th><th>Feature Type</th><th>Chains</th><th>Sequence identity</th></tr>
+        </thead>
+        <tbody>
+            <!--replace this content-->
+        </tbody>
+    </table>
     <!--End PDBs successfully uploaded-->
  
 </body>
