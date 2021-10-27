@@ -936,8 +936,18 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(pdb_obj_data['source']['expression_system_taxid'], '562')
         self.assertEqual(pdb_obj_data['source']['strain'], '168')
 
-    #@unittest.skip('experiment_upload')
-    def test_experiment_upload(self):
+    #@unittest.skip('test_model_upload4')
+    def test_model_upload4(self):
+        ret = self.serviceImpl.import_model_pdb_file(
+            self.ctx, {
+                'input_file_path': self.pdb_mmcif_file_path,
+                'structure_name': 'import_cif_as_pdb',
+                'workspace_name': self.wsName,
+            })[0]
+        self.assertFalse(ret)
+
+    #@unittest.skip('test_experiment_upload1')
+    def test_experiment_upload1(self):
         ret = self.serviceImpl.import_experiment_pdb_file(
             self.ctx, {
                 'input_file_path': self.pdb_mmcif_file_path,
@@ -963,6 +973,19 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('xml_handle', pdb_obj_data.keys())
         self.assertIn('rcsb_id', pdb_obj_data.keys())
         self.assertIn('release_date', pdb_obj_data.keys())
+
+    #@unittest.skip('test_experiment_upload2')
+    def test_experiment_upload2(self):
+        fileName = '1fat.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+        ret = self.serviceImpl.import_experiment_pdb_file(
+            self.ctx, {
+                'input_file_path': pdb_file_path,
+                'structure_name': 'import_pdb_as_exp',
+                'workspace_name': self.wsName,
+            })[0]
+        self.assertFalse(ret)
 
     #@unittest.skip('test_batch_import_pdbs_from_metafile1')
     @patch.object(PDBUtil, "STAGING_USER_FILE_PREFIX", new='/kb/module/test/data/')
