@@ -516,12 +516,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', params1['pdb_info'])
         self.assertIn('feature_id', params1['pdb_info'])
         self.assertIn('feature_type', params1['pdb_info'])
-        self.assertIn('protein_meta', params1['pdb_info'])
-        self.assertTrue(params1['pdb_info']['protein_meta'])
-        self.assertIn('model_id', params1['pdb_info']['protein_meta'][0])
-        self.assertIn('chain_id', params1['pdb_info']['protein_meta'][0])
-        self.assertIn('seq_identity', params1['pdb_info']['protein_meta'][0])
-        self.assertIn('exact_match', params1['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_ids', params1['pdb_info'])
+        self.assertIn('model_ids', params1['pdb_info'])
+        self.assertIn('sequence_identities', params1['pdb_info'])
+        self.assertIn('exact_matches', params1['pdb_info'])
 
         # A genome that has NO matching feature to the pdb protein
         pdb_info = {
@@ -535,12 +533,14 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         protein_data2, params2 = self.pdb_util._match_features(params, protein_data2)
         self.assertCountEqual(protein_data2[0].keys(),
                               ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertIn('protein_meta', params2['pdb_info'])
         self.assertIn('genome_name', params2['pdb_info'])
         self.assertIn('genome_ref', params2['pdb_info'])
         self.assertIn('feature_id', params2['pdb_info'])
         self.assertIn('feature_type', params2['pdb_info'])
-        self.assertFalse(params2['pdb_info']['protein_meta'])
+        self.assertNotIn('chain_ids', params2['pdb_info'])
+        self.assertNotIn('model_ids', params2['pdb_info'])
+        self.assertNotIn('sequence_identities', params2['pdb_info'])
+        self.assertNotIn('exact_matches', params2['pdb_info'])
 
     #@unittest.skip('test_model_file_to_data')  # Note the genome is from an Appdev narrative 42297
     def test_model_file_to_data(self):
@@ -576,7 +576,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', params1['pdb_info'])
         self.assertIn('feature_id', params1['pdb_info'])
         self.assertIn('feature_type', params1['pdb_info'])
-        self.assertFalse(params1['pdb_info']['protein_meta'])
+        self.assertNotIn('chain_ids', params1['pdb_info'])
+        self.assertNotIn('model_ids', params1['pdb_info'])
+        self.assertNotIn('sequence_identities', params1['pdb_info'])
+        self.assertNotIn('exact_matches', params1['pdb_info'])
 
         fileName = '5o5y.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -605,7 +608,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', params2['pdb_info'])
         self.assertIn('feature_id', params2['pdb_info'])
         self.assertIn('feature_type', params2['pdb_info'])
-        self.assertFalse(params2['pdb_info']['protein_meta'])
+        self.assertNotIn('chain_ids', params2['pdb_info'])
+        self.assertNotIn('model_ids', params2['pdb_info'])
+        self.assertNotIn('sequence_identities', params2['pdb_info'])
+        self.assertNotIn('exact_matches', params2['pdb_info'])
 
         fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -645,11 +651,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', params3['pdb_info'])
         self.assertIn('feature_id', params3['pdb_info'])
         self.assertIn('feature_type', params3['pdb_info'])
-        self.assertTrue(params3['pdb_info']['protein_meta'])
-        self.assertIn('model_id', params3['pdb_info']['protein_meta'][0])
-        self.assertIn('chain_id', params3['pdb_info']['protein_meta'][0])
-        self.assertIn('seq_identity', params3['pdb_info']['protein_meta'][0])
-        self.assertIn('exact_match', params3['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_ids', params3['pdb_info'])
+        self.assertIn('model_ids', params3['pdb_info'])
+        self.assertIn('sequence_identities', params3['pdb_info'])
+        self.assertIn('exact_matches', params3['pdb_info'])
 
     #@unittest.skip('test_exp_file_to_data')
     def test_exp_file_to_data(self):
@@ -695,7 +700,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', params1['pdb_info'])
         self.assertIn('feature_id', params1['pdb_info'])
         self.assertIn('feature_type', params1['pdb_info'])
-        self.assertFalse(params1['pdb_info']['protein_meta'])
+        self.assertNotIn('chain_ids', params1['pdb_info'])
+        self.assertNotIn('model_ids', params1['pdb_info'])
+        self.assertNotIn('sequence_identities', params1['pdb_info'])
+        self.assertNotIn('exact_matches', params1['pdb_info'])
 
     #@unittest.skip('test_import_model_pdb_file_nopatch')
     def test_import_model_pdb_file_nopatch(self):
@@ -737,11 +745,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', ret['pdb_info'])
         self.assertIn('feature_id', ret['pdb_info'])
         self.assertIn('feature_type', ret['pdb_info'])
-        self.assertTrue(ret['pdb_info']['protein_meta'])
-        self.assertIn('model_id', ret['pdb_info']['protein_meta'][0])
-        self.assertIn('chain_id', ret['pdb_info']['protein_meta'][0])
-        self.assertIn('seq_identity', ret['pdb_info']['protein_meta'][0])
-        self.assertIn('exact_match', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_ids', ret['pdb_info'])
+        self.assertIn('model_ids', ret['pdb_info'])
+        self.assertIn('sequence_identities', ret['pdb_info'])
+        self.assertIn('exact_matches', ret['pdb_info'])
 
     #@unittest.skip('test_import_model_pdb_file_patched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -780,11 +787,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('genome_ref', ret['pdb_info'])
         self.assertIn('feature_id', ret['pdb_info'])
         self.assertIn('feature_type', ret['pdb_info'])
-        self.assertTrue(ret['pdb_info']['protein_meta'])
-        self.assertIn('model_id', ret['pdb_info']['protein_meta'][0])
-        self.assertIn('chain_id', ret['pdb_info']['protein_meta'][0])
-        self.assertIn('seq_identity', ret['pdb_info']['protein_meta'][0])
-        self.assertIn('exact_match', ret['pdb_info']['protein_meta'][0])
+        self.assertIn('chain_ids', ret['pdb_info'])
+        self.assertIn('model_ids', ret['pdb_info'])
+        self.assertIn('sequence_identities', ret['pdb_info'])
+        self.assertIn('exact_matches', ret['pdb_info'])
 
     #@unittest.skip('test_import_experiment_pdb_file_nopatch')
     def test_import_experiment_pdb_file_nopatch(self):

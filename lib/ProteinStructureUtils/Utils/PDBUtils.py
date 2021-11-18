@@ -199,7 +199,10 @@ class PDBUtil:
             # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
             # proteins' translationsto to get the seq_identity and exact_match
             if feat_prot_seq:
-                pdb_info['protein_meta'] = []
+                pdb_chain_ids = []
+                pdb_model_ids = []
+                pdb_seq_idens = []
+                pdb_exact_matches = []
                 for prot in protein_data:
                     seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
                                                                           prot.get('sequence', ''))
@@ -211,11 +214,19 @@ class PDBUtil:
                         prot['genome_ref'] = gn_ref
                         prot['feature_id'] = feature_id
                         prot['feature_type'] = feature_type
-                        pdb_info['protein_meta'].append({
-                            'model_id': prot['model_id'],
-                            'chain_id': prot['chain_id'],
-                            'seq_identity': prot['seq_identity'],
-                            'exact_match': prot['exact_match']})
+                        pdb_chain_ids.append(prot['chain_id'])
+                        pdb_model_ids.append(str(prot['model_id']))
+                        pdb_seq_idens.append(str(prot['seq_identity']))
+                        pdb_exact_matches.append(str(prot['exact_match']))
+
+                if pdb_chain_ids:
+                    pdb_info['chain_ids'] = ','.join(pdb_chain_ids)
+                if pdb_model_ids:
+                    pdb_info['model_ids'] = ','.join(pdb_model_ids)
+                if pdb_seq_idens:
+                    pdb_info['sequence_identities'] = ','.join(pdb_seq_idens)
+                if pdb_exact_matches:
+                    pdb_info['exact_matches'] = ','.join(pdb_exact_matches)
             else:
                 logging.info(f'Found NO feature in genome that matches with {feature_id}')
 
@@ -696,28 +707,30 @@ class PDBUtil:
         srv_base_url = f'https://{srv_domain}'
         logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
-        for i in range(len(succ_pdb_paths)):
+        for succ_pdb in succ_pdb_paths:
             row_html = '<tr>'
-            succ_pdb = succ_pdb_paths[i]
             file_path = succ_pdb['file_path']
             file_name = os.path.basename(file_path)
             pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
+
             struct_name = succ_pdb['structure_name']
             struct_ref = succ_pdb['pdb_struct_ref']
             genome_name = succ_pdb['genome_name']
             genome_ref = succ_pdb['genome_ref']
             feat_id = succ_pdb['feature_id']
             feat_type = succ_pdb['feature_type']
-            #print(succ_pdb)
 
             pdb_chains = []
+            pdb_models = []
             seq_idens = []
-            if 'protein_meta' in succ_pdb:
-                for prot in succ_pdb['protein_meta']:
-                    pdb_chains.append(prot['chain_id'])
-                    seq_idens.append(prot['seq_identity'])
+            if succ_pdb.get('chain_ids', None):
+                pdb_chains = succ_pdb['chain_ids'].split()
+            if succ_pdb.get('model_ids', None):
+                pdb_models = succ_pdb['model_ids'].split()
+            if succ_pdb.get('squence_identities', None):
+                seq_idens = succ_pdb['sequence_identities'].split()
 
             row_html += (f'<td>{struct_name}<a href="{srv_base_url}/#dataview/{struct_ref}"'
                          f' target="_blank"> Data View</a> or <a href="#" '
@@ -726,14 +739,9 @@ class PDBUtil:
             row_html += (f'<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                          f' target="_blank">{genome_name}</a></td>'
                          f'<td>{feat_id}</td><td>{feat_type}</td>')
-            if pdb_chains:
-                row_html += f'<td>{pdb_chains}</td>'
-            else:
-                row_html += f'<td>[]</td>'
-            if seq_idens:
-                row_html += f'<td>{seq_idens}</td>'
-            else:
-                row_html += f'<td>[]</td>'
+            row_html += f'<td>{pdb_models}</td>'
+            row_html += f'<td>{pdb_chains}</td>'
+            row_html += f'<td>{seq_idens}</td>'
             row_html += '</tr>'
             pdb_html += row_html
         return pdb_html
@@ -803,6 +811,7 @@ class PDBUtil:
         logging.info(data)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
+        pdb_info = params.get('pdb_info', None)
 
         try:
             info = self.dfu.save_objects({
@@ -810,6 +819,7 @@ class PDBUtil:
                 'objects': [
                     {'type': 'KBaseStructure.ModelProteinStructure',
                      'name': pdb_name,
+                     'meta': pdb_info,
                      'data': data}]
             })[0]
         except WorkspaceError as e:
@@ -852,12 +862,14 @@ class PDBUtil:
             return {}
 
         logging.info(data)
+        pdb_info = params.get('pdb_info', None)
         try:
             info = self.dfu.save_objects({
                 'id': workspace_id,
                 'objects': [
                     {'type': 'KBaseStructure.ExperimentalProteinStructure',
                      'name': mmcif_name,
+                     'meta': pdb_info,
                      'data': data}]
             })[0]
         except WorkspaceError as e:
