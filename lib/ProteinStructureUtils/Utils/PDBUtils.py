@@ -28,7 +28,11 @@ from installed_clients.baseclient import ServerError as WorkspaceError
 
 class PDBUtil:
 
+    # “Expect Value” threshold to restrict which alignments will be significant
     E_VALUE_THRESH = 1e-20
+
+    # BLAST sequence identity threshold to determine which pdb structures will be matched to a KBase genome/feature
+    B_IDENTITY_THRESH = 0.6
 
     def _validate_import_pdb_file_params(self, params):
         """
@@ -89,15 +93,19 @@ class PDBUtil:
             protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
             (protein_data, params) = self._match_features(params, protein_data)
 
-            data = {
-                'name': structure.header.get('name', ''),
-                'num_chains': num_chains,
-                'num_residues': num_residues,
-                'num_atoms': num_atoms,
-                'compound': compound,
-                'source': source,
-                'proteins': protein_data
-            }
+            pdb_info = params.get('pdb_info', None)
+            if pdb_info and pdb_info.get('sequence_identities', None):
+                data = {
+                    'name': structure.header.get('name', ''),
+                    'num_chains': num_chains,
+                    'num_residues': num_residues,
+                    'num_atoms': num_atoms,
+                    'compound': compound,
+                    'source': source,
+                    'proteins': protein_data
+                }
+            else:
+                data = {}
         finally:
             return data, pp_no, params
 
@@ -135,32 +143,36 @@ class PDBUtil:
             protein_data = self._get_proteins_by_structure(structure, model_ids[0], file_path)
             (protein_data, params) = self._match_features(params, protein_data)
 
-            mmcif_data = {
-                'name': struc_name,
-                'head': structure.header.get('head', ''),
-                'rcsb_id': structure.header.get('rcsb_id', ''),
-                'deposition_date': structure.header.get('deposition_date', ''),
-                'release_date': structure.header.get('release_date', ''),
-                'structure_method': structure.header.get('structure_method', ''),
-                'resolution': structure.header.get('resolution', 0.0),
-                'structure_reference': structure.header.get('structure_reference', []),
-                'keywords': structure.header.get('keywords', ''),
-                'author': structure.header.get('author', ''),
-                'compound': cpd,
-                'source': src,
-                'num_models': num_models,
-                'num_chains': num_chains,
-                'num_residues': num_residues,
-                'num_atoms': num_atoms,
-                'num_het_atoms': structure.header.get('num_het_atoms', 0),
-                'num_water_atoms': structure.header.get('num_water_atoms', 0),
-                'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
-                'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
-                'pdb_handle': hd,
-                'mmcif_handle': hd,
-                'xml_handle': hd,
-                'proteins': protein_data
-            }
+            pdb_info = params.get('pdb_info', None)
+            if pdb_info and pdb_info.get('sequence_identities', None):
+                mmcif_data = {
+                    'name': struc_name,
+                    'head': structure.header.get('head', ''),
+                    'rcsb_id': structure.header.get('rcsb_id', ''),
+                    'deposition_date': structure.header.get('deposition_date', ''),
+                    'release_date': structure.header.get('release_date', ''),
+                    'structure_method': structure.header.get('structure_method', ''),
+                    'resolution': structure.header.get('resolution', 0.0),
+                    'structure_reference': structure.header.get('structure_reference', []),
+                    'keywords': structure.header.get('keywords', ''),
+                    'author': structure.header.get('author', ''),
+                    'compound': cpd,
+                    'source': src,
+                    'num_models': num_models,
+                    'num_chains': num_chains,
+                    'num_residues': num_residues,
+                    'num_atoms': num_atoms,
+                    'num_het_atoms': structure.header.get('num_het_atoms', 0),
+                    'num_water_atoms': structure.header.get('num_water_atoms', 0),
+                    'num_disordered_atoms': structure.header.get('num_disordered_atoms', 0),
+                    'num_disordered_residues': structure.header.get('num_disordered_residues', 0),
+                    'pdb_handle': hd,
+                    'mmcif_handle': hd,
+                    'xml_handle': hd,
+                    'proteins': protein_data
+                }
+            else:
+                mmcif_data = {}
         finally:
             return mmcif_data, pp_no, params
 
@@ -175,60 +187,62 @@ class PDBUtil:
         """
         pdb_info = params.get('pdb_info', None)
         if pdb_info:
-            feature_type = ''
-            feat_prot_seq = ''
+            kb_feature_type = ''
+            kb_feature_seq = ''
             genome_name = pdb_info['genome_name']
             narr_id = pdb_info['narrative_id']
             feature_id = pdb_info['feature_id']
 
             logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
             # 1. Get the genome's features and reference
-            (gn_ref, gn_features) = self._get_genome_ref_features(narr_id, genome_name)
+            (gn_ref, kb_genome_features) = self._get_genome_ref_features(narr_id, genome_name)
             pdb_info['genome_ref'] = gn_ref
 
             # 2. Match the genome features with the specified feature_id to obtain feature sequence
-            for feat in gn_features:
+            for feat in kb_genome_features:
                 if feat['id'] == feature_id:
                     logging.info(f'Found genome feature match for {feature_id}')
-                    prot_trans = feat['protein_translation']
-                    feat_prot_seq = prot_trans
-                    feature_type = self._get_feature_type(feat)
+                    kb_feature_type = self._get_feature_type(feat)
+                    kb_feature_seq = feat.get('protein_translation', '')
                     break
-            pdb_info['feature_type'] = feature_type
+            pdb_info['feature_type'] = kb_feature_type
 
             # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
             # proteins' translationsto to get the seq_identity and exact_match
-            if feat_prot_seq:
+            if kb_feature_seq:
                 pdb_chain_ids = []
                 pdb_model_ids = []
                 pdb_seq_idens = []
                 pdb_exact_matches = []
                 for prot in protein_data:
-                    seq_idens, seq_mats = self._compute_sequence_identity(feat_prot_seq,
+                    seq_idens, seq_mats = self._compute_sequence_identity(kb_feature_seq,
                                                                           prot.get('sequence', ''))
                     if seq_idens:
                         seq_idens.sort()
                         max_iden = seq_idens.pop()
-                        prot['seq_identity'] = max_iden
-                        prot['exact_match'] = 1 if max_iden > 0.99 else 0
-                        prot['genome_ref'] = gn_ref
-                        prot['feature_id'] = feature_id
-                        prot['feature_type'] = feature_type
-                        pdb_chain_ids.append(prot['chain_id'])
-                        pdb_model_ids.append(str(prot['model_id']))
-                        pdb_seq_idens.append(str(prot['seq_identity']))
-                        pdb_exact_matches.append(str(prot['exact_match']))
+                        if max_iden >= self.B_IDENTITY_THRESH:  # get the good matches
+                            prot['seq_identity'] = max_iden
+                            prot['exact_match'] = 1 if max_iden > 0.99 else 0
+                            prot['genome_ref'] = gn_ref
+                            prot['feature_id'] = feature_id
+                            prot['feature_type'] = kb_feature_type
+                            pdb_chain_ids.append(prot['chain_id'])
+                            pdb_model_ids.append(str(prot['model_id']))
+                            pdb_seq_idens.append(str(prot['seq_identity']))
+                            pdb_exact_matches.append(str(prot['exact_match']))
 
+                if pdb_seq_idens:
+                    pdb_info['sequence_identities'] = ','.join(pdb_seq_idens)
                 if pdb_chain_ids:
                     pdb_info['chain_ids'] = ','.join(pdb_chain_ids)
                 if pdb_model_ids:
                     pdb_info['model_ids'] = ','.join(pdb_model_ids)
-                if pdb_seq_idens:
-                    pdb_info['sequence_identities'] = ','.join(pdb_seq_idens)
                 if pdb_exact_matches:
                     pdb_info['exact_matches'] = ','.join(pdb_exact_matches)
             else:
                 logging.info(f'Found NO feature in genome that matches with {feature_id}')
+        else:
+            logging.info('NO KBase genome/feature object info were given for uploading')
 
         return protein_data, params
 
@@ -674,17 +688,20 @@ class PDBUtil:
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
     def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
-                               successful_paths, failed_paths):
+                               successful_paths, failed_pdbs):
         """
             _generate_batch_report: generate summary report for upload
         """
+
         output_html_files = self._generate_batch_report_html(structs_name, successful_paths)
 
-        failed_files = ','.join(failed_paths)
-        description = (f'Imported PDBs into a ProteinStructures object {structs_ref}, '
-                       f'named {structs_name}')
-        if failed_files:
-            description += f', with files "{failed_files}" failed to load.'
+        description = (f'Imported PDBs into a ProteinStructures object "{structs_ref}", '
+                       f'named "{structs_name}".')
+
+        if failed_pdbs:
+            failed_files = ','.join(failed_pdbs)
+            description += f' These files "{failed_files}" failed to load.'
+
         report_params = {'message': f'You have uploaded a batch of PDB files into {structs_name}.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
@@ -729,7 +746,7 @@ class PDBUtil:
                 pdb_chains = succ_pdb['chain_ids'].split()
             if succ_pdb.get('model_ids', None):
                 pdb_models = succ_pdb['model_ids'].split()
-            if succ_pdb.get('squence_identities', None):
+            if succ_pdb.get('sequence_identities', None):
                 seq_idens = succ_pdb['sequence_identities'].split()
 
             row_html += (f'<td>{struct_name}<a href="{srv_base_url}/#dataview/{struct_ref}"'
@@ -961,15 +978,15 @@ class PDBUtil:
 
         pdb_params = {}
         # loop through the list of pdb_file_paths
-        for pdb_file in pdb_file_paths:
-            pdb_params['input_staging_file_path'] = pdb_file['file_path']
+        for pdb in pdb_file_paths:
+            pdb_params['pdb_info'] = pdb
+            pdb_params['input_staging_file_path'] = pdb['file_path']
             pdb_params['input_file_path'] = None
             pdb_params['input_shock_id'] = None
             pdb_params['workspace_name'] = workspace_name
-            pdb_params['structure_name'] = pdb_file['structure_name']
-            pdb_params['pdb_info'] = pdb_file
+            pdb_params['structure_name'] = pdb['structure_name']
 
-            if pdb_file['is_model']:
+            if pdb['is_model']:
                 model_pdb_ret = self.import_model_pdb_file(pdb_params, False)
                 if model_pdb_ret:
                     ret_strct_ref = model_pdb_ret['structure_obj_ref']
@@ -979,7 +996,7 @@ class PDBUtil:
                     successful_files.append(model_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
-                    failed_files.append(pdb_file)
+                    failed_files.append(pdb['file_path'])
             else:
                 exp_pdb_ret = self.import_experiment_pdb_file(pdb_params, False)
                 if exp_pdb_ret:
@@ -990,7 +1007,7 @@ class PDBUtil:
                     successful_files.append(exp_pdb_ret['pdb_info'])
                     total_structures += 1
                 else:
-                    failed_files.append(pdb_file)
+                    failed_files.append(pdb['file_path'])
 
         if not model_pdb_objects:
             logging.info("No model pdb structure was created/saved!")

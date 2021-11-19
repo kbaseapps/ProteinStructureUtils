@@ -558,7 +558,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         params = {'pdb_info': pdb_info}
         (data1, pp_no1, params1) = self.pdb_util._model_file_to_data(pdb_file_path, params)
+        self.assertFalse(data1)
 
+        ## The following checks were true when no sequence_identity threshold was imposed.##
+        """
         self.assertEqual(pp_no1, 7)
         self.assertEqual(data1['name'], 'phytohemagglutinin-l')
         self.assertEqual(data1['num_chains'], 4)
@@ -580,12 +583,16 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertNotIn('model_ids', params1['pdb_info'])
         self.assertNotIn('sequence_identities', params1['pdb_info'])
         self.assertNotIn('exact_matches', params1['pdb_info'])
+        """
 
         fileName = '5o5y.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
         (data2, pp_no2, params2) = self.pdb_util._model_file_to_data(pdb_file_path, params)
+        self.assertFalse(data2)
 
+        ## The following checks were true when no sequence_identity threshold was imposed.##
+        """
         self.assertEqual(pp_no2, 2)
         self.assertEqual(
             data2['name'],
@@ -612,6 +619,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertNotIn('model_ids', params2['pdb_info'])
         self.assertNotIn('sequence_identities', params2['pdb_info'])
         self.assertNotIn('exact_matches', params2['pdb_info'])
+        """
 
         fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -674,6 +682,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (data, pp_no, params1) = self.pdb_util._exp_file_to_data(pdb_file_path, params)
 
         self.assertEqual(pp_no, 7)
+        ## The following checks were true when no sequence_identity threshold was imposed.##
+        """
         self.assertEqual(data['name'], 'PHYTOHEMAGGLUTININ-L')
         self.assertEqual(data['head'], 'LECTIN')
         self.assertEqual(data['rcsb_id'], '')
@@ -704,6 +714,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertNotIn('model_ids', params1['pdb_info'])
         self.assertNotIn('sequence_identities', params1['pdb_info'])
         self.assertNotIn('exact_matches', params1['pdb_info'])
+        """
 
     #@unittest.skip('test_import_model_pdb_file_nopatch')
     def test_import_model_pdb_file_nopatch(self):
@@ -719,8 +730,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.pdb_util.import_model_pdb_file(params, False)
-        self.assertIn('structure_obj_ref', ret)
-        self.assertNotIn('pdb_info', ret)
+        self.assertFalse(ret)
 
         fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -763,8 +773,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.pdb_util.import_model_pdb_file(params, False)
-        self.assertIn('structure_obj_ref', ret)
-        self.assertNotIn('pdb_info', ret)
+        self.assertFalse(ret)
 
         fileName = '6ift.pdb'
         narr_id = 57196
@@ -806,8 +815,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.pdb_util.import_experiment_pdb_file(params, False)
-        self.assertIn('structure_obj_ref', ret)
-        self.assertNotIn('pdb_info', ret)
+        self.assertFalse(ret)
 
     #@unittest.skip('test_import_experiment_pdb_file_pathched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -822,8 +830,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.pdb_util.import_experiment_pdb_file(params, False)
-        self.assertIn('structure_obj_ref', ret)
-        self.assertNotIn('pdb_info', ret)
+        self.assertFalse(ret)
 
     # Testing self.serviceImpl functions
     #@unittest.skip('test_structure_to_pdb_file')
@@ -856,8 +863,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_model_pdb_test1',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
-                                           "report_name", "scratch_path"])
+        self.assertFalse(ret)
 
     #@unittest.skip('test_model_upload2')
     def test_model_upload2(self):
@@ -870,32 +876,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_model_pdb_test2',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
-                                           "report_name", "scratch_path"])
-
-        # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
-        pdb_obj_data = self.wsClient.get_objects2(
-            {'objects': [{'ref': ret['structure_obj_ref']}]})['data'][0]['data']
-        self.assertEqual(pdb_obj_data['name'], 'phytohemagglutinin-l')
-        self.assertEqual(pdb_obj_data['num_chains'], 4)
-        self.assertEqual(pdb_obj_data['num_residues'], 928)
-        self.assertEqual(pdb_obj_data['num_atoms'], 7248)
-        self.assertCountEqual(pdb_obj_data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertCountEqual(pdb_obj_data['compound'].keys(),
-                              ['misc', 'molecule', 'chain', 'synonym'])
-        self.assertEqual(pdb_obj_data['compound']['molecule'], 'phytohemagglutinin-l')
-        self.assertEqual(pdb_obj_data['compound']['chain'], 'a, b, c, d')
-        self.assertEqual(pdb_obj_data['compound']['synonym'],
-                         'leucoagglutinating phytohemagglutinin, pha-l')
-        self.assertCountEqual(pdb_obj_data['source'].keys(),
-                              ['misc', 'organism_scientific',
-                               'organism_taxid', 'organ', 'other_details'])
-        self.assertEqual(pdb_obj_data['source']['organism_scientific'], 'phaseolus vulgaris')
-        self.assertEqual(pdb_obj_data['source']['organism_taxid'], '3885')
-        self.assertEqual(pdb_obj_data['source']['organ'], 'seed')
-        self.assertEqual(pdb_obj_data['source']['other_details'],
-                         'purified pha-l was purchased from sigma')
+        self.assertFalse(ret)
 
     #@unittest.skip('test_model_upload3')
     def test_model_upload3(self):
@@ -908,42 +889,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_model_pdb_6ift',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
-                                           "report_name", "scratch_path"])
-
-        # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
-        pdb_obj_data = self.wsClient.get_objects2(
-            {'objects': [{'ref': ret['structure_obj_ref']}]})['data'][0]['data']
-        self.assertEqual(pdb_obj_data['name'], 'ksga from bacillus subtilis in complex with sam')
-        self.assertEqual(pdb_obj_data['num_chains'], 1)
-        self.assertEqual(pdb_obj_data['num_residues'], 292)
-        self.assertEqual(pdb_obj_data['num_atoms'], 2508)
-        self.assertCountEqual(pdb_obj_data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertTrue(set(pdb_obj_data['compound'].keys()).issuperset(
-                        set(['misc', 'molecule', 'chain', 'synonym'])))
-        self.assertIn('ec', pdb_obj_data['compound'].keys())
-        self.assertIn('ec_number', pdb_obj_data['compound'].keys())
-        self.assertIn('engineered', pdb_obj_data['compound'].keys())
-        self.assertEqual(pdb_obj_data['compound']['molecule'],
-                         'ribosomal rna small subunit methyltransferase a')
-        self.assertEqual(pdb_obj_data['compound']['chain'], 'a')
-        self.assertEqual(set(pdb_obj_data['compound']['synonym'].split(',')),
-                         set(["16s rrna (adenine(1518)-n(6)/adenine(1519)-n(6))-dimethyltransferase",
-                              "16s rrna dimethyladenosine transferase",
-                              "16s rrna dimethylase",
-                              "s-adenosylmethionine-6-n'",
-                              "n'-adenosyl(rrna) dimethyltransferase "]))
-        self.assertCountEqual(pdb_obj_data['source'].keys(),
-                              ['misc', 'organism_scientific', 'strain', 'gene',
-                               'organism_taxid', 'expression_system', 'expression_system_taxid'])
-        self.assertEqual(pdb_obj_data['source']['organism_scientific'],
-                         'bacillus subtilis (strain 168)')
-        self.assertEqual(pdb_obj_data['source']['organism_taxid'], '224308')
-        self.assertEqual(pdb_obj_data['source']['gene'], 'rsma, ksga, bsu00420')
-        self.assertEqual(pdb_obj_data['source']['expression_system'], 'escherichia coli')
-        self.assertEqual(pdb_obj_data['source']['expression_system_taxid'], '562')
-        self.assertEqual(pdb_obj_data['source']['strain'], '168')
+        self.assertFalse(ret)
 
     #@unittest.skip('test_model_upload4')
     def test_model_upload4(self):
@@ -963,26 +909,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'structure_name': 'import_mmcif_test',
                 'workspace_name': self.wsName,
             })[0]
-        self.assertCountEqual(ret.keys(), ["structure_obj_ref", "report_ref",
-                                           "report_name", "scratch_path"])
-
-        # Check saved object with the ref value of ret['structure_obj_ref'] against datatype
-        pdb_obj_data = self.wsClient.get_objects2(
-            {'objects': [{'ref': ret['structure_obj_ref']}]})['data'][0]['data']
-        self.assertEqual(pdb_obj_data['name'], 'PHYTOHEMAGGLUTININ-L')
-        self.assertEqual(pdb_obj_data['head'], 'LECTIN')
-        self.assertEqual(pdb_obj_data['deposition_date'], '1996-06-12')
-        self.assertEqual(pdb_obj_data['resolution'], 2.8)
-        self.assertEqual(pdb_obj_data['structure_method'], 'X-RAY DIFFRACTION')
-        self.assertEqual(pdb_obj_data['compound'], {})
-        self.assertEqual(pdb_obj_data['source'], {})
-        self.assertCountEqual(pdb_obj_data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertIn('mmcif_handle', pdb_obj_data.keys())
-        self.assertIn('pdb_handle', pdb_obj_data.keys())
-        self.assertIn('xml_handle', pdb_obj_data.keys())
-        self.assertIn('rcsb_id', pdb_obj_data.keys())
-        self.assertIn('release_date', pdb_obj_data.keys())
+        self.assertFalse(ret)
 
     #@unittest.skip('test_experiment_upload2')
     def test_experiment_upload2(self):
