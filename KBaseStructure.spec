@@ -180,8 +180,8 @@ module KBaseStructure {
     @optional experimental_structures description
   */
   typedef structure {
-    list<structure_ref> model_structures;
-    list<structure_ref> experimental_structures;
+    list<ModelProteinStructure> model_structures;
+    list<ExperimentalProteinStructure> experimental_structures;
     int total_structures;
     string description;
   } ProteinStructures;
