@@ -718,7 +718,8 @@ class PDBUtil:
         return report_output
 
     def _write_pdb_htmls(self, output_dir, succ_pdb_paths):
-        """ Write the batch pdb info in a 3 column table of 'cards' into HTML files"""
+        """ Write the batch pdb info as a jQuery DataTable into HTML files"""
+
         pdb_html = ''
         srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
         srv_base_url = f'https://{srv_domain}'
