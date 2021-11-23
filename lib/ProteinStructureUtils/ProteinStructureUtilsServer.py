@@ -338,26 +338,14 @@ class Application(object):
         self.serverlog.set_log_level(6)
         self.rpc_service = JSONRPCServiceCustom()
         self.method_authentication = dict()
-        self.rpc_service.add(impl_ProteinStructureUtils.structure_to_pdb_file,
-                             name='ProteinStructureUtils.structure_to_pdb_file',
-                             types=[dict])
-        self.method_authentication['ProteinStructureUtils.structure_to_pdb_file'] = 'required'  # noqa
-        self.rpc_service.add(impl_ProteinStructureUtils.export_pdb,
-                             name='ProteinStructureUtils.export_pdb',
-                             types=[dict])
-        self.method_authentication['ProteinStructureUtils.export_pdb'] = 'required'  # noqa
-        self.rpc_service.add(impl_ProteinStructureUtils.import_model_pdb_file,
-                             name='ProteinStructureUtils.import_model_pdb_file',
-                             types=[dict])
-        self.method_authentication['ProteinStructureUtils.import_model_pdb_file'] = 'required'  # noqa
-        self.rpc_service.add(impl_ProteinStructureUtils.import_experiment_pdb_file,
-                             name='ProteinStructureUtils.import_experiment_pdb_file',
-                             types=[dict])
-        self.method_authentication['ProteinStructureUtils.import_experiment_pdb_file'] = 'required'  # noqa
         self.rpc_service.add(impl_ProteinStructureUtils.batch_import_pdbs_from_metafile,
                              name='ProteinStructureUtils.batch_import_pdbs_from_metafile',
                              types=[dict])
         self.method_authentication['ProteinStructureUtils.batch_import_pdbs_from_metafile'] = 'required'  # noqa
+        self.rpc_service.add(impl_ProteinStructureUtils.export_pdb_structures,
+                             name='ProteinStructureUtils.export_pdb_structures',
+                             types=[dict])
+        self.method_authentication['ProteinStructureUtils.export_pdb_structures'] = 'required'  # noqa
         self.rpc_service.add(impl_ProteinStructureUtils.status,
                              name='ProteinStructureUtils.status',
                              types=[dict])

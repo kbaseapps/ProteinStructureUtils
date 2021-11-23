@@ -907,18 +907,18 @@ class PDBUtil:
                 returnVal.update(report_output)
             return returnVal
 
-    def export_pdb(self, params):
+    def _export_pdb(self, params):
         """
-            export_pdb: return the shock_id of the uploaded pdb object
+            _export_pdb: return the shock_id of the uploaded pdb object
         """
         if "input_ref" not in params:
             raise ValueError("'input_ref' not in supplied params")
 
         return {'shock_id': self._get_pdb_shock_id(params['input_ref'])}
 
-    def structure_to_pdb_file(self, params):
+    def _structure_to_pdb_file(self, params):
         """
-            structure_to_pdb_file: get the file path for the given pdb object
+            _structure_to_pdb_file: get the file path for the given pdb object
         """
         if "input_ref" not in params:
             raise ValueError("input_ref not in supplied params")
@@ -933,6 +933,23 @@ class PDBUtil:
         })['file_path']
 
         return {'file_path': file_path}
+
+    def export_pdb_structures(self, params):
+        """
+            export_pdb_structures: return the shock_ids of the ProteinStructures object
+        """
+        if "input_ref" not in params:
+            raise ValueError("'input_ref' not in supplied params")
+
+        model_pdbs = []
+        exp_pdbs = []
+        shock_ids = []
+        for m_pdb in model_pdbs:
+            pass
+        for e_pdb in exp_pdbs:
+            pass
+
+        return shock_ids
 
     def batch_import_pdbs(self, params):
         """

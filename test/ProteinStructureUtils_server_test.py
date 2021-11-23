@@ -454,6 +454,28 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             pdb_data[0].keys(),
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
 
+    #@unittest.skip('test_structure_to_pdb_file')
+    def test_structure_to_pdb_file(self):
+        ret = self.pdb_util._structure_to_pdb_file({'input_ref': self.pdb_ref,
+                                                    'destination_dir': self.scratch})
+        self.assertEqual(ret['file_path'], os.path.join(self.scratch, '1nqg.pdb'))
+
+    #@unittest.skip('test_export_pdb_structure')
+    def test_export_pdb_structure(self):
+        ret = self.pdb_util._export_pdb({'input_ref': self.pdb_ref})
+        self.assertCountEqual(ret.keys(), ['shock_id'])
+
+    #@unittest.skip('test_structure_to_mmcif_file')
+    def test_structure_to_mmcif_file(self):
+        ret = self.pdb_util._structure_to_pdb_file({'input_ref': self.pdb_mmCif_ref,
+                                                    'destination_dir': self.scratch})
+        self.assertEqual(ret['file_path'], os.path.join(self.scratch, '1fat.cif'))
+
+    #@unittest.skip('test_export_mmcif_structure')
+    def test_export_mmcif_structure(self):
+        ret = self.pdb_util._export_pdb({'input_ref': self.pdb_mmCif_ref})
+        self.assertCountEqual(ret.keys(), ['shock_id'])
+
     #@unittest.skip('test_compute_sequence_identity')
     def test_compute_sequence_identity(self):
         seq1 = 'TGTGACTA'
@@ -560,66 +582,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (data1, pp_no1, params1) = self.pdb_util._model_file_to_data(pdb_file_path, params)
         self.assertFalse(data1)
 
-        ## The following checks were true when no sequence_identity threshold was imposed.##
-        """
-        self.assertEqual(pp_no1, 7)
-        self.assertEqual(data1['name'], 'phytohemagglutinin-l')
-        self.assertEqual(data1['num_chains'], 4)
-        self.assertEqual(data1['num_residues'], 928)
-        self.assertEqual(data1['num_atoms'], 7248)
-        self.assertEqual(len(data1['proteins']), data1['num_chains'])
-        self.assertCountEqual(data1['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertCountEqual(data1['compound'].keys(), ['misc', 'molecule', 'chain', 'synonym'])
-        self.assertCountEqual(data1['source'].keys(),
-                              ['misc', 'organism_scientific',
-                               'organism_taxid', 'organ', 'other_details'])
-        self.assertEqual(params1, params)
-        self.assertIn('genome_name', params1['pdb_info'])
-        self.assertIn('genome_ref', params1['pdb_info'])
-        self.assertIn('feature_id', params1['pdb_info'])
-        self.assertIn('feature_type', params1['pdb_info'])
-        self.assertNotIn('chain_ids', params1['pdb_info'])
-        self.assertNotIn('model_ids', params1['pdb_info'])
-        self.assertNotIn('sequence_identities', params1['pdb_info'])
-        self.assertNotIn('exact_matches', params1['pdb_info'])
-        """
-
         fileName = '5o5y.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
         shutil.copy(os.path.join('data', fileName), pdb_file_path)
         (data2, pp_no2, params2) = self.pdb_util._model_file_to_data(pdb_file_path, params)
         self.assertFalse(data2)
-
-        ## The following checks were true when no sequence_identity threshold was imposed.##
-        """
-        self.assertEqual(pp_no2, 2)
-        self.assertEqual(
-            data2['name'],
-            'crystal structure of thermococcus litoralis adp-dependent glucokinase (gk)')
-        self.assertEqual(data2['num_chains'], 2)
-        self.assertEqual(data2['num_residues'], 903)
-        self.assertEqual(data2['num_atoms'], 8013)
-        self.assertEqual(len(data2['proteins']), data2['num_chains'])
-        self.assertCountEqual(data2['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertCountEqual(data2['compound'].keys(),
-                              ['misc', 'molecule', 'chain', 'synonym', 'ec_number', 'ec',
-                               'engineered'])
-        self.assertCountEqual(data2['source'].keys(),
-                              ['misc', 'organism_scientific', 'expression_system',
-                               'gene', 'expression_system_taxid', 'expression_system_vector_type',
-                               'organism_taxid', 'expression_system_vector'])
-        self.assertEqual(params2, params)
-        self.assertIn('genome_name', params2['pdb_info'])
-        self.assertIn('genome_ref', params2['pdb_info'])
-        self.assertIn('feature_id', params2['pdb_info'])
-        self.assertIn('feature_type', params2['pdb_info'])
-        self.assertNotIn('chain_ids', params2['pdb_info'])
-        self.assertNotIn('model_ids', params2['pdb_info'])
-        self.assertNotIn('sequence_identities', params2['pdb_info'])
-        self.assertNotIn('exact_matches', params2['pdb_info'])
-        """
 
         fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -682,39 +649,6 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (data, pp_no, params1) = self.pdb_util._exp_file_to_data(pdb_file_path, params)
 
         self.assertEqual(pp_no, 7)
-        ## The following checks were true when no sequence_identity threshold was imposed.##
-        """
-        self.assertEqual(data['name'], 'PHYTOHEMAGGLUTININ-L')
-        self.assertEqual(data['head'], 'LECTIN')
-        self.assertEqual(data['rcsb_id'], '')
-        self.assertEqual(data['deposition_date'], '1996-06-12')
-        self.assertEqual(data['release_date'], '')
-        self.assertEqual(data['structure_method'], 'X-RAY DIFFRACTION')
-        self.assertEqual(data['resolution'], 2.8)
-        self.assertEqual(data['compound'], {})
-        self.assertEqual(data['source'], {})
-        self.assertTrue('pdb_handle' in data.keys())
-        self.assertEqual(len(data['proteins']), data['num_chains'])
-        self.assertCountEqual(data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertEqual(data['num_chains'], 4)
-        self.assertEqual(data['num_residues'], 928)
-        self.assertEqual(data['num_atoms'], 7248)
-        self.assertEqual(len(data['proteins']), data['num_chains'])
-        self.assertCountEqual(data['proteins'][0].keys(),
-                              ['id', 'sequence', 'md5', 'model_id', 'chain_id'])
-        self.assertCountEqual(data['compound'].keys(), [])
-        self.assertCountEqual(data['source'].keys(), [])
-
-        self.assertIn('genome_name', params1['pdb_info'])
-        self.assertIn('genome_ref', params1['pdb_info'])
-        self.assertIn('feature_id', params1['pdb_info'])
-        self.assertIn('feature_type', params1['pdb_info'])
-        self.assertNotIn('chain_ids', params1['pdb_info'])
-        self.assertNotIn('model_ids', params1['pdb_info'])
-        self.assertNotIn('sequence_identities', params1['pdb_info'])
-        self.assertNotIn('exact_matches', params1['pdb_info'])
-        """
 
     #@unittest.skip('test_import_model_pdb_file_nopatch')
     def test_import_model_pdb_file_nopatch(self):
@@ -833,97 +767,6 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertFalse(ret)
 
     # Testing self.serviceImpl functions
-    #@unittest.skip('test_structure_to_pdb_file')
-    def test_structure_to_pdb_file(self):
-        ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_ref,
-                                                                'destination_dir': self.scratch})
-        self.assertEqual(ret[0]['file_path'], os.path.join(self.scratch, '1nqg.pdb'))
-
-    #@unittest.skip('test_export_pdb_structure')
-    def test_export_pdb_structure(self):
-        ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_ref})
-        self.assertCountEqual(ret[0].keys(), ['shock_id'])
-
-    #@unittest.skip('test_structure_to_mmcif_file')
-    def test_structure_to_mmcif_file(self):
-        ret = self.serviceImpl.structure_to_pdb_file(self.ctx, {'input_ref': self.pdb_mmCif_ref,
-                                                                'destination_dir': self.scratch})
-        self.assertEqual(ret[0]['file_path'], os.path.join(self.scratch, '1fat.cif'))
-
-    #@unittest.skip('test_export_mmcif_structure')
-    def test_export_mmcif_structure(self):
-        ret = self.serviceImpl.export_pdb(self.ctx, {'input_ref': self.pdb_mmCif_ref})
-        self.assertCountEqual(ret[0].keys(), ['shock_id'])
-
-    #@unittest.skip('test_model_upload1')
-    def test_model_upload1(self):
-        ret = self.serviceImpl.import_model_pdb_file(
-            self.ctx, {
-                'input_file_path': self.pdb_file_path,
-                'structure_name': 'import_model_pdb_test1',
-                'workspace_name': self.wsName,
-            })[0]
-        self.assertFalse(ret)
-
-    #@unittest.skip('test_model_upload2')
-    def test_model_upload2(self):
-        fileName = '1fat.pdb'
-        pdb_file_path = os.path.join(self.scratch, fileName)
-        shutil.copy(os.path.join('data', fileName), pdb_file_path)
-        ret = self.serviceImpl.import_model_pdb_file(
-            self.ctx, {
-                'input_file_path': pdb_file_path,
-                'structure_name': 'import_model_pdb_test2',
-                'workspace_name': self.wsName,
-            })[0]
-        self.assertFalse(ret)
-
-    #@unittest.skip('test_model_upload3')
-    def test_model_upload3(self):
-        fileName = '6ift.pdb'
-        pdb_file_path = os.path.join(self.scratch, fileName)
-        shutil.copy(os.path.join('data', fileName), pdb_file_path)
-        ret = self.serviceImpl.import_model_pdb_file(
-            self.ctx, {
-                'input_file_path': pdb_file_path,
-                'structure_name': 'import_model_pdb_6ift',
-                'workspace_name': self.wsName,
-            })[0]
-        self.assertFalse(ret)
-
-    #@unittest.skip('test_model_upload4')
-    def test_model_upload4(self):
-        ret = self.serviceImpl.import_model_pdb_file(
-            self.ctx, {
-                'input_file_path': self.pdb_mmcif_file_path,
-                'structure_name': 'import_cif_as_pdb',
-                'workspace_name': self.wsName,
-            })[0]
-        self.assertFalse(ret)
-
-    #@unittest.skip('test_experiment_upload1')
-    def test_experiment_upload1(self):
-        ret = self.serviceImpl.import_experiment_pdb_file(
-            self.ctx, {
-                'input_file_path': self.pdb_mmcif_file_path,
-                'structure_name': 'import_mmcif_test',
-                'workspace_name': self.wsName,
-            })[0]
-        self.assertFalse(ret)
-
-    #@unittest.skip('test_experiment_upload2')
-    def test_experiment_upload2(self):
-        fileName = '1fat.pdb'
-        pdb_file_path = os.path.join(self.scratch, fileName)
-        shutil.copy(os.path.join('data', fileName), pdb_file_path)
-        ret = self.serviceImpl.import_experiment_pdb_file(
-            self.ctx, {
-                'input_file_path': pdb_file_path,
-                'structure_name': 'import_pdb_as_exp',
-                'workspace_name': self.wsName,
-            })[0]
-        self.assertFalse(ret)
-
     #@unittest.skip('test_batch_import_pdbs_from_metafile1')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_from_metafile1(self, download_staging_file):
@@ -951,3 +794,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
+
+    @unittest.skip('test_export_pdb_structures')
+    def test_export_pdb_structures(self, download_staging_file):
+        params = {'object_ref': '62713/24/1'}
+        ret = self.serviceImpl.export_pdb_structures(params)
