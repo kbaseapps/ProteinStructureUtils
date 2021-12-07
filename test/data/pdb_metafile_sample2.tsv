@@ -1,5 +1,8 @@
-Narrative ID	Object name (Genome AMA feature set)	Feature ID	PDB filename	Is model
-50569	JCVI_Syn3.kbase	JCVISYN3_0001	1fat.pdb	yes
-50569	JCVI_Syn3.kbase	JCVISYN3_0002	1nqg.pdb	yes
-50569	JCVI_Syn3.kbase	JCVISYN3_0003	1fat.cif	no
-50569	JCVI_Syn3.kbase	JCVISYN3_0004	5o5y.pdb	yes
+Narrative ID	Object name (Genome AMA feature set)	Feature ID	PDB filename	Is model	From RCSB
+50569	JCVI_Syn3.kbase	JCVISYN3_0001	1fat.pdb	yes	yes
+50569	JCVI_Syn3.kbase	JCVISYN3_0002	1nqg.pdb	yes	yes
+50569	JCVI_Syn3.kbase	JCVISYN3_0003	1fat.cif	no	no
+50569	JCVI_Syn3.kbase	JCVISYN3_0004	5o5y.pdb	yes	yes
+57196	JCVI_Syn3.kbase	JCVISYN3_0004	6ift	yes	yes
+57197	JCVI_Syn3.kbase	JCVISYN3_0004	6ifv	no	no
+57198	JCVI_Syn3.kbase	JCVISYN3_0004	6ifw	yes	yes

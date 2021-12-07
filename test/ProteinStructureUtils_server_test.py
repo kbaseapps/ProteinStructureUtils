@@ -200,6 +200,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             self.assertEqual(len(col_list), 7)
 
         required_cols.append('Is model')
+        required_cols.append('From RCSB')
         metafile = 'pdb_metafile_sample1b.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
@@ -216,9 +217,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret_df = self.pdb_util._read_file_by_type(meta_file_path)
         self.assertCountEqual(ret_df.columns, required_cols)
         for col in required_cols:
-            self.assertEqual(len(ret_df[col]), 4)
+            self.assertEqual(len(ret_df[col]), 7)
             col_list = ret_df[col].values.tolist()
-            self.assertEqual(len(col_list), 4)
+            self.assertEqual(len(col_list), 7)
 
     #@unittest.skip('test_read_file_by_type_tsv')
     def test_read_file_by_type_tsv(self):
@@ -236,6 +237,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             self.assertEqual(len(col_list), 7)
 
         required_cols.append('Is model')
+        required_cols.append('From RCSB')
         metafile = 'pdb_metafile_sample1c.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
@@ -252,9 +254,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret_df = self.pdb_util._read_file_by_type(meta_file_path)
         self.assertCountEqual(ret_df.columns, required_cols)
         for col in required_cols:
-            self.assertEqual(len(ret_df[col]), 4)
+            self.assertEqual(len(ret_df[col]), 7)
             col_list = ret_df[col].values.tolist()
-            self.assertEqual(len(col_list), 4)
+            self.assertEqual(len(col_list), 7)
 
     #@unittest.skip('test_read_file_by_type_xlsx')
     def test_read_file_by_type_xlsx(self):
@@ -272,6 +274,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             self.assertEqual(len(col_list), 7)
 
         required_cols.append('Is model')
+        required_cols.append('From RCSB')
         metafile = 'pdb_metafile_sample1d.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
         shutil.copy(os.path.join('data', metafile), meta_file_path)
@@ -289,9 +292,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret_df = self.pdb_util._read_file_by_type(meta_file_path)
         self.assertCountEqual(ret_df.columns, required_cols)
         for col in required_cols:
-            self.assertEqual(len(ret_df[col]), 4)
+            self.assertEqual(len(ret_df[col]), 7)
             col_list = ret_df[col].values.tolist()
-            self.assertEqual(len(col_list), 4)
+            self.assertEqual(len(col_list), 7)
 
     #@unittest.skip('test_incomplete_parse_metadata_csv_files')
     def test_parse_incomplete_metadata_csv_files(self):
@@ -415,12 +418,13 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (pdb_data, narr_ids, genome_objs,
             feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-        self.assertEqual(len(pdb_data), 4)
-        self.assertEqual(len(genome_objs), 4)
-        self.assertEqual(len(feature_ids), 4)
+        self.assertEqual(len(pdb_data), 7)
+        self.assertEqual(len(genome_objs), 7)
+        self.assertEqual(len(feature_ids), 7)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
+             'feature_id', 'from_rcsb'])
 
     #@unittest.skip('test_parse_complete_metadata_tsv_file')
     def test_parse_complete_metadata_tsv_file(self):
@@ -430,13 +434,14 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (pdb_data, narr_ids, genome_objs,
             feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-        self.assertEqual(len(pdb_data), 4)
-        self.assertEqual(len(narr_ids), 4)
-        self.assertEqual(len(genome_objs), 4)
-        self.assertEqual(len(feature_ids), 4)
+        self.assertEqual(len(pdb_data), 7)
+        self.assertEqual(len(narr_ids), 7)
+        self.assertEqual(len(genome_objs), 7)
+        self.assertEqual(len(feature_ids), 7)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
+             'feature_id', 'from_rcsb'])
 
     #@unittest.skip('test_parse_complete_metadata_xlsx_file')
     def test_parse_complete_metadata_xlsx_file(self):
@@ -446,13 +451,14 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (pdb_data, narr_ids, genome_objs,
             feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-        self.assertEqual(len(pdb_data), 4)
-        self.assertEqual(len(narr_ids), 4)
-        self.assertEqual(len(genome_objs), 4)
-        self.assertEqual(len(feature_ids), 4)
+        self.assertEqual(len(pdb_data), 7)
+        self.assertEqual(len(narr_ids), 7)
+        self.assertEqual(len(genome_objs), 7)
+        self.assertEqual(len(feature_ids), 7)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id', 'feature_id'])
+            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
+             'feature_id', 'from_rcsb'])
 
     #@unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
@@ -796,6 +802,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
     @unittest.skip('test_export_pdb_structures')
-    def test_export_pdb_structures(self, download_staging_file):
-        params = {'object_ref': '62713/24/1'}
-        ret = self.serviceImpl.export_pdb_structures(params)
+    def test_export_pdb_structures(self):
+        params = {'input_ref': '62713/24/1'}  # '62713/24/1' is in CI, so skipped here.
+        ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
+        print(ret)
+        self.assertCountEqual(ret[0].keys(), ['shock_id'])

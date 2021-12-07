@@ -952,7 +952,7 @@ class PDBUtil:
         """
             export_pdb_structures: return the shock_ids of the ProteinStructures object
         """
-        if "input_ref" not in params:
+        if 'input_ref' not in params:
             raise ValueError("'input_ref' not in supplied params")
 
         model_pdbs = []
@@ -963,7 +963,7 @@ class PDBUtil:
         for e_pdb in exp_pdbs:
             pass
 
-        return shock_ids
+        return {'shock_id': self._get_pdb_shock_id(params['input_ref'])}
 
     def batch_import_pdbs(self, params):
         """

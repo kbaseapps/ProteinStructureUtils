@@ -24,7 +24,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "e70eb78ca6636dc4cb2177e825da7b664393bbbb"
+    GIT_COMMIT_HASH = "e3fa454e548690312f32e34f0b865fce65b4547c"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -83,7 +83,7 @@ class ProteinStructureUtils:
            -> structure: parameter "input_ref" of type "obj_ref" (An X/Y/Z
            style reference @id ws)
         :returns: instance of type "ExportStructOutput" -> structure:
-           parameter "shock_ids" of list of String
+           parameter "shock_id" of list of String
         """
         # ctx is the context object
         # return variables are: result
