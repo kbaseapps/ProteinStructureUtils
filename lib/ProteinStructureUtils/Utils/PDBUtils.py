@@ -725,16 +725,23 @@ class PDBUtil:
         srv_base_url = f'https://{srv_domain}'
         logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
+        molstar_html_file = os.path.join(os.path.dirname(__file__), 'templates', 'molstar_viewer.html')
+        molstar_js_file = os.path.join(os.path.dirname(__file__), 'templates', 'molstar.js')
+        molstar_css_file = os.path.join(os.path.dirname(__file__), 'templates', 'molstar.css')
+        shutil.copy(molstar_html_file, os.path.join(output_dir, 'molstar_viewer.html'))
+        shutil.copy(molstar_js_file, os.path.join(output_dir, 'molstar.js'))
+        shutil.copy(molstar_css_file, os.path.join(output_dir, 'molstar.css'))
+
         for succ_pdb in succ_pdb_paths:
             row_html = '<tr>'
             file_path = succ_pdb['file_path']
-            file_name = os.path.basename(file_path)
+            #file_name = os.path.basename(file_path)
             pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
 
-            struct_name = succ_pdb['structure_name']
-            struct_ref = succ_pdb['pdb_struct_ref']
+            struct_nm = succ_pdb['structure_name'].upper()
+            #struct_ref = succ_pdb['pdb_struct_ref']
             genome_name = succ_pdb['genome_name']
             genome_ref = succ_pdb['genome_ref']
             feat_id = succ_pdb['feature_id']
@@ -750,10 +757,10 @@ class PDBUtil:
             if succ_pdb.get('sequence_identities', None):
                 seq_idens = succ_pdb['sequence_identities'].split()
 
-            row_html += (f'<td>{struct_name}<a href="{srv_base_url}/#dataview/{struct_ref}"'
-                         f' target="_blank"> Data View</a> or <a href="#" '
-                         f'onclick="showModal(\'{struct_name}\',\'{file_name}\');return false;">'
-                         f'Structure View</a></td>')
+            row_html += (f'<td>{struct_nm}<a href="https://www.rcsb.org/3d-view/{struct_nm}"'
+                         f' target="_blank"> RCSB Structure</a>'
+                         f' or <a href="molstar_viewer.html"'
+                         f' target="_blank"> MolStar Viewer</a></td>')
             row_html += (f'<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                          f' target="_blank">{genome_name}</a></td>'
                          f'<td>{feat_id}</td><td>{feat_type}</td>')
