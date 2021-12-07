@@ -584,7 +584,7 @@ class PDBUtil:
         logging.info(f'Reading input from file: {file_path}...')
 
         if not self._validate_file(file_path):
-            raise ValueError('Input file is invalid or not found')
+            raise ValueError('Input file is invalid or not found!')
 
         df = None
         file_ext = pathlib.Path(file_path).suffix
@@ -597,7 +597,7 @@ class PDBUtil:
                 # handle xls, xlsx, xlsm, xlsb, odf, ods and odt file extensions
                 df = pd.read_excel(file_path, index_col=None, engine='openpyxl')
             else:  # invalid file type
-                error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted"
+                error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted!"
                 raise ValueError(error_msg)
             # strip off the leading and trailing whitespaces of the column names
             df.columns = df.columns.str.strip()
@@ -618,13 +618,12 @@ class PDBUtil:
         logging.info(f'parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                            'PDB filename', 'Is model']
+                            'PDB filename', 'Is model', 'From RCSB']
 
         pdb_file_paths = list()
         narrative_ids = list()
         genome_names = list()
         feature_ids = list()
-        PDB_filenames = list()
 
         # df_meta_data is a Panda DataFrame object
         df_meta_data = self._read_file_by_type(metadata_file_path)
@@ -660,22 +659,25 @@ class PDBUtil:
                 raise ValueError(missing_feature_id)
 
             pdb_fn = df_meta_data[df_indexes[3]][i]  # pdb_fn does not have staging dir prefix
-            if not pd.isna(pdb_fn):
-                PDB_filenames.append(pdb_fn)
-            else:
+            if pd.isna(pdb_fn):
                 missing_pdb_file = f"Please fill all the rows in column '{required_columns[3]}'!"
                 raise ValueError(missing_pdb_file)
-
             (struct_name, ext) = os.path.splitext(os.path.basename(pdb_fn))
+
+            from_rcsb = df_meta_data[df_indexes[5]][i]  # pdb file source, default to 'yes'
+            if pd.isna(from_rcsb):
+                from_rcsb = 'yes'
+
             is_model = df_meta_data[df_indexes[4]][i]
             if not pd.isna(is_model):
                 pdb_file_paths.append(
                     {'file_path': pdb_fn,
                      'structure_name': struct_name,
-                     'is_model': 'y' in is_model or 'Y' in is_model,
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
-                     'feature_id': feat_id}
+                     'feature_id': feat_id,
+                     'is_model': 'y' in is_model or 'Y' in is_model,
+                     'from_rcsb': 'y' in from_rcsb or 'Y' in from_rcsb}
                 )
             else:
                 missing_pdb_md = f"Please fill all the rows in columns '{required_columns[4]}'!"
@@ -718,7 +720,9 @@ class PDBUtil:
         return report_output
 
     def _write_pdb_htmls(self, output_dir, succ_pdb_paths):
-        """ Write the batch pdb info as a jQuery DataTable into HTML files"""
+        """
+            _write_pdb_htmls: write the batch pdb info as a jQuery DataTable into HTML files
+        """
 
         pdb_html = ''
         srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
@@ -735,17 +739,16 @@ class PDBUtil:
         for succ_pdb in succ_pdb_paths:
             row_html = '<tr>'
             file_path = succ_pdb['file_path']
-            #file_name = os.path.basename(file_path)
             pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
 
             struct_nm = succ_pdb['structure_name'].upper()
-            #struct_ref = succ_pdb['pdb_struct_ref']
             genome_name = succ_pdb['genome_name']
             genome_ref = succ_pdb['genome_ref']
             feat_id = succ_pdb['feature_id']
             feat_type = succ_pdb['feature_type']
+            src_rcsb = succ_pdb['from_rcsb']
 
             pdb_chains = []
             pdb_models = []
@@ -757,10 +760,14 @@ class PDBUtil:
             if succ_pdb.get('sequence_identities', None):
                 seq_idens = succ_pdb['sequence_identities'].split()
 
-            row_html += (f'<td>{struct_nm}<a href="https://www.rcsb.org/3d-view/{struct_nm}"'
-                         f' target="_blank"> RCSB Structure</a>'
-                         f' or <a href="molstar_viewer.html"'
-                         f' target="_blank"> MolStar Viewer</a></td>')
+            if src_rcsb:
+                row_html += (f'<td>{struct_nm}<a href="https://www.rcsb.org/3d-view/{struct_nm}"'
+                             f' target="_blank"> RCSB Structure</a></td>')
+            else:
+                row_html += (f'<td>{struct_nm}<a href="./molstar_viewer.html"'
+                             f' or <a href="molstar_viewer.html"'
+                             f' target="_blank"> MolStar Viewer</a></td>')
+
             row_html += (f'<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                          f' target="_blank">{genome_name}</a></td>'
                          f'<td>{feat_id}</td><td>{feat_type}</td>')
