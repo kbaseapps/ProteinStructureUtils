@@ -71,13 +71,12 @@ class PDBUtil:
         parser = PDB.PDBParser(PERMISSIVE=1)
         pdb1 = file_path
         pp_no = 0
-        data = None
+        data = {}
 
         try:
             structure = parser.get_structure("test", pdb1)
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
-            logging.info(
-                f'PDBParser errored with message: {e.message}')
+            logging.info(f'PDBParser errored with message: {e.message}')
             raise
         else:
             ppb = PPBuilder()
@@ -483,11 +482,18 @@ class PDBUtil:
             fh.close()
             return True
 
+    def _dfu_get_objects(self, obj_ref):
+        """
+            _dfu_get_objects: call dfu.get_objects to return object data and info
+        """
+        obj = self.dfu.get_objects({"object_refs": [obj_ref]})['data'][0]
+        return obj['data'], obj['info']
+
     def _get_pdb_shock_id(self, obj_ref):
         """
             _get_pdb_shock_id: Return the shock id for the PDB file
         """
-        obj_data = self.dfu.get_objects({"object_refs": [obj_ref]})['data'][0]['data']
+        obj_data, obj_info = self._dfu_get_objects(obj_ref)
         return self.hs.hids_to_handles([obj_data['pdb_handle']])[0]['id']
 
     def _upload_to_shock(self, file_path):
@@ -601,7 +607,7 @@ class PDBUtil:
                 raise ValueError(error_msg)
             # strip off the leading and trailing whitespaces of the column names
             df.columns = df.columns.str.strip()
-        except WorkspaceError as e:
+        except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
             logging.info(
                 f'Reading file {file_path} errored with message: {e.message} and data: {e.data}')
             raise
@@ -690,12 +696,12 @@ class PDBUtil:
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
     def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
-                               successful_paths, failed_pdbs):
+                               pdb_infos, failed_pdbs):
         """
             _generate_batch_report: generate summary report for upload
         """
 
-        output_html_files = self._generate_batch_report_html(structs_name, successful_paths)
+        output_html_files = self._generate_batch_report_html(structs_name, pdb_infos)
 
         description = (f'Imported PDBs into a ProteinStructures object "{structs_ref}", '
                        f'named "{structs_name}".')
@@ -719,7 +725,7 @@ class PDBUtil:
 
         return report_output
 
-    def _write_pdb_htmls(self, output_dir, succ_pdb_paths):
+    def _write_pdb_htmls(self, output_dir, succ_pdb_infos):
         """
             _write_pdb_htmls: write the batch pdb info as a jQuery DataTable into HTML files
         """
@@ -736,7 +742,7 @@ class PDBUtil:
         shutil.copy(molstar_js_file, os.path.join(output_dir, 'molstar.js'))
         shutil.copy(molstar_css_file, os.path.join(output_dir, 'molstar.css'))
 
-        for succ_pdb in succ_pdb_paths:
+        for succ_pdb in succ_pdb_infos:
             row_html = '<tr>'
             file_path = succ_pdb['file_path']
             pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
@@ -778,7 +784,7 @@ class PDBUtil:
             pdb_html += row_html
         return pdb_html
 
-    def _generate_batch_report_html(self, prot_structs_name, succ_pdb_paths):
+    def _generate_batch_report_html(self, prot_structs_name, succ_pdb_infos):
         """
             _generate_batch_report_html: generates the HTML for the upload report
         """
@@ -791,7 +797,7 @@ class PDBUtil:
         # Create the template html file for reporting batch-uploaded pdb files
         batch_html_report_path = os.path.join(output_directory, 'batch_pdb_viewer.html')
 
-        pdb_html = self._write_pdb_htmls(output_directory, succ_pdb_paths)
+        pdb_html = self._write_pdb_htmls(output_directory, succ_pdb_infos)
 
         # Fetch & fill in detailed info into template HTML
         with open(os.path.join(os.path.dirname(__file__), 'templates', 'batch_pdb_template.html')
@@ -824,52 +830,24 @@ class PDBUtil:
             import_model_pdb_file: upload an experiment pdb file and convert into a
                                   KBaseStructure.ModelProteinStructure object
         """
-        logging.info(f'import_model_pdb_file to a pdb structure with params: {params}')
+        logging.info(f'import_model_pdb_file to a pdb data structure with params: {params}')
 
         # file_path is the pdb file's working area path (after dfu.download_staging_file call)
         file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
-
-        if not isinstance(workspace_name, int):
-            workspace_id = self.dfu.ws_name_to_id(workspace_name)
-        else:
-            workspace_id = workspace_name
 
         (data, n_polypeptides, params) = self._model_file_to_data(file_path, params)
         if not data:
             logging.info(f'PDB file {file_path} import with "Import ModelProteinStructure" failed!'
                          f'You may try to import it with "Import ExperimentalProteinStructure"')
-            return {}
+            return {}, {}
 
-        logging.info(data)
         data['pdb_handle'] = self._upload_to_shock(file_path)
         data['user_data'] = params.get('description', '')
         pdb_info = params.get('pdb_info', None)
-
-        try:
-            info = self.dfu.save_objects({
-                'id': workspace_id,
-                'objects': [
-                    {'type': 'KBaseStructure.ModelProteinStructure',
-                     'name': pdb_name,
-                     'meta': pdb_info,
-                     'data': data}]
-            })[0]
-        except WorkspaceError as e:
-            logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
-            raise
-        else:
-            obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
-            returnVal = {'structure_obj_ref': obj_ref}
-            returnVal['scratch_path'] = file_path
-            if params.get('pdb_info'):
-                returnVal['pdb_info'] = params.get('pdb_info')
-
-            if create_report:
-                report_output = self._generate_report('import_model_pdb_file', obj_ref,
-                                                      workspace_name, n_polypeptides,
-                                                      pdb_name, file_path)
-                returnVal.update(report_output)
-            return returnVal
+        if pdb_info:
+            pdb_info['scratch_path'] = file_path
+        logging.info(f'Model structure data:{data}')
+        return data, pdb_info
 
     def import_experiment_pdb_file(self, params, create_report=True):
         """
@@ -881,45 +859,20 @@ class PDBUtil:
         # file_path is the pdb file's working area path (after dfu.download_staging_file call)
         file_path, workspace_name, mmcif_name = self._validate_import_pdb_file_params(params)
 
-        if not isinstance(workspace_name, int):
-            workspace_id = self.dfu.ws_name_to_id(workspace_name)
-        else:
-            workspace_id = workspace_name
-
         # Parse the experimental pdb file for an experimental data structure
         (data, n_polypeptides, params) = self._exp_file_to_data(file_path, params)
         if not data:
             logging.info(f'Import {file_path} with "Import ExperimentalProteinStructure" failed!'
                          f'You may try to import it with "Import ModelProteinStructure"')
-            return {}
+            return {}, {}
 
-        logging.info(data)
+        data['pdb_handle'] = self._upload_to_shock(file_path)
+        data['user_data'] = params.get('description', '')
         pdb_info = params.get('pdb_info', None)
-        try:
-            info = self.dfu.save_objects({
-                'id': workspace_id,
-                'objects': [
-                    {'type': 'KBaseStructure.ExperimentalProteinStructure',
-                     'name': mmcif_name,
-                     'meta': pdb_info,
-                     'data': data}]
-            })[0]
-        except WorkspaceError as e:
-            logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
-            raise
-        else:
-            obj_ref = f"{info[6]}/{info[0]}/{info[4]}"
-            returnVal = {'structure_obj_ref': obj_ref}
-            returnVal['scratch_path'] = file_path
-            if params.get('pdb_info', None):
-                returnVal['pdb_info'] = params.get('pdb_info')
-
-            if create_report:
-                report_output = self._generate_report('import_experiment_pdb_file', obj_ref,
-                                                      workspace_name, n_polypeptides,
-                                                      mmcif_name, file_path)
-                returnVal.update(report_output)
-            return returnVal
+        if pdb_info:
+            pdb_info['scratch_path'] = file_path
+        logging.info(data)
+        return data, pdb_info
 
     def _export_pdb(self, params):
         """
@@ -1003,6 +956,7 @@ class PDBUtil:
 
         model_pdb_objects = list()
         exp_pdb_objects = list()
+        pdb_infos = list()
         successful_files = list()
         failed_files = list()
         protein_structures = dict()
@@ -1019,24 +973,20 @@ class PDBUtil:
             pdb_params['structure_name'] = pdb['structure_name']
 
             if pdb['is_model']:
-                model_pdb_ret = self.import_model_pdb_file(pdb_params, False)
-                if model_pdb_ret:
-                    ret_strct_ref = model_pdb_ret['structure_obj_ref']
-                    model_pdb_objects.append(ret_strct_ref)
-                    model_pdb_ret['pdb_info']['pdb_struct_ref'] = ret_strct_ref
-                    model_pdb_ret['pdb_info']['scratch_path'] = model_pdb_ret['scratch_path']
-                    successful_files.append(model_pdb_ret['pdb_info'])
+                model_pdb_data, pdb_info = self.import_model_pdb_file(pdb_params, False)
+                if model_pdb_data:
+                    model_pdb_objects.append(model_pdb_data)
+                    pdb_infos.append(pdb_info)
+                    successful_files.append(pdb['file_path'])
                     total_structures += 1
                 else:
                     failed_files.append(pdb['file_path'])
             else:
-                exp_pdb_ret = self.import_experiment_pdb_file(pdb_params, False)
-                if exp_pdb_ret:
-                    ret_strct_ref = exp_pdb_ret['structure_obj_ref']
-                    exp_pdb_objects.append(ret_strct_ref)
-                    exp_pdb_ret['pdb_info']['pdb_struct_ref'] = ret_strct_ref
-                    exp_pdb_ret['pdb_info']['scratch_path'] = exp_pdb_ret['scratch_path']
-                    successful_files.append(exp_pdb_ret['pdb_info'])
+                exp_pdb_data, pdb_info = self.import_experiment_pdb_file(pdb_params, False)
+                if exp_pdb_data:
+                    exp_pdb_objects.append(exp_pdb_data)
+                    pdb_infos.append(pdb_info)
+                    successful_files.append(pdb['file_path'])
                     total_structures += 1
                 else:
                     failed_files.append(pdb['file_path'])
@@ -1050,7 +1000,7 @@ class PDBUtil:
         protein_structures['total_structures'] = total_structures
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
-        logging.info(protein_structures)
+        logging.info(f'ProteinStructures data structure to be saved:\n{protein_structures}')
         returnVal = {}
         try:
             info = self.dfu.save_objects({
@@ -1060,15 +1010,15 @@ class PDBUtil:
                      'name': structures_name,
                      'data': protein_structures}]
             })[0]
-        except WorkspaceError as e:
-            logging.info(f'DFU.save_objects errored with message: {e.message} and data: {e.data}')
-            raise
+        except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
+            err_msg = f'DFU.save_objects errored with message: {e.message} and data: {e.data}'
+            logging.info(err_msg)
+            raise ValueError(err_msg)
         else:
             structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
             returnVal = {'structures_ref': structs_ref}
             report_output = self._generate_batch_report(
-                        workspace_name, structs_ref, structures_name,
-                        successful_files, failed_files)
+                        workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
             returnVal.update(report_output)
         finally:
             return returnVal
