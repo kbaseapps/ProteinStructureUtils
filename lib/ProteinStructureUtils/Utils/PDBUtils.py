@@ -31,7 +31,8 @@ class PDBUtil:
     # “Expect Value” threshold to restrict which alignments will be significant
     E_VALUE_THRESH = 1e-20
 
-    # BLAST sequence identity threshold to determine which pdb structures will be matched to a KBase genome/feature
+    # BLAST sequence identity threshold to determine which pdb structures will be
+    # matched to a KBase genome/feature
     B_IDENTITY_THRESH = 0.6
 
     def _validate_import_pdb_file_params(self, params):
@@ -83,6 +84,7 @@ class PDBUtil:
             for pp in ppb.build_peptides(structure):
                 pp_no += 1
 
+            # logging.info(f'Getting pdb structure data for {structure}!')
             (compound, source) = self._get_compound_source(structure)
             (num_models, model_ids) = self._get_models_from_structure(structure)
             (num_chains, chain_ids) = self._get_chains_from_structure(structure)
@@ -104,6 +106,7 @@ class PDBUtil:
                     'proteins': protein_data
                 }
             else:
+                logging.info(f'Parsing pdb file {file_path} failed to match KBase genome/features!')
                 data = {}
         finally:
             return data, pp_no, params
@@ -134,6 +137,7 @@ class PDBUtil:
             struc_name = structure.header.get('name', '')
             hd = self._upload_to_shock(file_path)
 
+            # logging.info(f'Getting pdb structure data for {structure}!')
             (cpd, src) = self._get_compound_source(structure)
             (num_models, model_ids) = self._get_models_from_structure(structure)
             (num_chains, chain_ids) = self._get_chains_from_structure(structure)
@@ -172,6 +176,7 @@ class PDBUtil:
                 }
             else:
                 mmcif_data = {}
+                logging.info(f'Parsing pdb file {file_path} failed to match KBase genome/features!')
         finally:
             return mmcif_data, pp_no, params
 
@@ -195,8 +200,11 @@ class PDBUtil:
             logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
             # 1. Get the genome's features and reference
             (gn_ref, kb_genome_features) = self._get_genome_ref_features(narr_id, genome_name)
-            pdb_info['genome_ref'] = gn_ref
+            if not gn_ref:
+                logging.info(f"Given genome {genome_name} does not exist in workspace {narr_id}!")
+                return protein_data, params
 
+            pdb_info['genome_ref'] = gn_ref
             # 2. Match the genome features with the specified feature_id to obtain feature sequence
             for feat in kb_genome_features:
                 if feat['id'] == feature_id:
@@ -204,11 +212,14 @@ class PDBUtil:
                     kb_feature_type = self._get_feature_type(feat)
                     kb_feature_seq = feat.get('protein_translation', '')
                     break
+
             pdb_info['feature_type'] = kb_feature_type
 
             # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
-            # proteins' translationsto to get the seq_identity and exact_match
+            # proteins' translations to to get the seq_identity and exact_match
             if kb_feature_seq:
+                logging.info(f"Finding seq_identity and exact_match for feature {feature_id}"
+                             f" in genome {genome_name}'s features...")
                 pdb_chain_ids = []
                 pdb_model_ids = []
                 pdb_seq_idens = []
@@ -324,15 +335,14 @@ class PDBUtil:
 
     def _get_genome_ref_features(self, narr_id, genome_name):
         """
-            _get_genome_ref_features: Get the genome reference and features for the given genome_name
+            _get_genome_ref_features: Get the genome reference and features for genome_name
         """
         genome_ref = ''
         genome_features = []
         (genome_info, genome_data) = self._get_object_info_data(narr_id, genome_name)
-        genome_ref = '/'.join([str(narr_id), str(genome_info[0]), str(genome_info[4])])
-        logging.info(f"Genome {genome_name}'s ref: {genome_ref}")
-        genome_features = genome_data['features']
-        logging.info(f'There are {len(genome_features)} features in {genome_name}')
+        if genome_info and genome_data:
+            genome_ref = '/'.join([str(narr_id), str(genome_info[0]), str(genome_info[4])])
+            genome_features = genome_data['features']
 
         return (genome_ref, genome_features)
 
@@ -356,10 +366,15 @@ class PDBUtil:
         obj_info = None
         obj_data = None
         if narr_id and obj_name:
-            obj_data_res = self.ws_client.get_objects2(
-                {'objects': [{'wsid': narr_id, 'name': obj_name}]})['data'][0]
-            obj_info = obj_data_res['info']
-            obj_data = obj_data_res['data']
+            try:
+                obj_data_res = self.ws_client.get_objects2(
+                    {'objects': [{'wsid': narr_id, 'name': obj_name}]})['data'][0]
+                obj_info = obj_data_res['info']
+                obj_data = obj_data_res['data']
+            except:
+                logging.info(f'No object with name {obj_name} exists in workspace {narr_id}')
+                logging.info(f'Unexpected error occurred while getting object for {obj_name}')
+                pass
 
         return (obj_info, obj_data)
 
@@ -735,9 +750,10 @@ class PDBUtil:
         srv_base_url = f'https://{srv_domain}'
         logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
-        molstar_html_file = os.path.join(os.path.dirname(__file__), 'templates', 'molstar_viewer.html')
-        molstar_js_file = os.path.join(os.path.dirname(__file__), 'templates', 'molstar.js')
-        molstar_css_file = os.path.join(os.path.dirname(__file__), 'templates', 'molstar.css')
+        dir_name = os.path.dirname(__file__)
+        molstar_html_file = os.path.join(dir_name, 'templates', 'molstar_viewer.html')
+        molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
+        molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
         shutil.copy(molstar_html_file, os.path.join(output_dir, 'molstar_viewer.html'))
         shutil.copy(molstar_js_file, os.path.join(output_dir, 'molstar.js'))
         shutil.copy(molstar_css_file, os.path.join(output_dir, 'molstar.css'))
@@ -837,8 +853,7 @@ class PDBUtil:
 
         (data, n_polypeptides, params) = self._model_file_to_data(file_path, params)
         if not data:
-            logging.info(f'PDB file {file_path} import with "Import ModelProteinStructure" failed!'
-                         f'You may try to import it with "Import ExperimentalProteinStructure"')
+            logging.info(f'PDB file {file_path} import with "Import ModelProteinStructure" failed!')
             return {}, {}
 
         data['pdb_handle'] = self._upload_to_shock(file_path)
@@ -862,8 +877,7 @@ class PDBUtil:
         # Parse the experimental pdb file for an experimental data structure
         (data, n_polypeptides, params) = self._exp_file_to_data(file_path, params)
         if not data:
-            logging.info(f'Import {file_path} with "Import ExperimentalProteinStructure" failed!'
-                         f'You may try to import it with "Import ModelProteinStructure"')
+            logging.info(f'Import {file_path} with "Import ExperimentalProteinStructure" failed!')
             return {}, {}
 
         data['pdb_handle'] = self._upload_to_shock(file_path)
@@ -910,7 +924,7 @@ class PDBUtil:
 
         model_pdbs = []
         exp_pdbs = []
-        shock_ids = []
+        # shock_ids = []
         for m_pdb in model_pdbs:
             pass
         for e_pdb in exp_pdbs:

@@ -6,3 +6,4 @@ Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is mod
 57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ift.pdb,yes,yes
 57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifv.pdb,yes,no
 57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifw.pdb,yes,
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,6ifx.pdb,yes,yes

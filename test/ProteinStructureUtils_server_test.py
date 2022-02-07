@@ -570,6 +570,33 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertNotIn('sequence_identities', params2['pdb_info'])
         self.assertNotIn('exact_matches', params2['pdb_info'])
 
+    #@unittest.skip('test_match_features_nonexist_genome')
+    def test_match_features_nonexist_genome(self):
+        fileName = 'MLuteus_AlphaFold_133.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+
+        parser = PDB.PDBParser(PERMISSIVE=1)
+        struct = parser.get_structure("ML_alphafold_133", pdb_file_path)
+        model = struct[0]
+        prot_data = self.pdb_util._get_proteins_by_structure(struct, model.get_id(),
+                                                             pdb_file_path)
+        self.assertCountEqual(prot_data[0].keys(),
+                              ['id', 'model_id', 'chain_id', 'sequence', 'md5'])
+
+        # Try to match with features in a non-existent genome
+        pdb_info = {
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_nonexist',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.133'
+        }
+        params = {'pdb_info': pdb_info}
+
+        # No features matched, nothing is changed by the _match_features(..) call
+        prot_data1, params1 = self.pdb_util._match_features(params, prot_data)
+        self.assertEqual(params1, params)
+        self.assertEqual(prot_data1, prot_data)
+
     #@unittest.skip('test_model_file_to_data')  # Note the genome is from an Appdev narrative 42297
     def test_model_file_to_data(self):
         fileName = '1fat.pdb'
@@ -636,6 +663,24 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('model_ids', params3['pdb_info'])
         self.assertIn('sequence_identities', params3['pdb_info'])
         self.assertIn('exact_matches', params3['pdb_info'])
+
+    #@unittest.skip('test_model_file_to_data_erred')  # Note the genome is from an Appdev narrative 63679
+    def test_model_file_to_data_erred(self):
+        fileName = 'MLuteus_AlphaFold_133.pdb'
+        pdb_file_path = os.path.join(self.scratch, fileName)
+        shutil.copy(os.path.join('data', fileName), pdb_file_path)
+
+        genome_name = 'MLuteus_ATCC_nonexist'
+        feat_id = 'MLuteus_masurca_RAST.CDS.133'
+
+        pdb_info = {
+                'narrative_id': 63679,
+                'genome_name': genome_name,
+                'feature_id': feat_id
+        }
+        params = {'pdb_info': pdb_info}
+        (data1, pp_no1, params1) = self.pdb_util._model_file_to_data(pdb_file_path, params)
+        self.assertFalse(data1)
 
     #@unittest.skip('test_exp_file_to_data')
     def test_exp_file_to_data(self):
@@ -783,27 +828,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(ret_data, {})
         self.assertEqual(ret_info, {})
 
-    #@unittest.skip('test_batch_import_pdbs_patched1')
+    #@unittest.skip('test_batch_import_pdbs_pathched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
-    def test_batch_import_pdbs_patched1(self, download_staging_file):
-        metafile = 'pdb_metafile_sample1.csv'
-        metafile = os.path.join('/kb/module/test/data', metafile)
-
-        params = {
-            'metadata_staging_file_path': metafile,
-            'structures_name': 'batch1_test_structures',
-            'workspace_name': self.wsName
-        }
-        ret1 = self.pdb_util.batch_import_pdbs(params)
-        structs_ref1 = ret1['structures_ref']
-
-        print(f'Checking the newly saved object data and info for {structs_ref1}\n')
-        self.check_object(structs_ref1)
-        print(f'Return for pdb_metafile_sample1.csv: {ret1}')
-
-    #@unittest.skip('test_batch_import_pdbs_pathched2')
-    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
-    def test_batch_import_pdbs_patched2(self, download_staging_file):
+    def test_batch_import_pdbs_patched(self, download_staging_file):
         fileName = 'pdb_metafile_sample2.csv'
 
         params = {
@@ -811,12 +838,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'structures_name': 'batch_import_pdbs_structures',
             'workspace_name': self.wsName
         }
-        ret2 = self.pdb_util.batch_import_pdbs(params)
-        structs_ref2 = ret2['structures_ref']
+        ret = self.pdb_util.batch_import_pdbs(params)
+        structs_ref = ret['structures_ref']
 
-        print(f'Checking the newly saved object data and info for {structs_ref2}\n')
-        self.check_object(structs_ref2)
-        print(f'Return for pdb_metafile_sample2.csv: {ret2}')
+        print(f'Checking the newly saved object data and info for {structs_ref}\n')
+        self.check_object(structs_ref)
 
     # Testing self.serviceImpl functions
     #@unittest.skip('test_batch_import_pdbs_from_metafile1')
@@ -848,12 +874,41 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(ret1)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
+    #@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds(self, download_staging_file):
+        metafile = 'pdb_metafile_mluteus_afpdbs.csv'
+        metafile = os.path.join('/kb/module/test/data', metafile)
+
+        params = {
+            'metadata_staging_file_path': metafile,
+            'structures_name': 'mluteus_afpdb_structures',
+            'workspace_name': self.wsName
+        }
+        ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
+        self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
+
+    #@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_batch_import_pdbs_for_MLuteus_ATCC_docked(self, download_staging_file):
+        metafile = 'pdb_metafile_mluteus_docked.csv'
+        metafile = os.path.join('/kb/module/test/data', metafile)
+
+        params = {
+            'metadata_staging_file_path': metafile,
+            'structures_name': 'mluteus_docked_structures',
+            'workspace_name': self.wsName
+        }
+        ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
+        self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
+
     @unittest.skip('test_export_pdb_structures')
     def test_export_pdb_structures(self):
         params = {'input_ref': '62713/24/1'}  # '62713/24/1' is in CI, so skipped here.
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
 
+    @unittest.skip('dfu_save_proteinstructure')
     def dfu_save_proteinstructure(self, params):
         """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
 
