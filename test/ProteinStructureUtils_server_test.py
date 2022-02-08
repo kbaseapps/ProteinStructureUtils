@@ -217,7 +217,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret_df = self.pdb_util._read_file_by_type(meta_file_path)
         self.assertCountEqual(ret_df.columns, required_cols)
         for col in required_cols:
-            self.assertEqual(len(ret_df[col]), 7)
+            self.assertEqual(len(ret_df[col]), 8)
             col_list = ret_df[col].values.tolist()
             self.assertEqual(len(col_list), 7)
 
@@ -418,7 +418,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (pdb_data, narr_ids, genome_objs,
             feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-        self.assertEqual(len(pdb_data), 7)
+        self.assertEqual(len(pdb_data), 8)
         self.assertEqual(len(genome_objs), 7)
         self.assertEqual(len(feature_ids), 7)
         self.assertCountEqual(
