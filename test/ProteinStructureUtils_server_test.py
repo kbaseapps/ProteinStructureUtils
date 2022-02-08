@@ -219,7 +219,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         for col in required_cols:
             self.assertEqual(len(ret_df[col]), 8)
             col_list = ret_df[col].values.tolist()
-            self.assertEqual(len(col_list), 7)
+            self.assertEqual(len(col_list), 8)
 
     #@unittest.skip('test_read_file_by_type_tsv')
     def test_read_file_by_type_tsv(self):
@@ -419,8 +419,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             feature_ids) = self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         self.assertEqual(len(pdb_data), 8)
-        self.assertEqual(len(genome_objs), 7)
-        self.assertEqual(len(feature_ids), 7)
+        self.assertEqual(len(genome_objs), 8)
+        self.assertEqual(len(feature_ids), 8)
         self.assertCountEqual(
             pdb_data[0].keys(),
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
@@ -888,7 +888,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    #@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
+    #unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_for_MLuteus_ATCC_docked(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_docked.csv'
