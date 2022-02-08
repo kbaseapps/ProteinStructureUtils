@@ -874,7 +874,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(ret1)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    #@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
+    @unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_afpdbs.csv'
@@ -888,7 +888,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    #unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
+    @unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_for_MLuteus_ATCC_docked(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_docked.csv'
