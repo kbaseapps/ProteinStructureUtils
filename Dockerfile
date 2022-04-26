@@ -18,7 +18,7 @@ RUN pip install --upgrade pip \
 RUN apt-get update \
     && apt-get -y install wget
 
-ENV BLAST_VERSION='2.12.0'
+ENV BLAST_VERSION='2.13.0'
 
 RUN cd /opt \
     && wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz \
