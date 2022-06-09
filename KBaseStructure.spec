@@ -152,6 +152,7 @@ module KBaseStructure {
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional compound source
+    @optional mmcif_handle
   */
   typedef structure {
     string user_data;
