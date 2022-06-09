@@ -1,5 +1,5 @@
-Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model
-50569,JCVI_Syn3.kbase,JCVISYN3_0001,JCVISYN3_0001.pdb,y
-50569,JCVI_Syn3.kbase,JCVISYN3_0002,,y
-50569,JCVI_Syn3.kbase,JCVISYN3_0003,JCVISYN3_0003.pdb,n
-50569,JCVI_Syn3.kbase,JCVISYN3_0004,JCVISYN3_0004.pdb,n
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model,From RCSB
+50569,JCVI_Syn3.kbase,JCVISYN3_0001,JCVISYN3_0001.pdb,y,y
+50569,JCVI_Syn3.kbase,JCVISYN3_0002,,y,y
+50569,JCVI_Syn3.kbase,JCVISYN3_0003,JCVISYN3_0003.pdb,n,n
+50569,JCVI_Syn3.kbase,JCVISYN3_0004,JCVISYN3_0004.pdb,n,n

@@ -24,7 +24,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "a42ae2fa2bf37a44443c21e1b3196a8dd548d24f"
+    GIT_COMMIT_HASH = "e3fa454e548690312f32e34f0b865fce65b4547c"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -44,136 +44,18 @@ class ProteinStructureUtils:
         pass
 
 
-    def structure_to_pdb_file(self, ctx, params):
-        """
-        :param params: instance of type "StructureToPDBFileParams" ->
-           structure: parameter "input_ref" of type "obj_ref" (An X/Y/Z style
-           reference @id ws), parameter "destination_dir" of String
-        :returns: instance of type "StructureToPDBFileOutput" -> structure:
-           parameter "file_path" of String
-        """
-        # ctx is the context object
-        # return variables are: result
-        #BEGIN structure_to_pdb_file
-        logging.info('Starting structure_to_pdb_file with params:\n{}'.format(params))
-        self.config['USER_ID'] = ctx['user_id']
-        self.pdb_util = PDBUtil(self.config)
-        result = self.pdb_util.structure_to_pdb_file(params)
-        #END structure_to_pdb_file
-
-        # At some point might do deeper type checking...
-        if not isinstance(result, dict):
-            raise ValueError('Method structure_to_pdb_file return value ' +
-                             'result is not type dict as required.')
-        # return the results
-        return [result]
-
-    def export_pdb(self, ctx, params):
-        """
-        :param params: instance of type "ExportParams" (Input of the
-           export_pdb function obj_ref: generics object reference) ->
-           structure: parameter "input_ref" of type "obj_ref" (An X/Y/Z style
-           reference @id ws)
-        :returns: instance of type "ExportOutput" -> structure: parameter
-           "shock_id" of String
-        """
-        # ctx is the context object
-        # return variables are: result
-        #BEGIN export_pdb
-        logging.info('Starting export_pdb with params:\n{}'.format(params))
-        self.config['USER_ID'] = ctx['user_id']
-        self.pdb_util = PDBUtil(self.config)
-        result = self.pdb_util.export_pdb(params)
-        #END export_pdb
-
-        # At some point might do deeper type checking...
-        if not isinstance(result, dict):
-            raise ValueError('Method export_pdb return value ' +
-                             'result is not type dict as required.')
-        # return the results
-        return [result]
-
-    def import_model_pdb_file(self, ctx, params):
-        """
-        import_model_pdb_file: import a ProteinStructure from PDB
-        :param params: instance of type "ImportPDBParams" (Input of the
-           import_model_pdb_file and import_experiment_pdb_file functions
-           input_shock_id: file shock id input_file_path: absolute file path
-           input_staging_file_path: staging area file path structure_name:
-           structure object name workspace_name: workspace name for object to
-           be saved to) -> structure: parameter "input_shock_id" of String,
-           parameter "input_file_path" of String, parameter
-           "input_staging_file_path" of String, parameter "structure_name" of
-           String, parameter "description" of String, parameter
-           "workspace_name" of type "workspace_name" (workspace name of the
-           object)
-        :returns: instance of type "ImportPDBOutput" -> structure: parameter
-           "report_name" of String, parameter "report_ref" of String,
-           parameter "structure_obj_ref" of type "obj_ref" (An X/Y/Z style
-           reference @id ws)
-        """
-        # ctx is the context object
-        # return variables are: result
-        #BEGIN import_model_pdb_file
-        logging.info('Starting import_model_pdb_file with params:\n{}'.format(params))
-        self.config['USER_ID'] = ctx['user_id']
-        self.pdb_util = PDBUtil(self.config)
-        result = self.pdb_util.import_model_pdb_file(params)
-        #END import_model_pdb_file
-
-        # At some point might do deeper type checking...
-        if not isinstance(result, dict):
-            raise ValueError('Method import_model_pdb_file return value ' +
-                             'result is not type dict as required.')
-        # return the results
-        return [result]
-
-    def import_experiment_pdb_file(self, ctx, params):
-        """
-        import_experiment_pdb_file: import a ProteinStructure from PDB
-        :param params: instance of type "ImportPDBParams" (Input of the
-           import_model_pdb_file and import_experiment_pdb_file functions
-           input_shock_id: file shock id input_file_path: absolute file path
-           input_staging_file_path: staging area file path structure_name:
-           structure object name workspace_name: workspace name for object to
-           be saved to) -> structure: parameter "input_shock_id" of String,
-           parameter "input_file_path" of String, parameter
-           "input_staging_file_path" of String, parameter "structure_name" of
-           String, parameter "description" of String, parameter
-           "workspace_name" of type "workspace_name" (workspace name of the
-           object)
-        :returns: instance of type "ImportPDBOutput" -> structure: parameter
-           "report_name" of String, parameter "report_ref" of String,
-           parameter "structure_obj_ref" of type "obj_ref" (An X/Y/Z style
-           reference @id ws)
-        """
-        # ctx is the context object
-        # return variables are: result
-        #BEGIN import_experiment_pdb_file
-        logging.info('Starting import_experiment_pdb_file with params:\n{}'.format(params))
-        self.config['USER_ID'] = ctx['user_id']
-        self.pdb_util = PDBUtil(self.config)
-        result = self.pdb_util.import_experiment_pdb_file(params)
-        #END import_experiment_pdb_file
-
-        # At some point might do deeper type checking...
-        if not isinstance(result, dict):
-            raise ValueError('Method import_experiment_pdb_file return value ' +
-                             'result is not type dict as required.')
-        # return the results
-        return [result]
-
     def batch_import_pdbs_from_metafile(self, ctx, params):
         """
         batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files
-        :param params: instance of type "BatchPDBImportParams" (Input of the
-           batch_import_pdbs_from_metafile structures_name: Proteinstructures
-           object name workspace_name: workspace name for object to be saved
-           to metadata_staging_file_path: path to a spreadsheet file that
-           lists the metadata of PDB files and their KBase metadata) ->
-           structure: parameter "metadata_staging_file_path" of String,
-           parameter "structures_name" of String, parameter "workspace_name"
-           of type "workspace_name" (workspace name of the object)
+        :param params: instance of type "BatchPDBImportParams" (Input/Output
+           of the batch_import_pdbs_from_metafile structures_name:
+           Proteinstructures object name workspace_name: workspace name for
+           object to be saved to metadata_staging_file_path: path to a
+           spreadsheet file that lists the metadata of PDB files and their
+           KBase metadata) -> structure: parameter
+           "metadata_staging_file_path" of String, parameter
+           "structures_name" of String, parameter "workspace_name" of type
+           "workspace_name" (workspace name of the object)
         :returns: instance of type "BatchPDBImportOutput" -> structure:
            parameter "structures_ref" of String, parameter "report_name" of
            String, parameter "report_ref" of String
@@ -190,6 +72,31 @@ class ProteinStructureUtils:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method batch_import_pdbs_from_metafile return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def export_pdb_structures(self, ctx, params):
+        """
+        :param params: instance of type "ExportParams" (Input/output of the
+           export_pdb_structures function obj_ref: generics object reference)
+           -> structure: parameter "input_ref" of type "obj_ref" (An X/Y/Z
+           style reference @id ws)
+        :returns: instance of type "ExportStructOutput" -> structure:
+           parameter "shock_id" of list of String
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN export_pdb_structures
+        logging.info('Starting export_pdb_structures with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.pdb_util = PDBUtil(self.config)
+        result = self.pdb_util.export_pdb_structures(params)
+        #END export_pdb_structures
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method export_pdb_structures return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
