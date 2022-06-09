@@ -168,6 +168,7 @@ module KBaseStructure {
 
     /*File links*/
     handle_ref pdb_handle;
+    handle_ref mmcif_handle;
   } ModelProteinStructure;
 
 
