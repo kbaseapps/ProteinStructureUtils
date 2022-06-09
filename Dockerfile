@@ -16,7 +16,8 @@ RUN pip install --upgrade pip \
     && pip install openpyxl
 
 RUN apt-get update \
-    && apt-get -y install wget
+    && apt-get -y install wget \
+    && apt-get -y install libgomp1
 
 ENV BLAST_VERSION='2.13.0'
 
