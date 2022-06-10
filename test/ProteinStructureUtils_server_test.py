@@ -871,7 +871,6 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        print(ret1)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
     @unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
@@ -902,14 +901,15 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
+    # '62713/24/1' is in CI, so skipped here.
     @unittest.skip('test_export_pdb_structures')
     def test_export_pdb_structures(self):
-        params = {'input_ref': '62713/24/1'}  # '62713/24/1' is in CI, so skipped here.
+        params = {'input_ref': '62713/24/1'}
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_id'])
 
-    @unittest.skip('dfu_save_proteinstructure')
-    def dfu_save_proteinstructure(self, params):
+    @unittest.skip('test_dfu_save_proteinstructure')
+    def test_dfu_save_proteinstructure(self, params):
         """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
 
         obj_to_save = {
