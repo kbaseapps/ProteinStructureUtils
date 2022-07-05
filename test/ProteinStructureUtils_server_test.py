@@ -304,7 +304,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Required column 'Is model' is missing!"):
+                'Required column "Is model" is missing!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1b.csv'
@@ -313,7 +313,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB filename'!"):
+                "Please fill all the rows in column: PDB filename!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.csv'
@@ -322,7 +322,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'Feature ID'!"):
+                "Please fill all the rows in column: Feature ID!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1d.csv'
@@ -331,7 +331,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'Object name'!"):
+                'Please fill all the rows in column: Object name!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
     #@unittest.skip('test_incomplete_parse_metadata_tsv_files')
@@ -342,7 +342,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Required column 'Is model' is missing!"):
+                'Required column "Is model" is missing!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1b.tsv'
@@ -351,7 +351,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB filename'!"):
+                "Please fill all the rows in column: PDB filename!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.tsv'
@@ -360,7 +360,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'Feature ID'!"):
+                "Please fill all the rows in column: Feature ID!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1d.tsv'
@@ -369,7 +369,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'Object name'!"):
+                'Please fill all the rows in column: Object name!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
     #@unittest.skip('test_incomplete_parse_metadata_xlsx_files')
@@ -380,7 +380,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Required column 'Is model' is missing!"):
+                'Required column "Is model" is missing!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1b.xlsx'
@@ -389,7 +389,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'PDB filename'!"):
+                "Please fill all the rows in column: PDB filename!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1c.xlsx'
@@ -398,7 +398,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'Feature ID'!"):
+                "Please fill all the rows in column: Feature ID!"):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
         metafile = 'pdb_metafile_sample1d.xlsx'
@@ -407,7 +407,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         print(f"Parsing metadata file '{metafile}'......")
         with self.assertRaisesRegex(
                 ValueError,
-                "Please fill all the rows in column 'Object name'!"):
+                'Please fill all the rows in column: Object name!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
     #@unittest.skip('test_parse_complete_metadata_csv_file')
@@ -424,7 +424,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(
             pdb_data[0].keys(),
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
-             'feature_id', 'from_rcsb'])
+             'feature_id', 'from_rcsb', 'file_extension'])
 
     #@unittest.skip('test_parse_complete_metadata_tsv_file')
     def test_parse_complete_metadata_tsv_file(self):
@@ -441,7 +441,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(
             pdb_data[0].keys(),
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
-             'feature_id', 'from_rcsb'])
+             'feature_id', 'from_rcsb', 'file_extension'])
 
     #@unittest.skip('test_parse_complete_metadata_xlsx_file')
     def test_parse_complete_metadata_xlsx_file(self):
@@ -458,7 +458,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(
             pdb_data[0].keys(),
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
-             'feature_id', 'from_rcsb'])
+             'feature_id', 'from_rcsb', 'file_extension'])
 
     #@unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
@@ -714,7 +714,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'for test PDBUtils.import_model_pdb_file_nopatch',
             'workspace_name': self.wsName
         }
-        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params, False)
+        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params)
         self.assertFalse(ret_data)
         self.assertFalse(ret_info)
 
@@ -735,7 +735,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'for test PDBUtils.import_model_pdb_file_nopatch',
             'workspace_name': self.wsName
         }
-        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params, False)
+        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params)
         self._check_import_model_pdb_6ift(ret_data, ret_info)
         self.assertEqual(ret_data['user_data'], params['description'])
 
@@ -751,7 +751,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'for test PDBUtils.import_model_pdb_file_patch',
             'workspace_name': self.wsName
         }
-        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params, False)
+        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params)
         self.assertFalse(ret_data)
         self.assertFalse(ret_info)
 
@@ -770,7 +770,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'for test PDBUtils.import_model_pdb_file_patch',
             'workspace_name': self.wsName
         }
-        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params, False)
+        ret_data, ret_info = self.pdb_util.import_model_pdb_file(params)
         self._check_import_model_pdb_6ift(ret_data, ret_info)
         self.assertEqual(ret_data['user_data'], params['description'])
 
@@ -808,7 +808,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'for test PDBUtils.import_exp_pdb_file',
             'workspace_name': self.wsName
         }
-        ret_data, ret_info = self.pdb_util.import_experiment_pdb_file(params, False)
+        ret_data, ret_info = self.pdb_util.import_experiment_pdb_file(params)
         self.assertEqual(ret_data, {})
         self.assertEqual(ret_info, {})
 
@@ -824,7 +824,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'for test PDBUtils.import_exp_pdb_file',
             'workspace_name': self.wsName
         }
-        ret_data, ret_info = self.pdb_util.import_experiment_pdb_file(params, False)
+        ret_data, ret_info = self.pdb_util.import_experiment_pdb_file(params)
         self.assertEqual(ret_data, {})
         self.assertEqual(ret_info, {})
 
@@ -873,7 +873,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    @unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
+    #@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_for_MLuteus_ATCC_alphafolds(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_afpdbs.csv'
@@ -887,7 +887,21 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    @unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
+    ##@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_cifs')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_batch_import_pdbs_for_MLuteus_ATCC_cifs(self, download_staging_file):
+        metafile = 'pdb_metafile_mluteus_afcifs.csv'
+        metafile = os.path.join('/kb/module/test/data', metafile)
+
+        params = {
+            'metadata_staging_file_path': metafile,
+            'structures_name': 'mluteus_afpdb_structures',
+            'workspace_name': self.wsName
+        }
+        ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
+        self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
+
+    #@unittest.skip('test_batch_import_pdbs_for_MLuteus_ATCC_docked')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_for_MLuteus_ATCC_docked(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_docked.csv'

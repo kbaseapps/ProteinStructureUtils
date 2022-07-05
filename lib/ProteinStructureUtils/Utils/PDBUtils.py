@@ -43,7 +43,7 @@ class PDBUtil:
         # check for required parameters
         for p in ['structure_name', 'workspace_name']:
             if p not in params:
-                raise ValueError('"{}" parameter is required, but missing'.format(p))
+                raise ValueError(f'Parameter "{p}" is required, but missing!')
 
         if params.get('input_file_path'):
             file_path = params.get('input_file_path')
@@ -65,7 +65,7 @@ class PDBUtil:
     def _model_file_to_data(self, file_path, params):
         """
             _model_file_to_data:
-                Do the PDB conversion--parse the model pdb file for creating a pdb data object
+                Do the PDB conversion--parse the model pdb/cif file for creating a pdb data object
         """
         logging.info(f'Parsing pdb file {file_path} to a pdb structure with params: {params}')
 
@@ -585,7 +585,7 @@ class PDBUtil:
         # check for required parameters
         for p in ['structures_name', 'workspace_name', 'metadata_staging_file_path']:
             if p not in params:
-                raise ValueError(f'"{p}" parameter is required, but missing')
+                raise ValueError(f'Parameter "{p}" is required, but missing')
 
         # metadata_staging_file_path must be from the staging area--must have the staging dir prefix
         if params.get('metadata_staging_file_path', None):
@@ -594,8 +594,7 @@ class PDBUtil:
                  ).get('copy_file_path')
             return (staging_file_path, params['workspace_name'], params['structures_name'])
         else:
-            error_msg = "Must supply a 'metadata_staging_file_path'"
-            raise ValueError(error_msg)
+            raise ValueError('Must supply a "metadata_staging_file_path"')
 
     def _read_file_by_type(self, file_path):
         """
@@ -618,7 +617,7 @@ class PDBUtil:
                 # handle xls, xlsx, xlsm, xlsb, odf, ods and odt file extensions
                 df = pd.read_excel(file_path, index_col=None, engine='openpyxl')
             else:  # invalid file type
-                error_msg = "Invalid input file type, only 'csv/tsv/xlsx' are accepted!"
+                error_msg = 'Invalid input file type, only "csv/tsv/xlsx" are accepted!'
                 raise ValueError(error_msg)
             # strip off the leading and trailing whitespaces of the column names
             df.columns = df.columns.str.strip()
@@ -640,6 +639,8 @@ class PDBUtil:
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
                             'PDB filename', 'Is model', 'From RCSB']
+        # Only extensions ‘.cif’ or ‘.pdb’ are valid
+        accepted_extensions = ['.pdb', '.cif']
 
         pdb_file_paths = list()
         narrative_ids = list()
@@ -653,8 +654,7 @@ class PDBUtil:
         # check if required columns are read in correctly
         for col in required_columns:
             if col not in df_col_list:
-                missing_required = f"Required column '{col}' is missing!"
-                raise ValueError(missing_required)
+                raise ValueError(f'Required column "{col}" is missing!')
 
         df_indexes = df_meta_data.columns
         for i in range(len(df_meta_data[df_indexes[0]])):
@@ -662,28 +662,28 @@ class PDBUtil:
             if not pd.isna(narr_id):
                 narrative_ids.append(narr_id)
             else:
-                missing_narr_id = "Please fill all the rows in column 'Narrative ID'!"
-                raise ValueError(missing_narr_id)
+                raise ValueError(f'Please fill all the rows in column: {required_columns[0]}!')
 
             obj_name = df_meta_data[df_indexes[1]][i]
             if not pd.isna(obj_name):
                 genome_names.append(obj_name)
             else:
-                missing_obj_name = "Please fill all the rows in column 'Object name'!"
-                raise ValueError(missing_obj_name)
+                raise ValueError('Please fill all the rows in column: Object name!')
 
             feat_id = df_meta_data[df_indexes[2]][i]
             if not pd.isna(feat_id):
                 feature_ids.append(feat_id)
             else:
-                missing_feature_id = f"Please fill all the rows in column '{required_columns[2]}'!"
-                raise ValueError(missing_feature_id)
+                raise ValueError(f'Please fill all the rows in column: {required_columns[2]}!')
 
             pdb_fn = df_meta_data[df_indexes[3]][i]  # pdb_fn does not have staging dir prefix
             if pd.isna(pdb_fn):
-                missing_pdb_file = f"Please fill all the rows in column '{required_columns[3]}'!"
-                raise ValueError(missing_pdb_file)
+                raise ValueError(f'Please fill all the rows in column: {required_columns[3]}!')
+
             (struct_name, ext) = os.path.splitext(os.path.basename(pdb_fn))
+            if ext not in accepted_extensions:
+                #raise ValueError('Only files with extensions ".cif" or ".pdb" are accepted.')
+                print('Only files with extensions ".cif" or ".pdb" are accepted.')
 
             from_rcsb = df_meta_data[df_indexes[5]][i]  # pdb file source, default to 'yes'
             if pd.isna(from_rcsb):
@@ -693,6 +693,7 @@ class PDBUtil:
             if not pd.isna(is_model):
                 pdb_file_paths.append(
                     {'file_path': pdb_fn,
+                     'file_extension': ext,
                      'structure_name': struct_name,
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
@@ -701,12 +702,10 @@ class PDBUtil:
                      'from_rcsb': 'y' in from_rcsb or 'Y' in from_rcsb}
                 )
             else:
-                missing_pdb_md = f"Please fill all the rows in columns '{required_columns[4]}'!"
-                raise ValueError(missing_pdb_md)
+                raise ValueError(f'Please fill all the rows in column: {required_columns[4]}!')
 
         if not pdb_file_paths:
-            error_msg = "No PDB file info is provided!"
-            raise ValueError(error_msg)
+            raise ValueError('No PDB file info is provided!')
 
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
@@ -787,7 +786,6 @@ class PDBUtil:
                              f' target="_blank"> RCSB Structure</a></td>')
             else:
                 row_html += (f'<td>{struct_nm}<a href="./molstar_viewer.html"'
-                             f' or <a href="molstar_viewer.html"'
                              f' target="_blank"> MolStar Viewer</a></td>')
 
             row_html += (f'<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
@@ -841,9 +839,9 @@ class PDBUtil:
         self.ws_client = Workspace(config['workspace-url'])
         self.shock_url = config['shock-url']
 
-    def import_model_pdb_file(self, params, create_report=True):
+    def import_model_pdb_file(self, params, create_report=False):
         """
-            import_model_pdb_file: upload an experiment pdb file and convert into a
+            import_model_pdb_file: upload a pdb file and convert into a
                                   KBaseStructure.ModelProteinStructure object
         """
         logging.info(f'import_model_pdb_file to a pdb data structure with params: {params}')
@@ -864,7 +862,7 @@ class PDBUtil:
         logging.info(f'Model structure data:{data}')
         return data, pdb_info
 
-    def import_experiment_pdb_file(self, params, create_report=True):
+    def import_experiment_pdb_file(self, params, create_report=False):
         """
             import_experiment_pdb_file: upload an experiment pdb file and convert into a
                                        KBaseStructure.ExperimentalProteinStructure object
@@ -893,7 +891,7 @@ class PDBUtil:
             _export_pdb: return the shock_id of the uploaded pdb object
         """
         if "input_ref" not in params:
-            raise ValueError("'input_ref' not in supplied params")
+            raise ValueError('"input_ref" not in supplied params')
 
         return {'shock_id': self._get_pdb_shock_id(params['input_ref'])}
 
@@ -902,9 +900,9 @@ class PDBUtil:
             _structure_to_pdb_file: get the file path for the given pdb object
         """
         if "input_ref" not in params:
-            raise ValueError("input_ref not in supplied params")
+            raise ValueError('input_ref not in supplied params')
         if "destination_dir" not in params:
-            raise ValueError("destination_dir not in supplied params")
+            raise ValueError('destination_dir not in supplied params')
 
         shock_id = self._get_pdb_shock_id(params['input_ref'])
         file_path = self.dfu.shock_to_file({
@@ -920,7 +918,7 @@ class PDBUtil:
             export_pdb_structures: return the shock_ids of the ProteinStructures object
         """
         if 'input_ref' not in params:
-            raise ValueError("'input_ref' not in supplied params")
+            raise ValueError('"input_ref" not in supplied params')
 
         model_pdbs = []
         exp_pdbs = []
@@ -987,16 +985,26 @@ class PDBUtil:
             pdb_params['structure_name'] = pdb['structure_name']
 
             if pdb['is_model']:
-                model_pdb_data, pdb_info = self.import_model_pdb_file(pdb_params, False)
-                if model_pdb_data:
-                    model_pdb_objects.append(model_pdb_data)
-                    pdb_infos.append(pdb_info)
-                    successful_files.append(pdb['file_path'])
-                    total_structures += 1
-                else:
-                    failed_files.append(pdb['file_path'])
+                if pdb['file_extension'] == '.pdb':
+                    model_pdb_data, pdb_info = self.import_model_pdb_file(pdb_params)
+                    if model_pdb_data:
+                        model_pdb_objects.append(model_pdb_data)
+                        pdb_infos.append(pdb_info)
+                        successful_files.append(pdb['file_path'])
+                        total_structures += 1
+                    else:
+                        failed_files.append(pdb['file_path'])
+                elif pdb['file_extension'] == '.cif':
+                    cif_pdb_data, pdb_info = self.import_experiment_pdb_file(pdb_params)
+                    if cif_pdb_data:
+                        model_pdb_objects.append(cif_pdb_data)
+                        pdb_infos.append(pdb_info)
+                        successful_files.append(pdb['file_path'])
+                        total_structures += 1
+                    else:
+                        failed_files.append(pdb['file_path'])
             else:
-                exp_pdb_data, pdb_info = self.import_experiment_pdb_file(pdb_params, False)
+                exp_pdb_data, pdb_info = self.import_experiment_pdb_file(pdb_params)
                 if exp_pdb_data:
                     exp_pdb_objects.append(exp_pdb_data)
                     pdb_infos.append(pdb_info)
@@ -1026,7 +1034,6 @@ class PDBUtil:
             })[0]
         except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
             err_msg = f'DFU.save_objects errored with message: {e.message} and data: {e.data}'
-            logging.info(err_msg)
             raise ValueError(err_msg)
         else:
             structs_ref = f"{info[6]}/{info[0]}/{info[4]}"

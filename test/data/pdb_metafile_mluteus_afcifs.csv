@@ -1,0 +1,4 @@
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model,From RCSB
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,MLuteus_AlphaFold_133.pdb,yes,no
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,pdb_extract_MLuteus_133.cif,yes,no
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,ma-bak-cepc-0245.cif,yes,no
