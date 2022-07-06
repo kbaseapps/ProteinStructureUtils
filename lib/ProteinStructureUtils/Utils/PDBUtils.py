@@ -749,17 +749,12 @@ class PDBUtil:
         srv_base_url = f'https://{srv_domain}'
         logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
-        dir_name = os.path.dirname(__file__)
-        molstar_html_file = os.path.join(dir_name, 'templates', 'molstar_viewer.html')
-        molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
-        molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
-        shutil.copy(molstar_html_file, os.path.join(output_dir, 'molstar_viewer.html'))
-        shutil.copy(molstar_js_file, os.path.join(output_dir, 'molstar.js'))
-        shutil.copy(molstar_css_file, os.path.join(output_dir, 'molstar.css'))
-
+        struct_content = ""
+        preloadstructs = r"(\/\/Start preloading)(.*)(\/\/End preloading)"
         for succ_pdb in succ_pdb_infos:
             row_html = '<tr>'
             file_path = succ_pdb['file_path']
+            file_ext = succ_pdb['file_extension'][1:]
             pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
@@ -796,6 +791,33 @@ class PDBUtil:
             row_html += f'<td>{seq_idens}</td>'
             row_html += '</tr>'
             pdb_html += row_html
+
+            # Insert the structure file for preloading
+            struct_content += "viewer.loadStructureFromUrl("
+            struct_content += f"'{new_pdb_path}.{file_ext}', '{file_ext}', false, "
+            struct_content += "{representationParams:{theme:{globalName: 'operator-name'}}});\n"
+
+        dir_name = os.path.dirname(__file__)
+        molstar_template_file = os.path.join(dir_name, 'templates', 'molstar_viewer_template.html')
+        molstar_html = os.path.join(dir_name, 'molstar.html')
+
+        with open(molstar_html, 'w') as molstar_html_pt:
+            with open(molstar_template_file, 'r') as molstar_template_pt:
+                molstar_viewer_content = molstar_template_pt.read()
+                print(f"Before replace: {molstar_viewer_content}")
+                molstar_viewer_content = molstar_viewer_content.replace(preloadstructs,
+                                                                        r"\1struct_content\3")
+                print(f"After replace: {molstar_viewer_content}")
+                molstar_html_pt.write(molstar_viewer_content)
+
+        molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
+        molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
+        molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
+        shutil.copy(molstar_js_file, os.path.join(output_dir, 'molstar.js'))
+        shutil.copy(molstar_css_file, os.path.join(output_dir, 'molstar.css'))
+        shutil.copy(molstar_ico_file, os.path.join(output_dir, 'favicon.ico'))
+        shutil.copy(molstar_html, os.path.join(output_dir, 'molstar_viewer.html'))
+
         return pdb_html
 
     def _generate_batch_report_html(self, prot_structs_name, succ_pdb_infos):

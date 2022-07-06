@@ -2,9 +2,12 @@
 <html lang="en-US">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width" initial-scale=1">
+    <!--meta name="viewport" content="width=device-width, initial-scale=1"-->
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <title>Mol* Viewer</title>
     <link rel="stylesheet" type="text/css" href="./molstar.css" />
 </head>
 <body>
@@ -61,6 +64,11 @@
 
         let emdb = getParam('emdb', '[^&]+').trim();
         if (emdb) viewer.loadEmdb(emdb);
+
+        // Start preloading
+        viewer.loadStructureFromUrl('./pdb_extract_MLuteus_133.cif', 'mmcif', false, { representationParams: { theme: { globalName: 'operator-name' } } });
+        viewer.loadStructureFromUrl('./MLuteus_AlphaFold_133.pdb', 'pdb', false, { representationParams: { theme: { globalName: 'operator-name' } } });
+        // End preloading
     </script> 
 </body>
 </html> 
