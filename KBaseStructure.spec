@@ -71,7 +71,7 @@ module KBaseStructure {
   typedef string handle_ref;
 
   
-  /*
+    /*
     ProteinData
     mol_id id: ID for the protein
     string sequence: amino acid sequence
@@ -87,7 +87,7 @@ module KBaseStructure {
     bool exact_match: computed according to seq_identity
 
     @optional id uniref_id cds_id model_id chain_id seq_identity exact_match
-    @optional  genome_ref metagenome_ref feature_ref feature_set_ref feature_type
+    @optional genome_ref metagenome_ref feature_ref feature_set_ref feature_type
   */
   typedef structure {
     mol_id id;
@@ -156,8 +156,9 @@ module KBaseStructure {
     bool is_model;
   } ProteinStructure;
 
+      
   /*
-    ProteinStructures
+    ProteinStructures - using the merged ProteinStructure
     protein_structures: a list of references to ProteinStructure
     total_structures: total count of protein structures
     description: description/remarks
