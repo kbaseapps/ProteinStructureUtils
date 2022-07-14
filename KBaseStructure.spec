@@ -155,6 +155,7 @@ module KBaseStructure {
     bool is_model;
   } ProteinStructure;
 
+      
   /*
     ProteinStructures
     protein_structures: a list of references to ProteinStructure
