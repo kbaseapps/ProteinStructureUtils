@@ -141,25 +141,37 @@ module KBaseStructure {
     /*Protein links*/
     list<ProteinData> proteins;
 
-    /*File links*/
-    handle_ref pdb_handle;
-    handle_ref mmcif_handle;
-    handle_ref xml_handle;
-  } ExperimentalProteinStructure;
-
-  /*
-    ModelProteinStructure
+ /*
+    ProteinStructure
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional compound source
-    @optional mmcif_handle
+    @optional user_data num_models num_het_atoms num_water_atoms num_disordered_atoms num_disordered_residues
+    @optional rcsb_id deposition_date head release_date structure_method resolution author
+    @optional mmcif_handle xml_handle
   */
   typedef structure {
-    string user_data;
     string name;
+    string user_data;
     int num_chains;
     int num_residues;
     int num_atoms;
+
+    /*Experimental header from .cif file*/
+    string rcsb_id;
+    string deposition_date;
+    string head;
+    string release_date;
+    string structure_method;
+    float resolution;
+    string author;
+
+    /*Structure metadata from .cif file*/
+    int num_models;
+    int num_het_atoms;
+    int num_water_atoms;
+    int num_disordered_atoms;
+    int num_disordered_residues;
 
     mapping<string, string> compound;
     mapping<string, string> source;
@@ -170,20 +182,21 @@ module KBaseStructure {
     /*File links*/
     handle_ref pdb_handle;
     handle_ref mmcif_handle;
-  } ModelProteinStructure;
+    handle_ref xml_handle;
 
+    /*Label provided by the user*/
+    bool is_model;
+  } ProteinStructure;
 
   /*
     ProteinStructures
-    model_structures: a list of references to ModelProteinStructures
-    experimental_structures: a list of references to ExperimentalProteinStructures
+    protein_structures: a list of references to ProteinStructure
     total_structures: total count of protein structures
     description: description/remarks
-    @optional experimental_structures description
+    @optional description
   */
   typedef structure {
-    list<ModelProteinStructure> model_structures;
-    list<ExperimentalProteinStructure> experimental_structures;
+    list<ProteinStructure> protein_structures;
     int total_structures;
     string description;
   } ProteinStructures;
