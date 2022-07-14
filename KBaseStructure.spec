@@ -158,7 +158,7 @@ module KBaseStructure {
 
       
   /*
-    ProteinStructures
+    ProteinStructures - using the merged ProteinStructure
     protein_structures: a list of references to ProteinStructure
     total_structures: total count of protein structures
     description: description/remarks
