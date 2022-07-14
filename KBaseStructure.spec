@@ -70,6 +70,7 @@ module KBaseStructure {
   */
   typedef string handle_ref;
 
+  
   /*
     ProteinData
     mol_id id: ID for the protein
@@ -109,7 +110,7 @@ module KBaseStructure {
 
 
  /*
-    ProteinStructure
+    ProteinStructure - merged from previous ModelProteinStructure and ExperimentalProteinStructure
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
     @optional compound source
