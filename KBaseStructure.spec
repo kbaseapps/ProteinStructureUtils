@@ -107,39 +107,6 @@ module KBaseStructure {
     bool exact_match;
   } ProteinData;
 
-  /*
-    ExperimentalProteinStructure
-    compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
-    source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
-    @optional mmcif_handle xml_handle
-    @optional compound source
-  */
-  typedef structure {
-    /*Experimental header*/
-    string rcsb_id;
-    string name;
-    string deposition_date;
-    string head;
-    string release_date;
-    string structure_method;
-    float resolution;
-    string author;
-
-    mapping<string, string> compound;
-    mapping<string, string> source;
-
-    /*Structure metadata*/
-    int num_models;
-    int num_chains;
-    int num_residues;
-    int num_atoms;
-    int num_het_atoms;
-    int num_water_atoms;
-    int num_disordered_atoms;
-    int num_disordered_residues;
-
-    /*Protein links*/
-    list<ProteinData> proteins;
 
  /*
     ProteinStructure
