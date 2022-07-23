@@ -152,7 +152,7 @@ module KBaseStructure {
     handle_ref mmcif_handle;
     handle_ref xml_handle;
 
-    /*Label provided by the user*/
+    /*Label provided by the user, bool is an int*/
     bool is_model;
   } ProteinStructure;
 
