@@ -803,7 +803,8 @@ class PDBUtil:
             if file_ext == 'cif':
                 file_ext = 'mmcif'
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
-            new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
+            base_filename = os.path.basename(file_path)
+            new_pdb_path = os.path.join(output_dir, base_filename)
             shutil.copy(pdb_file_path, new_pdb_path)
 
             struct_nm = succ_pdb['structure_name'].upper()
@@ -817,7 +818,7 @@ class PDBUtil:
 
             script_content = '<script type="text/javascript">\n'
             script_content += self._config_viewer(viewer_name, struct_name, False)
-            script_content += (f'{viewer_name}.loadStructureFromUrl("{new_pdb_path}", '
+            script_content += (f'{viewer_name}.loadStructureFromUrl("./{base_filename}", '
                                f'"{file_ext}", false, {{ representationParams: '
                                f'{{ theme: {{ globalName: "operator-name" }} }} }});')
             script_content += '\n</script>'
@@ -853,7 +854,7 @@ class PDBUtil:
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
 
-            pre_loads += (f'\nviewer.loadStructureFromUrl("{new_pdb_path}", '
+            pre_loads += (f'\nviewer.loadStructureFromUrl("./{os.path.basename(file_path)}", '
                           f'"{file_ext}", false, {{ representationParams: '
                           f'{{ theme: {{ globalName: "operator-name" }} }} }});')
 
@@ -897,7 +898,8 @@ class PDBUtil:
                 seq_idens = succ_pdb['sequence_identities']
 
             tbody_html += (f'\n<td><div id="{struct_nm}" class="subtablinks" '
-                           f'onclick="openSubTab(event, this)">{struct_nm}</div></td>')
+                           f'onclick="openSubTab(event, this)" style="cursor: pointer;" '
+                           f'title="Click to see in mol*">{struct_nm}</div></td>')
             tbody_html += (f'\n<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                            f' target="_blank">{genome_name}</a></td><td>{feat_id}</td>')
             tbody_html += f'\n<td>{pdb_chains} </td>'
@@ -1099,7 +1101,6 @@ class PDBUtil:
         successful_files = list()
         failed_files = list()
         protein_structures = dict()
-        total_structures = 0
 
         pdb_params = {}
         # loop through the list of pdb_file_paths
@@ -1133,9 +1134,10 @@ class PDBUtil:
             logging.info("No pdb structure was created/saved!")
             return {}
 
+        total_structures = len(pdb_objects)
         protein_structures['protein_structures'] = pdb_objects
-        protein_structures['total_structures'] = len(pdb_objects)
-        protein_structures['description'] = (f'Created {len(pdb_objects)} '
+        protein_structures['total_structures'] = total_structures
+        protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
 
         returnVal = {}
