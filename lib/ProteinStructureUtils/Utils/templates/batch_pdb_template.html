@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width" initial-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="./molstar.css" />
+    <title>Protein Structures with Mol* Viewer</title>
     <style>
         * {
           box-sizing: border-box;
@@ -23,125 +26,165 @@
           }
         }
 
-        /* Style the structure area */
-        .viewer_3Dmoljs {
-          height: 400px;
-          width: 100%;
-          position: relative;
-        }
-
-        /* Style the modal window */
-        .modal {
-          --gap: 15px;
-
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-sizing: border-box;
-          padding: var(--gap);
-          background: rgba(0, 0, 0, 0.5);
-          font-family: sans-serif;
-        }
-
-        .modal__inner {
-          background: #ffffff;
-          width: 100%;
-          max-width: 800px;
+        /* Style the tab */
+        .tab {
           overflow: hidden;
-          border-radius: 4px;
+          border: 1px solid #ccc;
+          background-color: #f1f1f1;
         }
 
-        .modal__top {
-          display: flex;
-          align-items: center;
-          background-color: #eeeeee;
-        }
-
-        .modal__title {
-          flex-grow: 1;
-          padding: 0 var(--gap);
-          font-size: 20px;
-        }
-
-        .modal__close {
-          display: flex;
-          align-items: center;
-          cursor: pointer;
-          padding: var(--gap);
-          background: none;
+        /* Style the buttons that are used to open the tab content */
+        .tab button {
+          background-color: inherit;
+          float: left;
           border: none;
           outline: none;
+          cursor: pointer;
+          padding: 14px 16px;
+          transition: 0.3s;
         }
 
-        .modal__content {
-          padding: 0 var(--gap);
-          line-height: 1.5;
+        /* Change background color of buttons on hover */
+        .tab button:hover {
+          background-color: #ddd;
         }
 
-        .modal__bottom {
-          text-align: right;
-          padding: 0 var(--gap) var(--gap) var(--gap);
+        /* Create an active/current tablink class */
+        .tab button.active {
+          background-color: #ccc;
+        }
+
+        /* Style the tab content */
+        .tabcontent {
+          display: none;
+          padding: 6px 12px;
+          -webkit-animation: fadeEffect 1s;
+          animation: fadeEffect 1s;
+          /*border: 1px solid #ccc;
+          border-top: none;*/
+        }
+
+        /* Style the subtab content */
+        .subtabcontent {
+          display: none;
+          padding: 10px 12px;
+          margin-top: 20px;
+          -webkit-animation: fadeEffect 1s;
+          animation: fadeEffect 1s;
+          border: 2px solid #ccc;
+          background-color: rgb(187, 187, 187);
+        }
+
+        /* Fade in tabs */
+        @-webkit-keyframes fadeEffect {
+          from {opacity: 0;}
+          to {opacity: 1;}
+        }
+
+        @keyframes fadeEffect {
+          from {opacity: 0;}
+          to {opacity: 1;}
+        }
+
+        /* Embed the viewer */
+        #app {
+          position: relative;
+          left: 0px;
+          top: 0px;
+          width: auto;
+          height: 800px;
+        }
+        /* Embed the viewer */
+        .struct {
+          position: relative;
+          left: 0px;
+          top: 0px;
+          width: auto;
+          height: 500px;
         }
     </style>
 
     <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.3.1.js"></script>
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
     <script>
-        function showModal(titleHtml, pdb_path) {
-          const modal = document.createElement("div");
-          const contentHtml = `
-                <div class="viewer_3Dmoljs"
-                     data-backgroundcolor="0xffffff"
-                     data-style="cartoon:color=spectrum"
-                     data-href="${pdb_path}">
-                </div>
-          `;
-
-          modal.classList.add("modal");
-          modal.innerHTML = `
-                <div class="modal__inner">
-                    <div class="modal__content">${contentHtml}</div>
-                    <div class="modal__top">
-                        <div class="modal__title">${titleHtml}</div>
-                        <button class="modal__close" type="button">
-                            <span class="material-icons">close</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            modal.querySelector(".modal__close").addEventListener("click", () => {
-            document.body.removeChild(modal);
-          });
-
-          const mol_script = document.createElement('script');
-          mol_script.setAttribute('src', 'https://3Dmol.csb.pitt.edu/build/3Dmol-min.js');
-          modal.appendChild(mol_script);
-
-          document.body.appendChild(modal);
-        }
-
-        $(document).ready( function () {
-            $('#pdbs').DataTable();
-        });
-    </script>
+      $(document).ready( function () {
+          $('#pdbs').DataTable();
+      });
+  </script>
 </head>
 <body>
+<!-- Tab links -->
+<div class="tab">
+  <button class="tablinks" onclick="openTab(event, 'StructureInfo')" id="defaultOpen">Structure Info</button>
+  <button class="tablinks" onclick="openTab(event, 'StructureViewer')">Structure Viewer</button>
+</div>
+
+<!-- Begin Tab content1 -->
+<div id="StructureInfo" class="tabcontent">
     <!--Begin PDBs successfully uploaded-->
-    <h2>PDBs successfully uploaded</h2>
+    <h2>Protein structures successfully uploaded</h2>
     <table id="pdbs" class="display" style="width: 100%;">
         <thead>
-            <tr><th>Structure</th><th>Genome</th><th>Feature</th><th>Feature Type</th><th>Model(s(</th><th>Chain(s)</th><th>Sequence identity</th></tr>
+            <tr>
+              <th>Structure</th>
+              <th>Genome</th>
+              <th>Feature</th>
+              <th>Model and chain matching feature</th>
+              <th>Sequence identity</th>
+            </tr>
         </thead>
         <tbody>
-            <!--replace this content-->
+            <!--replace uploaded pdbs tbody-->
         </tbody>
     </table>
     <!--End PDBs successfully uploaded-->
  
+    <!--Begin Sub Tab content-->
+    <!--replace subtabs-->
+    <!--End Sub Tab content-->
+</div>
+<!-- End Tab content1 -->
+
+<!-- Begin Tab content2 -->
+<!--replace StructureViewer content-->
+<!-- End Tab content2 -->
+
+  <!--Managing tab states -->
+  <script>
+    function openTab(evt, tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    }
+
+    function openSubTab(evt, subtab) {
+      var subtabid = subtab.id;
+      var i, subtabcontents, subtablinks, subtabName;
+      subtabName = subtabid.substr(0, subtabid.length) + "_1";
+      //alert("Inside openSubTab: " + subtabName + " is clicked!");
+
+      subtabcontents = document.getElementsByClassName("subtabcontent");
+      for (i = 0; i < subtabcontents.length; i++) {
+        subtabcontents[i].style.display = "none";
+      }
+      subtablinks = document.getElementsByClassName("subtablinks");
+      for (i = 0; i < subtablinks.length; i++) {
+        subtablinks[i].className = subtablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(subtabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    }
+
+    // Get the element with id="defaultOpen" and click on it
+    document.getElementById("defaultOpen").click();
+  </script>
 </body>
 </html> 

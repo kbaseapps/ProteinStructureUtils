@@ -1,6 +1,6 @@
-Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model,From RCSB
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifs.pdb,yes,yes
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ift.pdb,yes,yes
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,6ifv.pdb,yes,no
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifw.pdb,yes,no
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,6ifx.pdb,yes,yes
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifs.pdb,yes
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ift.pdb,yes
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,6ifv.pdb,yes
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifw.pdb,yes
+57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0002,6ifx.pdb,yes

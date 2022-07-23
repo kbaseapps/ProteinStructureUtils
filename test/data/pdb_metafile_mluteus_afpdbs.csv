@@ -1,13 +1,13 @@
-Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model,From RCSB
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,MLuteus_AlphaFold_133.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1883,MLuteus_AlphaFold_1883.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1919,MLuteus_AlphaFold_1919.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.2537,MLuteus_AlphaFold_2537.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.2777,MLuteus_AlphaFold_2777.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.2922,MLuteus_AlphaFold_2922.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3366,MLuteus_AlphaFold_3366.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,MLuteus_AlphaFold_3483.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3664,MLuteus_AlphaFold_3664.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3665,MLuteus_AlphaFold_3665.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3827,MLuteus_AlphaFold_3827.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3968,MLuteus_AlphaFold_3968.pdb,yes,no
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,MLuteus_AlphaFold_133.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1883,MLuteus_AlphaFold_1883.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1919,MLuteus_AlphaFold_1919.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.2537,MLuteus_AlphaFold_2537.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.2777,MLuteus_AlphaFold_2777.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.2922,MLuteus_AlphaFold_2922.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3366,MLuteus_AlphaFold_3366.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,MLuteus_AlphaFold_3483.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3664,MLuteus_AlphaFold_3664.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3665,MLuteus_AlphaFold_3665.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3827,MLuteus_AlphaFold_3827.pdb,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3968,MLuteus_AlphaFold_3968.pdb,yes

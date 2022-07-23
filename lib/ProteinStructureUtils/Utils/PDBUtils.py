@@ -2,6 +2,9 @@ import hashlib
 import logging
 import os
 import sys
+import re
+import gzip
+import string
 import shutil
 import uuid
 import errno
@@ -35,10 +38,10 @@ class PDBUtil:
     # matched to a KBase genome/feature
     B_IDENTITY_THRESH = 0.6
 
-    def _validate_import_pdb_file_params(self, params):
+    def _validate_import_file_params(self, params):
         """
-            _validate_import_pdb_file_params:
-                validates input params to import_model_pdb_file and import_experiment_pdb_file
+            _validate_import_file_params:
+                validates input params to import_pdb_file and import_mmdif_file
         """
         # check for required parameters
         for p in ['structure_name', 'workspace_name']:
@@ -62,20 +65,52 @@ class PDBUtil:
 
         return file_path, params.get('workspace_name'), params.get('structure_name')
 
-    def _model_file_to_data(self, file_path, params):
-        """
-            _model_file_to_data:
-                Do the PDB conversion--parse the model pdb/cif file for creating a pdb data object
-        """
-        logging.info(f'Parsing pdb file {file_path} to a pdb structure with params: {params}')
+    def _get_pdb_id(self, pdb_file):
+        pdb_id = os.path.basename(pdb_file)
+        for ext in [r'\.gz$', r'\.pdb$', r'\.ent$', r'\.cif$', r'^pdb']:
+            pdb_id = re.sub(ext, '', pdb_id)
+        if pdb_id.startswith('ent') and len(pdb_id) > 4:
+            pdb_id = pdb_id[3:]
 
-        parser = PDB.PDBParser(PERMISSIVE=1)
-        pdb1 = file_path
+        return pdb_id
+
+    def _get_pdb_structure(self, pdb_file, pdb_id=None, quiet=True):
+        """Set QUIET to False to output warnings like incomplete chains etc."""
+
+        if pdb_id is None:
+            pdb_id = self._get_pdb_id(pdb_file)
+        parser = PDB.PDBParser(PERMISSIVE=1, get_header=True, QUIET=quiet)
+        if pdb_file.endswith('.gz'):
+            with gzip.open(pdb_file, 'rt') as ifh:
+                structure = parser.get_structure(pdb_id, ifh)
+        else:
+            structure = parser.get_structure(pdb_id, pdb_file)
+
+        # Rename empty chains (i.e. chain.id == ' ')
+        model = structure[0]
+        chain_ids = {chain.id for chain in model.child_list}
+        for chain in model.child_list:
+            if chain.id in [' ', 'Z']:
+                chain_ids.remove(chain.id)
+                chain.id = next(c for c in string.ascii_uppercase if c not in chain_ids)
+                chain_ids.add(chain.id)
+        model.child_dict = {chain.id: chain for chain in model.child_list}
+
+        return structure
+
+    def _pdb_file_to_data(self, file_path, params):
+        """
+            _pdb_file_to_data:
+                Do the PDB conversion--use PDB.PDBParser to parse the pdb file for
+                                       creating a pdb data object
+        """
+        logging.info(f'Parsing pdb file {file_path} to a ProteinData object with params: {params}')
+
         pp_no = 0
-        data = {}
-
+        pdb_data = {}
+        pdb_id = self._get_pdb_id(file_path)
         try:
-            structure = parser.get_structure("test", pdb1)
+            structure = self._get_pdb_structure(file_path, pdb_id, quiet=False)
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             logging.info(f'PDBParser errored with message: {e.message}')
             raise
@@ -96,7 +131,7 @@ class PDBUtil:
 
             pdb_info = params.get('pdb_info', None)
             if pdb_info and pdb_info.get('sequence_identities', None):
-                data = {
+                pdb_data = {
                     'name': structure.header.get('name', ''),
                     'num_chains': num_chains,
                     'num_residues': num_residues,
@@ -107,16 +142,17 @@ class PDBUtil:
                 }
             else:
                 logging.info(f'Parsing pdb file {file_path} failed to match KBase genome/features!')
-                data = {}
+                pdb_data = {}
         finally:
-            return data, pp_no, params
+            return pdb_data, pp_no, params
 
-    def _exp_file_to_data(self, file_path, params):
+    def _mmcif_file_to_data(self, file_path, params):
         """
-            _exp_file_to_data:
-                Do the PDB conversion--parse the experiment pdb file for creating a pdb data object
+            _mmcif_file_to_data:
+                Do the PDB conversion--use PDB.MMCIFParser to parse the experiment pdb file for
+                                       creating a pdb data object
         """
-        logging.info(f'Parsing pdb file {file_path} to a pdb structure with params: {params}')
+        logging.info(f'Parsing pdb file {file_path} to a ProteinData object with params: {params}')
 
         parser = PDB.MMCIFParser()
         cif = file_path
@@ -236,9 +272,9 @@ class PDBUtil:
                             prot['genome_ref'] = gn_ref
                             prot['feature_id'] = feature_id
                             prot['feature_type'] = kb_feature_type
-                            pdb_chain_ids.append(prot['chain_id'])
+                            pdb_chain_ids.append(f"Model {prot['model_id']+1}.Chain {prot['chain_id']}")
                             pdb_model_ids.append(str(prot['model_id']))
-                            pdb_seq_idens.append(str(prot['seq_identity']))
+                            pdb_seq_idens.append(f"{prot['seq_identity']*100}%")
                             pdb_exact_matches.append(str(prot['exact_match']))
 
                 if pdb_seq_idens:
@@ -577,9 +613,9 @@ class PDBUtil:
 
         return report_output
 
-    def _validate_batch_import_pdbs_params(self, params):
+    def _validate_batch_import_params(self, params):
         """
-            _validate_batch_import_pdbs_params:
+            _validate_batch_import_params:
                 validates params passed to batch_import_pdbs method
         """
         # check for required parameters
@@ -638,7 +674,7 @@ class PDBUtil:
         logging.info(f'parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                            'PDB filename', 'Is model', 'From RCSB']
+                            'PDB filename', 'Is model']
         # Only extensions ‘.cif’ or ‘.pdb’ are valid
         accepted_extensions = ['.pdb', '.cif']
 
@@ -685,10 +721,6 @@ class PDBUtil:
                 #raise ValueError('Only files with extensions ".cif" or ".pdb" are accepted.')
                 print('Only files with extensions ".cif" or ".pdb" are accepted.')
 
-            from_rcsb = df_meta_data[df_indexes[5]][i]  # pdb file source, default to 'yes'
-            if pd.isna(from_rcsb):
-                from_rcsb = 'yes'
-
             is_model = df_meta_data[df_indexes[4]][i]
             if not pd.isna(is_model):
                 pdb_file_paths.append(
@@ -698,8 +730,7 @@ class PDBUtil:
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
                      'feature_id': feat_id,
-                     'is_model': 'y' in is_model or 'Y' in is_model,
-                     'from_rcsb': 'y' in from_rcsb or 'Y' in from_rcsb}
+                     'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0}
                 )
             else:
                 raise ValueError(f'Please fill all the rows in column: {required_columns[4]}!')
@@ -715,7 +746,7 @@ class PDBUtil:
             _generate_batch_report: generate summary report for upload
         """
 
-        output_html_files = self._generate_batch_report_html(structs_name, pdb_infos)
+        output_html_files = self._generate_batch_report_html(pdb_infos)
 
         description = (f'Imported PDBs into a ProteinStructures object "{structs_ref}", '
                        f'named "{structs_name}".')
@@ -739,23 +770,117 @@ class PDBUtil:
 
         return report_output
 
-    def _write_pdb_htmls(self, output_dir, succ_pdb_infos):
+    def _config_viewer(self, viewer_nm, struct_nm, showctrl=False):
         """
-            _write_pdb_htmls: write the batch pdb info as a jQuery DataTable into HTML files
+            _config_viewer: write the mol* viewer configurations
+        """
+        ctrl = 'true' if showctrl else 'false'
+        return (f'let {viewer_nm} = new molstar.Viewer("{struct_nm}", {{\n'
+                f'layoutIsExpanded: false,\n'
+                f'layoutShowControls: {ctrl},\n'
+                f'layoutShowRemoteState: false,\n'
+                f'layoutShowSequence: true,\n'
+                f'layoutShowLog: false,\n'
+                f'layoutShowLeftPanel: {ctrl},\n'
+                f'viewportShowExpand: false,\n'
+                f'viewportShowSelectionMode: false,\n'
+                f'viewportShowAnimation: true,\n'
+                f'collapseLeftPanel: false,\n'
+                f'}});\n')
+
+    def _write_viewer_content_single(self, output_dir, succ_pdb_infos):
+        """
+            _write_viewer_content_single: write the mol* viewer html content to fill in the
+                                        subtabcontent and replace the string <!--replace subtabs-->
+                                        in the templatefile 'batch_pdb_template.html'
+        """
+        viewer_content = ''
+        pdb_index = 0
+
+        for succ_pdb in succ_pdb_infos:
+            file_path = succ_pdb['file_path']
+            file_ext = succ_pdb['file_extension'][1:]
+            if file_ext == 'cif':
+                file_ext = 'mmcif'
+            pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
+            new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
+            shutil.copy(pdb_file_path, new_pdb_path)
+
+            struct_nm = succ_pdb['structure_name'].upper()
+            viewer_name = 'viewer' + str(pdb_index + 1)
+            struct_name = 'struct' + str(pdb_index + 1)
+
+            sub_div = (f'<div id="{struct_nm}_1" class="subtabcontent">\n'
+                       f'<h2>{struct_nm}</h2>\n'
+                       f'<div id="{struct_name}" class="struct"></div>\n'
+                       f'<script type="text/javascript" src="./molstar.js"></script>\n')
+
+            script_content = '<script type="text/javascript">\n'
+            script_content += self._config_viewer(viewer_name, struct_name, False)
+            script_content += (f'{viewer_name}.loadStructureFromUrl("{new_pdb_path}", '
+                               f'"{file_ext}", false, {{ representationParams: '
+                               f'{{ theme: {{ globalName: "operator-name" }} }} }});')
+            script_content += '\n</script>'
+
+            sub_div += script_content
+            sub_div += '\n</div>\n'
+            viewer_content += sub_div
+            pdb_index += 1
+
+        return viewer_content
+
+    def _write_viewer_content_multi(self, output_dir, succ_pdb_infos):
+        """
+            _write_viewer_content_multi: write the mol* viewer html content to fill in the
+                                         subtabcontent and replace the string <!--replace subtabs-->
+                                         in the templatefile 'batch_pdb_template.html'
+        """
+        pre_loads = ''
+        viewer_content = ('<div id="StructureViewer" class="tabcontent">'
+                          '<h2>Uploaded Structure(s)</h2>'
+                          '<div id="app"></div>'
+                          '<script type="text/javascript" src="./molstar.js"></script>')
+
+        script_content = '<script type="text/javascript">\n'
+        script_content += self._config_viewer('viewer', 'app', True)
+
+        for succ_pdb in succ_pdb_infos:
+            file_path = succ_pdb['file_path']
+            file_ext = succ_pdb['file_extension'][1:]
+            if file_ext == 'cif':
+                file_ext = 'mmcif'
+            pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
+            new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
+            shutil.copy(pdb_file_path, new_pdb_path)
+
+            pre_loads += (f'\nviewer.loadStructureFromUrl("{new_pdb_path}", '
+                          f'"{file_ext}", false, {{ representationParams: '
+                          f'{{ theme: {{ globalName: "operator-name" }} }} }});')
+
+        # insert the structure file for preloading
+        script_content += pre_loads
+        script_content += '\n</script>'
+        viewer_content += script_content
+        viewer_content += '\n</div>\n'
+
+        return viewer_content
+
+    def _write_structure_info(self, output_dir, succ_pdb_infos):
+        """
+            _write_structure_info: write the batch uploaded structure info to replace the string
+                                   '<!--replace uploaded pdbs tbody-->' in the tboday tag of the
+                                   jQuery DataTable in the template file 'batch_pdb_template.html'
         """
 
-        pdb_html = ''
+        tbody_html = ''
         srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
         srv_base_url = f'https://{srv_domain}'
         logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
-        struct_content = ""
-        preloadstructs = r"(\/\/Start preloading)(.*)(\/\/End preloading)"
         for succ_pdb in succ_pdb_infos:
-            row_html = '<tr>'
+            tbody_html += '<tr>'
             file_path = succ_pdb['file_path']
-            file_ext = succ_pdb['file_extension'][1:]
-            pdb_file_path = succ_pdb['scratch_path']  # This is the scratch path for this pdb file
+            pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
 
@@ -763,64 +888,25 @@ class PDBUtil:
             genome_name = succ_pdb['genome_name']
             genome_ref = succ_pdb['genome_ref']
             feat_id = succ_pdb['feature_id']
-            feat_type = succ_pdb['feature_type']
-            src_rcsb = succ_pdb['from_rcsb']
 
             pdb_chains = []
-            pdb_models = []
             seq_idens = []
             if succ_pdb.get('chain_ids', None):
-                pdb_chains = succ_pdb['chain_ids'].split()
-            if succ_pdb.get('model_ids', None):
-                pdb_models = succ_pdb['model_ids'].split()
+                pdb_chains = succ_pdb['chain_ids']
             if succ_pdb.get('sequence_identities', None):
-                seq_idens = succ_pdb['sequence_identities'].split()
+                seq_idens = succ_pdb['sequence_identities']
 
-            if src_rcsb:
-                row_html += (f'<td>{struct_nm}<a href="https://www.rcsb.org/3d-view/{struct_nm}"'
-                             f' target="_blank"> RCSB Structure</a></td>')
-            else:
-                row_html += (f'<td>{struct_nm}<a href="./molstar_viewer.html"'
-                             f' target="_blank"> MolStar Viewer</a></td>')
+            tbody_html += (f'\n<td><div id="{struct_nm}" class="subtablinks" '
+                           f'onclick="openSubTab(event, this)">{struct_nm}</div></td>')
+            tbody_html += (f'\n<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
+                           f' target="_blank">{genome_name}</a></td><td>{feat_id}</td>')
+            tbody_html += f'\n<td>{pdb_chains} </td>'
+            tbody_html += f'\n<td>{seq_idens}</td>'
+            tbody_html += '\n</tr>'
 
-            row_html += (f'<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
-                         f' target="_blank">{genome_name}</a></td>'
-                         f'<td>{feat_id}</td><td>{feat_type}</td>')
-            row_html += f'<td>{pdb_models}</td>'
-            row_html += f'<td>{pdb_chains}</td>'
-            row_html += f'<td>{seq_idens}</td>'
-            row_html += '</tr>'
-            pdb_html += row_html
+        return tbody_html
 
-            # Insert the structure file for preloading
-            struct_content += "viewer.loadStructureFromUrl("
-            struct_content += f"'{new_pdb_path}.{file_ext}', '{file_ext}', false, "
-            struct_content += "{representationParams:{theme:{globalName: 'operator-name'}}});\n"
-
-        dir_name = os.path.dirname(__file__)
-        molstar_template_file = os.path.join(dir_name, 'templates', 'molstar_viewer_template.html')
-        molstar_html = os.path.join(dir_name, 'molstar.html')
-
-        with open(molstar_html, 'w') as molstar_html_pt:
-            with open(molstar_template_file, 'r') as molstar_template_pt:
-                molstar_viewer_content = molstar_template_pt.read()
-                print(f"Before replace: {molstar_viewer_content}")
-                molstar_viewer_content = molstar_viewer_content.replace(preloadstructs,
-                                                                        r"\1struct_content\3")
-                print(f"After replace: {molstar_viewer_content}")
-                molstar_html_pt.write(molstar_viewer_content)
-
-        molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
-        molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
-        molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
-        shutil.copy(molstar_js_file, os.path.join(output_dir, 'molstar.js'))
-        shutil.copy(molstar_css_file, os.path.join(output_dir, 'molstar.css'))
-        shutil.copy(molstar_ico_file, os.path.join(output_dir, 'favicon.ico'))
-        shutil.copy(molstar_html, os.path.join(output_dir, 'molstar_viewer.html'))
-
-        return pdb_html
-
-    def _generate_batch_report_html(self, prot_structs_name, succ_pdb_infos):
+    def _generate_batch_report_html(self, succ_pdb_infos):
         """
             _generate_batch_report_html: generates the HTML for the upload report
         """
@@ -830,83 +916,41 @@ class PDBUtil:
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
 
-        # Create the template html file for reporting batch-uploaded pdb files
-        batch_html_report_path = os.path.join(output_directory, 'batch_pdb_viewer.html')
+        pdb_html = self._write_structure_info(output_directory, succ_pdb_infos)
+        single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
+        multi_viewer = self._write_viewer_content_multi(output_directory, succ_pdb_infos)
 
-        pdb_html = self._write_pdb_htmls(output_directory, succ_pdb_infos)
+        dir_name = os.path.dirname(__file__)
+        report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
+        report_html = os.path.join(dir_name, 'batch_pdb_viewer.html')
 
-        # Fetch & fill in detailed info into template HTML
-        with open(os.path.join(os.path.dirname(__file__), 'templates', 'batch_pdb_template.html')
-                  ) as batch_template_html:
-            batch_html_report = batch_template_html.read()\
-                .replace('<!--replace this content-->', pdb_html)
+        with open(report_html, 'w') as report_html_pt:
+            with open(report_template_file, 'r') as report_template_pt:
+                # Fetch & fill in detailed info into template HTML
+                batch_html_report = report_template_pt.read()\
+                    .replace('<!--replace uploaded pdbs tbody-->', pdb_html)
+                batch_html_report = batch_html_report\
+                    .replace('<!--replace subtabs-->', single_viewer)
+                batch_html_report = batch_html_report\
+                    .replace('<!--replace StructureViewer content-->', multi_viewer)
+                report_html_pt.write(batch_html_report)
 
-        with open(batch_html_report_path, 'w') as html_report_file:
-            html_report_file.write(batch_html_report)
-        print(f'Full batch_html_report has been written to {batch_html_report_path}')
+        molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
+        molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
+        molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
+        shutil.copy(molstar_js_file, os.path.join(output_directory, 'molstar.js'))
+        shutil.copy(molstar_css_file, os.path.join(output_directory, 'molstar.css'))
+        shutil.copy(molstar_ico_file, os.path.join(output_directory, 'favicon.ico'))
+
+        batch_html_report_path = os.path.join(output_directory, 'batch_pdb_report.html')
+        shutil.copy(report_html, batch_html_report_path)
+        logging.info(f'Full batch_report has been written to {batch_html_report_path}')
 
         html_report.append({'path': output_directory,
                             'name': os.path.basename(batch_html_report_path),
                             'description': 'HTML report for PDB upload'})
 
         return html_report
-
-    def __init__(self, config):
-        self.callback_url = config['SDK_CALLBACK_URL']
-        self.scratch = config['scratch']
-        self.token = config['KB_AUTH_TOKEN']
-        self.user_id = config['USER_ID']
-        self.dfu = DataFileUtil(self.callback_url)
-        self.hs = AbstractHandle(config['handle-service-url'])
-        self.ws_client = Workspace(config['workspace-url'])
-        self.shock_url = config['shock-url']
-
-    def import_model_pdb_file(self, params, create_report=False):
-        """
-            import_model_pdb_file: upload a pdb file and convert into a
-                                  KBaseStructure.ModelProteinStructure object
-        """
-        logging.info(f'import_model_pdb_file to a pdb data structure with params: {params}')
-
-        # file_path is the pdb file's working area path (after dfu.download_staging_file call)
-        file_path, workspace_name, pdb_name = self._validate_import_pdb_file_params(params)
-
-        (data, n_polypeptides, params) = self._model_file_to_data(file_path, params)
-        if not data:
-            logging.info(f'PDB file {file_path} import with "Import ModelProteinStructure" failed!')
-            return {}, {}
-
-        data['pdb_handle'] = self._upload_to_shock(file_path)
-        data['user_data'] = params.get('description', '')
-        pdb_info = params.get('pdb_info', None)
-        if pdb_info:
-            pdb_info['scratch_path'] = file_path
-        logging.info(f'Model structure data:{data}')
-        return data, pdb_info
-
-    def import_experiment_pdb_file(self, params, create_report=False):
-        """
-            import_experiment_pdb_file: upload an experiment pdb file and convert into a
-                                       KBaseStructure.ExperimentalProteinStructure object
-        """
-        logging.info(f'import_experiment_pdb_file to a pdb structure with params: {params}')
-
-        # file_path is the pdb file's working area path (after dfu.download_staging_file call)
-        file_path, workspace_name, mmcif_name = self._validate_import_pdb_file_params(params)
-
-        # Parse the experimental pdb file for an experimental data structure
-        (data, n_polypeptides, params) = self._exp_file_to_data(file_path, params)
-        if not data:
-            logging.info(f'Import {file_path} with "Import ExperimentalProteinStructure" failed!')
-            return {}, {}
-
-        data['pdb_handle'] = self._upload_to_shock(file_path)
-        data['user_data'] = params.get('description', '')
-        pdb_info = params.get('pdb_info', None)
-        if pdb_info:
-            pdb_info['scratch_path'] = file_path
-        logging.info(data)
-        return data, pdb_info
 
     def _export_pdb(self, params):
         """
@@ -934,6 +978,68 @@ class PDBUtil:
         })['file_path']
 
         return {'file_path': file_path}
+
+    def __init__(self, config):
+        self.callback_url = config['SDK_CALLBACK_URL']
+        self.scratch = config['scratch']
+        self.token = config['KB_AUTH_TOKEN']
+        self.user_id = config['USER_ID']
+        self.dfu = DataFileUtil(self.callback_url)
+        self.hs = AbstractHandle(config['handle-service-url'])
+        self.ws_client = Workspace(config['workspace-url'])
+        self.shock_url = config['shock-url']
+
+    def import_pdb_file(self, params, create_report=False):
+        """
+            import_pdb_file: upload a pdb file and convert into a
+                            KBaseStructure.ProteinStructure object
+        """
+        logging.info(f'import_pdb_file to a pdb data structure with params: {params}')
+
+        # file_path is the pdb file's working area path (after dfu.download_staging_file call)
+        file_path, workspace_name, pdb_name = self._validate_import_file_params(params)
+
+        (data, n_polypeptides, params) = self._pdb_file_to_data(file_path, params)
+        if not data:
+            logging.info(f'PDB file {file_path} import with "import_pdb_file" failed!')
+            return {}, {}
+
+        data['pdb_handle'] = self._upload_to_shock(file_path)
+        data['user_data'] = params.get('description', '')
+        data['is_model'] = params.get('is_model', 0)
+        # logging.info(f'Protein structure data from a .pdb file:{data}')
+
+        pdb_info = params.get('pdb_info', None)
+        if pdb_info:
+            pdb_info['scratch_path'] = file_path
+
+        return data, pdb_info
+
+    def import_mmcif_file(self, params, create_report=False):
+        """
+            import_mmcif_file: upload an mmcif file and convert into a
+                              KBaseStructure.ProteinStructure object
+        """
+        logging.info(f'import_mmcif_file to a pdb structure with params: {params}')
+
+        # file_path is the pdb file's working area path (after dfu.download_staging_file call)
+        file_path, workspace_name, mmcif_name = self._validate_import_file_params(params)
+
+        # Parse the experimental pdb file for an experimental data structure
+        (data, n_polypeptides, params) = self._mmcif_file_to_data(file_path, params)
+        if not data:
+            logging.info(f'Import {file_path} with "_mmcif_file_to_data" failed!')
+            return {}, {}
+
+        data['mmcif_handle'] = self._upload_to_shock(file_path)
+        data['user_data'] = params.get('description', '')
+        data['is_model'] = params.get('is_model', 0)
+        # logging.info(f'Protein structure data from a .cif file:{data}')
+
+        pdb_info = params.get('pdb_info', None)
+        if pdb_info:
+            pdb_info['scratch_path'] = file_path
+        return data, pdb_info
 
     def export_pdb_structures(self, params):
         """
@@ -968,16 +1074,16 @@ class PDBUtil:
                 report_name: name of generated report (if any)
                 report_ref: report reference (if any)
 
-            1. call _validate_batch_import_pdbs_params to validate input params
+            1. call _validate_batch_import_params to validate input params
             2. call _parse_metadata to parse for model_pdb_files, exp_pdb_files and kbase_meta_data
-            3. call import_model_pdb_file on each entry in model_pdb_paths, and
-               call import_experiment_pdb_file on each entry in exp_pdb_paths
+            3. call import_pdb_file on each entry in pdb_paths, and/or
+               call import_mmcif_file on each entry in pdb_paths
             4. assemble the data for a ProteinStructures and save the data object
             5. call _generate_batch_report to generate a report for batch_import_pdbs' result
         """
 
         (metadata_file_path, workspace_name,
-         structures_name) = self._validate_batch_import_pdbs_params(params)
+         structures_name) = self._validate_batch_import_params(params)
 
         if not isinstance(workspace_name, int):
             workspace_id = self.dfu.ws_name_to_id(workspace_name)
@@ -988,8 +1094,7 @@ class PDBUtil:
         (pdb_file_paths, narrative_ids, genome_names,
          feature_ids) = self._parse_metadata_file(metadata_file_path, workspace_id)
 
-        model_pdb_objects = list()
-        exp_pdb_objects = list()
+        pdb_objects = list()
         pdb_infos = list()
         successful_files = list()
         failed_files = list()
@@ -1005,46 +1110,34 @@ class PDBUtil:
             pdb_params['input_shock_id'] = None
             pdb_params['workspace_name'] = workspace_name
             pdb_params['structure_name'] = pdb['structure_name']
+            pdb_params['is_model'] = pdb['is_model']
 
-            if pdb['is_model']:
-                if pdb['file_extension'] == '.pdb':
-                    model_pdb_data, pdb_info = self.import_model_pdb_file(pdb_params)
-                    if model_pdb_data:
-                        model_pdb_objects.append(model_pdb_data)
-                        pdb_infos.append(pdb_info)
-                        successful_files.append(pdb['file_path'])
-                        total_structures += 1
-                    else:
-                        failed_files.append(pdb['file_path'])
-                elif pdb['file_extension'] == '.cif':
-                    cif_pdb_data, pdb_info = self.import_experiment_pdb_file(pdb_params)
-                    if cif_pdb_data:
-                        model_pdb_objects.append(cif_pdb_data)
-                        pdb_infos.append(pdb_info)
-                        successful_files.append(pdb['file_path'])
-                        total_structures += 1
-                    else:
-                        failed_files.append(pdb['file_path'])
-            else:
-                exp_pdb_data, pdb_info = self.import_experiment_pdb_file(pdb_params)
-                if exp_pdb_data:
-                    exp_pdb_objects.append(exp_pdb_data)
+            if pdb['file_extension'] == '.pdb':
+                pdb_data, pdb_info = self.import_pdb_file(pdb_params)
+                if pdb_data:
+                    pdb_objects.append(pdb_data)
                     pdb_infos.append(pdb_info)
                     successful_files.append(pdb['file_path'])
-                    total_structures += 1
+                else:
+                    failed_files.append(pdb['file_path'])
+            elif pdb['file_extension'] == '.cif':
+                cif_data, pdb_info = self.import_mmcif_file(pdb_params)
+                if cif_data:
+                    pdb_objects.append(cif_data)
+                    pdb_infos.append(pdb_info)
+                    successful_files.append(pdb['file_path'])
                 else:
                     failed_files.append(pdb['file_path'])
 
-        if not model_pdb_objects:
-            logging.info("No model pdb structure was created/saved!")
+        if not pdb_objects:
+            logging.info("No pdb structure was created/saved!")
             return {}
 
-        protein_structures['model_structures'] = model_pdb_objects
-        protein_structures['experimental_structures'] = exp_pdb_objects
-        protein_structures['total_structures'] = total_structures
-        protein_structures['description'] = (f'Created {total_structures} '
+        protein_structures['protein_structures'] = pdb_objects
+        protein_structures['total_structures'] = len(pdb_objects)
+        protein_structures['description'] = (f'Created {len(pdb_objects)} '
                                              f'structures in {structures_name}')
-        logging.info(f'ProteinStructures data structure to be saved:\n{protein_structures}')
+
         returnVal = {}
         try:
             info = self.dfu.save_objects({
@@ -1063,5 +1156,6 @@ class PDBUtil:
             report_output = self._generate_batch_report(
                         workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
             returnVal.update(report_output)
+            logging.info(f'ProteinStructures data structure saved as:\n{structs_ref}')
         finally:
             return returnVal
