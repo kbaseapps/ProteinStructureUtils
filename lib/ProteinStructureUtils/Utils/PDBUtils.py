@@ -274,9 +274,8 @@ class PDBUtil:
                             prot['feature_type'] = kb_feature_type
                             pdb_chain_ids.append(f"Model {prot['model_id']+1}.Chain {prot['chain_id']}")
                             pdb_model_ids.append(str(prot['model_id']))
-                            pdb_seq_idens.append(f"{prot['seq_identity']*100}%")
+                            pdb_seq_idens.append(f"{round(prot['seq_identity']*100, 2)}%")
                             pdb_exact_matches.append(str(prot['exact_match']))
-
                 if pdb_seq_idens:
                     pdb_info['sequence_identities'] = ','.join(pdb_seq_idens)
                 if pdb_chain_ids:
@@ -718,7 +717,7 @@ class PDBUtil:
 
             (struct_name, ext) = os.path.splitext(os.path.basename(pdb_fn))
             if ext not in accepted_extensions:
-                #raise ValueError('Only files with extensions ".cif" or ".pdb" are accepted.')
+                # raise ValueError('Only files with extensions ".cif" or ".pdb" are accepted.')
                 print('Only files with extensions ".cif" or ".pdb" are accepted.')
 
             is_model = df_meta_data[df_indexes[4]][i]
@@ -770,18 +769,18 @@ class PDBUtil:
 
         return report_output
 
-    def _config_viewer(self, viewer_nm, struct_nm, showctrl=False):
+    def _config_viewer(self, viewer_nm, div_id):
         """
             _config_viewer: write the mol* viewer configurations
         """
-        ctrl = 'true' if showctrl else 'false'
-        return (f'let {viewer_nm} = new molstar.Viewer("{struct_nm}", {{\n'
+        return (f'<script type="text/javascript">\n'
+                f'let {viewer_nm} = new molstar.Viewer("{div_id}", {{\n'
                 f'layoutIsExpanded: false,\n'
-                f'layoutShowControls: {ctrl},\n'
+                f'layoutShowControls: true,\n'
                 f'layoutShowRemoteState: false,\n'
                 f'layoutShowSequence: true,\n'
                 f'layoutShowLog: false,\n'
-                f'layoutShowLeftPanel: {ctrl},\n'
+                f'layoutShowLeftPanel: true,\n'
                 f'viewportShowExpand: false,\n'
                 f'viewportShowSelectionMode: false,\n'
                 f'viewportShowAnimation: true,\n'
@@ -809,15 +808,13 @@ class PDBUtil:
 
             struct_nm = succ_pdb['structure_name'].upper()
             viewer_name = 'viewer' + str(pdb_index + 1)
-            struct_name = 'struct' + str(pdb_index + 1)
+            div_id = 'struct' + str(pdb_index + 1)
 
-            sub_div = (f'<div id="{struct_nm}_1" class="subtabcontent">\n'
+            sub_div = (f'<div id="{struct_nm}" class="subtabcontent">\n'
                        f'<h2>{struct_nm}</h2>\n'
-                       f'<div id="{struct_name}" class="struct"></div>\n'
-                       f'<script type="text/javascript" src="./molstar.js"></script>\n')
+                       f'<div id="{div_id}" class="app"></div>\n')
 
-            script_content = '<script type="text/javascript">\n'
-            script_content += self._config_viewer(viewer_name, struct_name, False)
+            script_content = self._config_viewer(viewer_name, div_id)
             script_content += (f'{viewer_name}.loadStructureFromUrl("./{base_filename}", '
                                f'"{file_ext}", false, {{ representationParams: '
                                f'{{ theme: {{ globalName: "operator-name" }} }} }});')
@@ -836,16 +833,19 @@ class PDBUtil:
                                          subtabcontent and replace the string <!--replace subtabs-->
                                          in the templatefile 'batch_pdb_template.html'
         """
+        viewer_nm = 'viewer_all'
+        div_id = 'app_all'
         pre_loads = ''
-        viewer_content = ('<div id="StructureViewer" class="tabcontent">'
-                          '<h2>Uploaded Structure(s)</h2>'
-                          '<div id="app"></div>'
-                          '<script type="text/javascript" src="./molstar.js"></script>')
+        viewer_tabs = ('<div class="tab">'
+                       '<button id="AllStructures_sub" class="subtablinks" '
+                       'onclick="openSubTab(event, this)">ALL STRUCTURES</button>')
+        viewer_content = ('<div id="AllStructures" class="subtabcontent">'
+                          '<h2>Uploaded Structure(s)</h2><div id="app_all" class="app"></div>')
 
-        script_content = '<script type="text/javascript">\n'
-        script_content += self._config_viewer('viewer', 'app', True)
+        script_content = self._config_viewer(viewer_nm, div_id)
 
         for succ_pdb in succ_pdb_infos:
+            struct_nm = succ_pdb['structure_name'].upper()
             file_path = succ_pdb['file_path']
             file_ext = succ_pdb['file_extension'][1:]
             if file_ext == 'cif':
@@ -854,9 +854,15 @@ class PDBUtil:
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
 
-            pre_loads += (f'\nviewer.loadStructureFromUrl("./{os.path.basename(file_path)}", '
+            viewer_tabs += (f'\n<button id="{struct_nm}_sub" '
+                            f'class="subtablinks" onclick="openSubTab(event, this)">'
+                            f'{struct_nm}</button>')
+
+            pre_loads += (f'\n{viewer_nm}.loadStructureFromUrl("./{os.path.basename(file_path)}", '
                           f'"{file_ext}", false, {{ representationParams: '
                           f'{{ theme: {{ globalName: "operator-name" }} }} }});')
+
+        viewer_tabs += '\n</div>'
 
         # insert the structure file for preloading
         script_content += pre_loads
@@ -864,7 +870,7 @@ class PDBUtil:
         viewer_content += script_content
         viewer_content += '\n</div>\n'
 
-        return viewer_content
+        return viewer_tabs, viewer_content
 
     def _write_structure_info(self, output_dir, succ_pdb_infos):
         """
@@ -897,8 +903,8 @@ class PDBUtil:
             if succ_pdb.get('sequence_identities', None):
                 seq_idens = succ_pdb['sequence_identities']
 
-            tbody_html += (f'\n<td><div id="{struct_nm}" class="subtablinks" '
-                           f'onclick="openSubTab(event, this)" style="cursor: pointer;" '
+            tbody_html += (f'\n<td><div class="subtablinks" '
+                           f'onclick="openSubTab(event, this, false)" style="cursor: pointer;" '
                            f'title="Click to see in mol*">{struct_nm}</div></td>')
             tbody_html += (f'\n<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                            f' target="_blank">{genome_name}</a></td><td>{feat_id}</td>')
@@ -920,7 +926,8 @@ class PDBUtil:
 
         pdb_html = self._write_structure_info(output_directory, succ_pdb_infos)
         single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
-        multi_viewer = self._write_viewer_content_multi(output_directory, succ_pdb_infos)
+        viewer_tabs, multi_viewer = self._write_viewer_content_multi(output_directory,
+                                                                     succ_pdb_infos)
 
         dir_name = os.path.dirname(__file__)
         report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
@@ -932,9 +939,11 @@ class PDBUtil:
                 batch_html_report = report_template_pt.read()\
                     .replace('<!--replace uploaded pdbs tbody-->', pdb_html)
                 batch_html_report = batch_html_report\
-                    .replace('<!--replace subtabs-->', single_viewer)
+                    .replace('<!--replace StructureViewer subtabs-->', viewer_tabs)
                 batch_html_report = batch_html_report\
-                    .replace('<!--replace StructureViewer content-->', multi_viewer)
+                    .replace('<!--replace subtab content multi-->', multi_viewer)
+                batch_html_report = batch_html_report\
+                    .replace('<!--replace subtab content single-->', single_viewer)
                 report_html_pt.write(batch_html_report)
 
         molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')

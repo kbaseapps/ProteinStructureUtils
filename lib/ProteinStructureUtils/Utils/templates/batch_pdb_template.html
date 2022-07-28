@@ -57,22 +57,21 @@
         /* Style the tab content */
         .tabcontent {
           display: none;
-          padding: 6px 12px;
+          padding: 0px 0px;
           -webkit-animation: fadeEffect 1s;
           animation: fadeEffect 1s;
-          /*border: 1px solid #ccc;
-          border-top: none;*/
+          border-top: none;
         }
 
         /* Style the subtab content */
         .subtabcontent {
           display: none;
           padding: 10px 12px;
-          margin-top: 20px;
           -webkit-animation: fadeEffect 1s;
           animation: fadeEffect 1s;
           border: 2px solid #ccc;
-          background-color: rgb(187, 187, 187);
+          border-top: none;
+          background-color: #ccc;
         }
 
         /* Fade in tabs */
@@ -87,20 +86,12 @@
         }
 
         /* Embed the viewer */
-        #app {
+        .app {
           position: relative;
           left: 0px;
           top: 0px;
           width: auto;
-          height: 800px;
-        }
-        /* Embed the viewer */
-        .struct {
-          position: relative;
-          left: 0px;
-          top: 0px;
-          width: auto;
-          height: 500px;
+          height: 600px;
         }
     </style>
 
@@ -116,7 +107,7 @@
 <!-- Tab links -->
 <div class="tab">
   <button class="tablinks" onclick="openTab(event, 'StructureInfo')" id="defaultOpen">Structure Info</button>
-  <button class="tablinks" onclick="openTab(event, 'StructureViewer')">Structure Viewer</button>
+  <button class="tablinks" onclick="openTab(event, 'StructureViewer')" id="molstarviewer">Structure Viewer</button>
 </div>
 
 <!-- Begin Tab content1 -->
@@ -138,15 +129,17 @@
         </tbody>
     </table>
     <!--End PDBs successfully uploaded-->
- 
-    <!--Begin Sub Tab content-->
-    <!--replace subtabs-->
-    <!--End Sub Tab content-->
 </div>
 <!-- End Tab content1 -->
 
 <!-- Begin Tab content2 -->
-<!--replace StructureViewer content-->
+<div id="StructureViewer" class="tabcontent">
+  <script type="text/javascript" src="./molstar.js"></script>
+    <!--replace StructureViewer subtabs-->
+    <!--Begin Sub Tab content-->
+    <!--replace subtab content multi-->
+    <!--replace subtab content single-->
+    <!--End Sub Tab content-->
 <!-- End Tab content2 -->
 
   <!--Managing tab states -->
@@ -165,10 +158,12 @@
       evt.currentTarget.className += " active";
     }
 
-    function openSubTab(evt, subtab) {
-      var subtabid = subtab.id;
+    function openSubTab(evt, subtab, fromSubmenu=true) {
       var i, subtabcontents, subtablinks, subtabName;
-      subtabName = subtabid.substr(0, subtabid.length) + "_1";
+      if (typeof subtab.name === 'undefined')
+          subtabName = subtab.textContent;
+      else
+          subtabName = subtab.id.replace("_sub", "");
       //alert("Inside openSubTab: " + subtabName + " is clicked!");
 
       subtabcontents = document.getElementsByClassName("subtabcontent");
@@ -180,11 +175,18 @@
         subtablinks[i].className = subtablinks[i].className.replace(" active", "");
       }
       document.getElementById(subtabName).style.display = "block";
-      evt.currentTarget.className += " active";
+      if (!fromSubmenu) {
+        document.getElementById("molstarviewer").click();
+        document.getElementById(subtabName+ "_sub").className += " active";
+      } else {
+        evt.currentTarget.className += " active";
+      }
     }
 
     // Get the element with id="defaultOpen" and click on it
     document.getElementById("defaultOpen").click();
+    // Get the element with id="AllStructures_sub" and click on it
+    document.getElementById("AllStructures_sub").click();
   </script>
 </body>
 </html> 
