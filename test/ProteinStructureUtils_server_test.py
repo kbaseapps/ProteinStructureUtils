@@ -786,7 +786,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(pdb_info['genome_name'], 'Synthetic_bacterium_JCVI_Syn3_genome')
         self.assertEqual(pdb_info['feature_id'], 'JCVISYN3_0004')
         self.assertEqual(pdb_info['genome_ref'], '57196/6/1')
-        self.assertEqual(pdb_info['sequence_identities'], '67.9487%')
+        self.assertEqual(pdb_info['sequence_identities'], '67.95%')
         self.assertEqual(pdb_info['chain_ids'], 'Model 1.Chain A')
         self.assertEqual(pdb_info['feature_type'], 'gene')
         self.assertEqual(pdb_info['model_ids'], '0')
@@ -884,7 +884,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
         parms = {'input_ref': ret1[0]['structures_ref']}
         exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
-        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_cifs')
@@ -918,6 +918,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        parms = {'input_ref': ret2[0]['structures_ref']}
+        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
+        self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     # '57196/53/1' is in AppDev
     #@unittest.skip('test_export_pdb_structures')
