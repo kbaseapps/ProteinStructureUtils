@@ -44,7 +44,7 @@ module ProteinStructureUtils {
   } ExportParams;
 
   typedef structure {
-      list<string> shock_id;
+      list<string> shock_ids;
   } ExportStructOutput;
 
   funcdef export_pdb_structures (ExportParams params) returns (ExportStructOutput result) authentication required;

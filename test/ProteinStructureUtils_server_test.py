@@ -839,7 +839,6 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         structs_ref = ret['structures_ref']
 
         print(f'Checking the newly saved object data and info for {structs_ref}\n')
-        self.check_object(structs_ref)
 
     # Testing self.serviceImpl functions
     #@unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
@@ -883,6 +882,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        parms = {'input_ref': ret[0]['structures_ref']}
+        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
+        self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_cifs')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -897,6 +900,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        parms = {'input_ref': ret[0]['structures_ref']}
+        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
+        self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_docked')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -912,12 +919,20 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
+    # '57196/53/1' is in AppDev
+    #@unittest.skip('test_export_pdb_structures')
+    def test_export_pdb_structures(self):
+        params = {'input_ref': '57196/53/1'}
+        ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
+        self.assertCountEqual(ret[0].keys(), ['shock_ids'])
+        self.assertEqual(len(ret[0]['shock_ids']), 12)
+
     # '62713/24/1' is in CI, so skipped here.
     @unittest.skip('test_export_pdb_structures')
-    def test_export_pdb_structures(self):
+    def test_export_pdb_structures_ci(self):
         params = {'input_ref': '62713/24/1'}
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
-        self.assertCountEqual(ret[0].keys(), ['shock_id'])
+        self.assertCountEqual(ret[0].keys(), ['shock_ids'])
 
     @unittest.skip('test_dfu_save_proteinstructure')
     def test_dfu_save_proteinstructure(self):

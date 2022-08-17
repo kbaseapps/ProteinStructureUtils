@@ -1059,15 +1059,20 @@ class PDBUtil:
         if 'input_ref' not in params:
             raise ValueError('"input_ref" not in supplied params')
 
-        model_pdbs = []
-        exp_pdbs = []
-        # shock_ids = []
-        for m_pdb in model_pdbs:
-            pass
-        for e_pdb in exp_pdbs:
-            pass
+        shock_ids = []
+        objData, objInfo = self._dfu_get_objects(params['input_ref'])
+        for pro_str in objData['protein_structures']:
+            if pro_str.get('pdb_handle', None):
+                shock_ids.append(pro_str['pdb_handle'])
+                continue
+            elif pro_str.get('mmcif_handle', None):
+                shock_ids.append(pro_str['mmcif_handle'])
+                continue
+            elif pro_str.get('xml_handle', None):
+                shock_ids.append(pro_str['xml_handle'])
+                continue
 
-        return {'shock_id': self._get_pdb_shock_id(params['input_ref'])}
+        return {'shock_ids': shock_ids}
 
     def batch_import_pdbs(self, params):
         """
