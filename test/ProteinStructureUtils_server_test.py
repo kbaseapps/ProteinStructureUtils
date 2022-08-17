@@ -882,7 +882,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
-        parms = {'input_ref': ret[0]['structures_ref']}
+        parms = {'input_ref': ret1[0]['structures_ref']}
         exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
         self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
