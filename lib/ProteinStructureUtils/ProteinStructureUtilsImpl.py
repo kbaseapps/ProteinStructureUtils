@@ -3,7 +3,7 @@
 import logging
 import os
 
-from ProteinStructureUtils.Utils.PDBUtils import PDBUtil
+from ProteinStructureUtils.Utils.PDBUtil import PDBUtil
 #END_HEADER
 
 
