@@ -346,6 +346,10 @@ class Application(object):
                              name='ProteinStructureUtils.export_pdb_structures',
                              types=[dict])
         self.method_authentication['ProteinStructureUtils.export_pdb_structures'] = 'required'  # noqa
+        self.rpc_service.add(impl_ProteinStructureUtils.query_rcsb_structures,
+                             name='ProteinStructureUtils.query_rcsb_structures',
+                             types=[dict])
+        self.method_authentication['ProteinStructureUtils.query_rcsb_structures'] = 'required'  # noqa
         self.rpc_service.add(impl_ProteinStructureUtils.status,
                              name='ProteinStructureUtils.status',
                              types=[dict])

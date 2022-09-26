@@ -546,6 +546,18 @@ class PDBUtil:
         obj_data, obj_info = self._dfu_get_objects(obj_ref)
         return self.hs.hids_to_handles([obj_data['pdb_handle']])[0]['id']
 
+    def _get_struct_shock_id(self, struct_ref, file_ext):
+        """
+            _get_struct_shock_id: Return the shock id for the structure file of the given extension
+        """
+        obj_data, obj_info = self._dfu_get_objects(struct_ref)
+        shock_id = ''
+        if file_ext in ('pdb', 'mmcif', 'xml'):
+            handle_type = '_'.join([file_ext, 'handle'])
+            shock_id = self.hs.hids_to_handles([obj_data[handle_type]])[0]['id']
+
+        return shock_id
+
     def _upload_to_shock(self, file_path):
         """
             _upload_to_shock: upload target file to shock using DataFileUtil
@@ -557,9 +569,9 @@ class PDBUtil:
             'pack': 'gzip',
             'make_handle': True,
         }
-        shock_id = self.dfu.file_to_shock(file_to_shock_params)['handle']['hid']
+        hdl = self.dfu.file_to_shock(file_to_shock_params)[0]['handle']
 
-        return shock_id
+        return hdl
 
     def _generate_report_html(self, pdb_name, pdb_path):
         """
@@ -1054,25 +1066,55 @@ class PDBUtil:
 
     def export_pdb_structures(self, params):
         """
-            export_pdb_structures: return the shock_ids of the ProteinStructures object
+            export_structure_handles: return the handles of the ProteinStructures object
         """
         if 'input_ref' not in params:
-            raise ValueError('"input_ref" not in supplied params')
+            raise ValueError('Variable "input_ref" is required!')
 
-        shock_ids = []
+        handles = []
         objData, objInfo = self._dfu_get_objects(params['input_ref'])
         for pro_str in objData['protein_structures']:
             if pro_str.get('pdb_handle', None):
-                shock_ids.append(pro_str['pdb_handle'])
+                handles.append(pro_str['pdb_handle'])
                 continue
             elif pro_str.get('mmcif_handle', None):
-                shock_ids.append(pro_str['mmcif_handle'])
+                handles.append(pro_str['mmcif_handle'])
                 continue
             elif pro_str.get('xml_handle', None):
-                shock_ids.append(pro_str['xml_handle'])
+                handles.append(pro_str['xml_handle'])
                 continue
 
-        return {'shock_ids': shock_ids}
+        return {'shock_ids': handles}
+
+    def export_protein_structures(self, params):
+        """
+            export_pdb_structures: return the shock_ids of the ProteinStructures object
+        """
+        if 'input_ref' not in params:
+            raise ValueError('Variable "input_ref" is required!')
+
+        structsData, structsInfo = self._dfu_get_objects(params['input_ref'])
+
+        export_package_dir = os.path.join(self.scratch, "output")
+        if not os.path.isdir(export_package_dir):
+            os.mkdir(export_package_dir)
+
+        # TODO!!!!
+        # output_file_format = params.get('file_format', 'pdb')
+        # prot_structs_name = structsInfo[1]
+        # output_file = os.path.join(export_package_dir, '_'.join(prot_structs_name.split()) + ".csv")
+        # self._prot_structures_to_output(structsData, output_file, self.token, output_file_format)
+
+        # package it up
+        package_details = self.dfu.package_for_download({
+            'file_path': export_package_dir,
+            'ws_refs': [params['input_ref']]
+        })
+
+        return {
+            'shock_id': package_details['shock_id'],
+            'result_dir': export_package_dir
+        }
 
     def batch_import_pdbs(self, params):
         """

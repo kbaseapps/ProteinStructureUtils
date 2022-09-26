@@ -1,5 +1,6 @@
 FROM kbase/sdkbase2:python
 MAINTAINER KBase Developer
+
 # -----------------------------------------
 # In this section, you can install any system dependencies required
 # to run your App.  For instance, you could place an apt-get update or
@@ -7,13 +8,15 @@ MAINTAINER KBase Developer
 # installation scripts.
 
 # RUN apt-get update
-
 RUN pip install --upgrade pip \
     && pip install biopython --upgrade \
+    && pip install --upgrade requests \
+    && pip install Cython \
     && pip install wheel \
     && pip install pandas \
-    && pip install mock==4.0.3 \
-    && pip install openpyxl
+    && pip install mock==4.0.3\
+    && pip install openpyxl \
+    && pip install python-graphql-client
 
 RUN apt-get update \
     && apt-get -y install wget \

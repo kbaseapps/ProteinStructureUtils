@@ -4,6 +4,7 @@ import logging
 import os
 
 from ProteinStructureUtils.Utils.PDBUtil import PDBUtil
+from ProteinStructureUtils.Utils.RCSBUtil import RCSBUtil
 #END_HEADER
 
 
@@ -24,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "6e26a0b79e1f968aaeed053136d1139004351130"
+    GIT_COMMIT_HASH = "3afe07ad1afd9c6134ef55a1615813443222f990"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -79,9 +80,9 @@ class ProteinStructureUtils:
     def export_pdb_structures(self, ctx, params):
         """
         :param params: instance of type "ExportParams" (Input/output of the
-           export_pdb_structures function obj_ref: generics object reference)
-           -> structure: parameter "input_ref" of type "obj_ref" (An X/Y/Z
-           style reference @id ws)
+           export_pdb_structures function input_ref: generics object
+           reference) -> structure: parameter "input_ref" of type "obj_ref"
+           (An X/Y/Z style reference @id ws)
         :returns: instance of type "ExportStructOutput" -> structure:
            parameter "shock_ids" of list of String
         """
@@ -97,6 +98,40 @@ class ProteinStructureUtils:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method export_pdb_structures return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def query_rcsb_structures(self, ctx, params):
+        """
+        :param params: instance of type "RCSBImportParams" (Input/output of
+           the query_rcsb_structures function sequence_strings: a list of
+           protein sequences uniprot_ids: a list of uniprot ids ec_numbers: a
+           list of ec numbers inchis: a list of InChI strings smiles: a list
+           of SMILES strings workspace_name: workspace name for objects to be
+           saved to @optional sequence_strings uniprot_ids ec_numbers inchis
+           smiles) -> structure: parameter "sequence_strings" of list of
+           String, parameter "uniprot_ids" of list of String, parameter
+           "ec_numbers" of list of String, parameter "inchis" of list of
+           String, parameter "smiles" of list of String, parameter
+           "workspace_name" of type "workspace_name" (workspace name of the
+           object)
+        :returns: instance of type "QueryRCSBStructsOutput" -> structure:
+           parameter "rcsb_ids" of list of String, parameter "report_name" of
+           String, parameter "report_ref" of String
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN query_rcsb_structures
+        logging.info('Starting query_rcsb_structures with params:\n{}'.format(params))
+        self.config['USER_ID'] = ctx['user_id']
+        self.rscb_util = RCSBUtil(self.config)
+        result = self.rscb_util.querey_structure_info(params)
+        #END query_rcsb_structures
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method query_rcsb_structures return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
