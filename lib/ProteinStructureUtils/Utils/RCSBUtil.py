@@ -13,6 +13,7 @@ import subprocess
 from urllib.parse import urlparse
 
 import json, requests
+from requests.exceptions import ConnectionError
 from python_graphql_client import GraphqlClient
 
 from installed_clients.AbstractHandleClient import AbstractHandle
@@ -115,10 +116,10 @@ class RCSBUtil:
                                             return the seqEcUniprotJsonObject
         """
         seqEcUniprotJsonObject = {}
-        if searchType not in ('sequence_strings', 'uniprot_ids', 'ec_numbers'):
+        if searchType not in ('sequence', 'sequence_strings', 'uniprot_ids', 'ec_numbers'):
             return seqEcUniprotJsonObject
         #
-        if searchType == "sequence_strings":
+        if searchType == "sequence_strings" or searchType == "sequence":
             if len(valList) == 1:
                 seqEcUniprotJsonObject = {
                     "query": {
@@ -302,8 +303,9 @@ class RCSBUtil:
             reqH = requests.post(self.__baseSearchUrl, json=jsonQueryObj)
             reqH.raise_for_status()
         except Exception as e:
-            logging.info(f'Requesting data from RCSB db errored with message: {e.message}')
-            raise
+            err_msg = f'Requesting data from RCSB db errored with message: {e.message}'
+            logging.info(err_msg)
+            raise ValueError(err_msg)
         else:
             return json.loads(reqH.text)
 
@@ -328,7 +330,7 @@ class RCSBUtil:
         if len(retIdList) != total_number:
             errMsg = (f"The total_count={total_number}, "
                       "but only got {len(retIdList)} id(s) from result_set.")
-            raise ValueError("%s" % errMsg)
+            raise ValueError(errMsg)
 
         return retIdList
 
@@ -364,6 +366,10 @@ class RCSBUtil:
             graphql_ret = self.__graphqlClient.execute(query=queryString)
             # asyncio.run() is available ONLY for python 3.7 or newer
             # graphql_ret = asyncio.run(self.__graphqlClient.execute_async(query=queryString))
+        except ConnectionError as e:  # not raising error to allow continue
+            logging.info('Querying RCSB GraphQL had a Connection Error or no response!')
+            print(e)
+            return {}
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             err_msg = f'Querying RCSB errored with message: {e.message} and data: {e.data}'
             raise ValueError(err_msg)
@@ -374,8 +380,10 @@ class RCSBUtil:
         """
             _formatRCSBJson: Format rcsb GraphQL returned data into Json objects per rcsb structure
         """
-        dic = {}
+        if not data:
+            return {}
 
+        dic = {}
         # short-naming the long rcsb data attribute strings
         src_organism = 'rcsb_entity_source_organism'
         prim_cite = 'rcsb_primary_citation'
