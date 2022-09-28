@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import os
+from readline import read_history_file
 import sys
 import re
 import gzip
@@ -13,6 +14,7 @@ import subprocess
 from urllib.parse import urlparse
 
 import json, requests
+import aiohttp, asyncio
 from requests.exceptions import ConnectionError, HTTPError, RequestException
 from python_graphql_client import GraphqlClient
 
@@ -306,7 +308,7 @@ class RCSBUtil:
             return json.loads(reqH.text)
         except (HTTPError, ConnectionError, RequestException) as e:
             logging.info(" ERROR ".center(30, "-"))
-            logging.info(f'Querying RCSB db had an Error {e}')
+            logging.info(f'Querying RCSB db with {jsonQueryObj} had an Error: {e}')
             return {}
         except Exception as e:
             print(e)
@@ -363,14 +365,23 @@ class RCSBUtil:
         """
             _queryGraphql: Given a list of rcsb_ids, Query the RCSB GraphQL API
         """
+        logging.info(f'Querying GraphQL db for the structures of {len(id_list)} rcsd_ids')
         if not id_list:
             return {}
 
         queryString = self.__graphqlQueryTemplate % '", "'.join(id_list)
         try:
-            graphql_ret = self.__graphqlClient.execute(query=queryString)
+            #graphql_ret = self.__graphqlClient.execute(query=queryString)
             # asyncio.run() is available ONLY for python 3.7 or newer
             # graphql_ret = asyncio.run(self.__graphqlClient.execute_async(query=queryString))
+            evt_loop = asyncio.get_event_loop()
+            graphql_ret = evt_loop.run_until_complete(
+                          self.__graphqlClient.execute_async(query=queryString))
+            #logging.info(f'Querying GraphQL db returned the structures {graphql_ret}')
+            return graphql_ret
+        except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
+            logging.info('Connecting to RCSB GraphQL host with URL "{self.__baseGraphqlUrl} errored.')
+            return {}
         except (HTTPError, ConnectionError, RequestException) as e:
             # not raising error to allow continue with other chunks
             logging.info(f'Querying RCSB GraphQL had a Connection Error:************\n {e}.\n'
@@ -379,8 +390,6 @@ class RCSBUtil:
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             err_msg = f'Querying RCSB errored with message: {e.message} and data: {e.data}'
             raise ValueError(err_msg)
-        else:
-            return graphql_ret
 
     def _formatRCSBJson(self, data):
         """
@@ -497,6 +506,7 @@ class RCSBUtil:
         """
             _get_graphql_data - Query the RCSB GraphQL API, fetch data from GraphQL return
         """
+        logging.info(f'Fetch GraphQL data for the structures of {len(id_list)} rcsd_ids')
         # Split large id list into multiple 100 id lists to avoid server connection time-out problem
         chunkSize = 100
         idListChunks = [id_list[i:i+chunkSize] for i in range(0, len(id_list), chunkSize)]
@@ -524,11 +534,15 @@ class RCSBUtil:
             pdb_struct = struct_info[rcsb_id]
             tbody_html += '<tr>'
 
-            expl_method = pdb_struct['method']
-            prim_cite = pdb_struct['primary_citation']
-            prim_cite_str = ';'.join(prim_cite["title"],
-                                     prim_cite["journal_abbrev"],
-                                     prim_cite["year"])
+            expl_method = ';'.join(pdb_struct.get('method', []))
+            prim_cite = pdb_struct.get('primary_citation', {})
+            if prim_cite:
+                prim_cite_str = ';'.join([prim_cite.get('title', ''),
+                                          ','.join(prim_cite.get('rcsb_authors', [])),
+                                          prim_cite.get('journal_abbrev', ''),
+                                          str(prim_cite.get('year', 'TBD'))])
+            else:
+                prim_cite_str = ''
             prot_sequences = []
             pdb_chains = []
             src_organisms = []
@@ -659,11 +673,13 @@ class RCSBUtil:
             idlist = rcsb_output.get('id_list', [])
             struct_info = self._get_graphql_data(idlist)
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
-            err_msg = f'Querying RCSB errored with message: {e.message} and data: {e.data}'
-            raise ValueError(err_msg)
+            logging.info(e)
+            return {}
         else:
-            returnVal = {'rcsb_ids': idlist}
-            report_output = self._generate_query_report(workspace_name, idlist, struct_info)
+            print('Retrieved structure information:')
+            print(f'total_count={struct_info.get("total_count", 0)}')
+            print(f'first structure: {struct_info.get(idlist[0]).get("primary_citation")}')
+            returnVal['rcsb_ids'] = idlist
+            report_output = self._generate_query_report(workspace_name, struct_info)
             returnVal.update(report_output)
-        finally:
             return returnVal
