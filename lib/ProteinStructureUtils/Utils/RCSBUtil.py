@@ -13,7 +13,7 @@ import subprocess
 from urllib.parse import urlparse
 
 import json, requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, HTTPError, RequestException
 from python_graphql_client import GraphqlClient
 
 from installed_clients.AbstractHandleClient import AbstractHandle
@@ -303,28 +303,26 @@ class RCSBUtil:
         try:
             reqH = requests.post(self.__baseSearchUrl, json=jsonQueryObj)
             reqH.raise_for_status()
-        except ConnectionError as e:  # not raising error to allow continue
-            logging.info(f'Querying RCSB db had a Connection Error:************\n {e}.\n'
-                          'Or database connection request had no response!')
-            raise e
-        except (RuntimeError, TypeError, KeyError, ValueError) as e:
-            err_msg = f'Requesting data from RCSB db errored with message: {e.message}'
-            logging.info(err_msg)
-            raise ValueError(err_msg)
-        else:
             return json.loads(reqH.text)
+        except (HTTPError, ConnectionError, RequestException) as e:
+            logging.info(" ERROR ".center(30, "-"))
+            logging.info(f'Querying RCSB db had an Error {e}')
+            return {}
+        except Exception as e:
+            print(e)
+            return {}
 
     def _readRCSBResult(self, rcsb_retObj):
         """parse the RCSB query result and return a PDB ID list
         """
-
-        # Read "total_count" number
         total_number = 0
-        if "total_count" in rcsb_retObj:
+        retIdList = []
+        if rcsb_retObj and rcsb_retObj.get('total_count', None):
             total_number = rcsb_retObj["total_count"]
+        else:
+            return []
 
         # Read entry ID from "result_set" list
-        retIdList = []
         if "result_set" in rcsb_retObj:
             for obj in rcsb_retObj["result_set"]:
                 if "identifier" in obj:
@@ -357,6 +355,8 @@ class RCSBUtil:
             return []
         #
         retJsonObj = self._queryRCSB(jsonQueryObj)
+        if not retJsonObj:
+            return []
         return self._readRCSBResult(retJsonObj)
 
     def _queryGraphql(self, id_list=[]):
@@ -371,7 +371,8 @@ class RCSBUtil:
             graphql_ret = self.__graphqlClient.execute(query=queryString)
             # asyncio.run() is available ONLY for python 3.7 or newer
             # graphql_ret = asyncio.run(self.__graphqlClient.execute_async(query=queryString))
-        except ConnectionError as e:  # not raising error to allow continue with other chunks
+        except (HTTPError, ConnectionError, RequestException) as e:
+            # not raising error to allow continue with other chunks
             logging.info(f'Querying RCSB GraphQL had a Connection Error:************\n {e}.\n'
                          'Or database connection request had no response!')
             return {}
