@@ -219,6 +219,167 @@ class RCSBUtilsTest(unittest.TestCase):
         pm_empty = self.rcsb_util._create_seq_ec_uniprot_params(search_type3b, valList3)
         self.assertFalse(pm_empty)
 
+    @unittest.skip('test_create_chem_params_inchi')
+    def test_create_chem_params_inchi(self):
+        # test single InChI
+        search_type1 = "InChI"
+        valList11 = ["InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)"]
+        chem_pm11 = self.rcsb_util._create_chem_params(search_type1, valList11)
+
+        expected_chem_pm1 = {
+            "query": {
+                "type": "terminal",
+                "service": "chemical",
+                "parameters": {
+                    "value": valList11[0],
+                    "type": "descriptor",
+                    "descriptor_type": search_type1,
+                    "match_type": "graph-exact"
+                }
+            },
+            "return_type": "entry",
+            "request_options": {
+                "results_content_type": [
+                    "computational",
+                    "experimental"
+                ],
+                "return_all_hits": True
+            }
+        }
+        self.assertDictEqual(chem_pm11, expected_chem_pm1)
+        self.assertEqual(chem_pm11['query']['type'], 'terminal')
+        self.assertEqual(chem_pm11['query']['service'], 'chemical')
+        self.assertEqual(chem_pm11['query']['parameters']['type'], 'descriptor')
+        self.assertEqual(chem_pm11['query']['parameters']['value'], valList11[0])
+        self.assertEqual(chem_pm11['query']['parameters']['descriptor_type'], search_type1)
+        self.assertEqual(chem_pm11['query']['parameters']['match_type'], 'graph-exact')
+
+        # test multiple InChIs
+        valList12 = ["InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)",
+                    "InChI=1S/C10H16N5O13P3/madeup"]
+        chem_pm12 = self.rcsb_util._create_chem_params(search_type1, valList12)
+
+        self.assertEqual(chem_pm12['query']['type'], 'group')
+        self.assertEqual(chem_pm12['query']['logical_operator'], 'or')
+        self.assertEqual(chem_pm12['request_options'], expected_chem_pm1['request_options'])
+        ret_nodelist = chem_pm12['query']['nodes']
+        self.assertEqual(len(ret_nodelist), 2)
+        self.assertEqual(ret_nodelist[0]['type'], 'terminal')
+        self.assertEqual(ret_nodelist[0]['service'], 'chemical')
+        self.assertEqual(ret_nodelist[0]['parameters']['value'], valList12[0])
+        self.assertEqual(ret_nodelist[0]['parameters']['descriptor_type'], search_type1)
+        self.assertEqual(ret_nodelist[0]['parameters']['match_type'], 'graph-exact')
+        self.assertEqual(ret_nodelist[1]['parameters']['value'], valList12[1])
+
+    @unittest.skip('test_create_chem_params_smiles')
+    def test_create_chem_params_smiles(self):
+        # test single SMILES
+        search_type2 = "SMILES"
+        valList21 = ["c1nc(c2c(n1)n(cn2)[C@H]3[C@@H]([C@@H]([C@H](O3)CO[P@@](=O)(O)O)N"]
+        chem_pm21 = self.rcsb_util._create_chem_params(search_type2, valList21)
+
+        expected_chem_pm2 = {
+            "query": {
+                "type": "terminal",
+                "service": "chemical",
+                "parameters": {
+                    "value": valList21[0],
+                    "type": "descriptor",
+                    "descriptor_type": search_type2,
+                    "match_type": "graph-exact"
+                }
+            },
+            "return_type": "entry",
+            "request_options": {
+                "results_content_type": [
+                    "computational",
+                    "experimental"
+                ],
+                "return_all_hits": True
+            }
+        }
+        self.assertDictEqual(chem_pm21, expected_chem_pm2)
+        self.assertEqual(chem_pm21['query']['type'], 'terminal')
+        self.assertEqual(chem_pm21['query']['service'], 'chemical')
+        self.assertEqual(chem_pm21['query']['parameters']['type'], 'descriptor')
+        self.assertEqual(chem_pm21['query']['parameters']['value'], valList21[0])
+        self.assertEqual(chem_pm21['query']['parameters']['descriptor_type'], search_type2)
+        self.assertEqual(chem_pm21['query']['parameters']['match_type'], 'graph-exact')
+
+        # test multiple SMILES
+        valList22 = ["c1nc(c2c(n1)n(cn2)[C@H]3[C@@H]([C@@H]([C@H](O3)CO[P@@](=O)(O)O)N",
+                     "c1nc(c2c(n1)n(cn2)[C@H]3[C@@H]([C@H]4[C@H](O3)CO[P@](=O)(O4)O)O)N"]
+        chem_pm22 = self.rcsb_util._create_chem_params(search_type2, valList22)
+
+        self.assertEqual(chem_pm22['query']['type'], 'group')
+        self.assertEqual(chem_pm22['query']['logical_operator'], 'or')
+        self.assertEqual(chem_pm22['request_options'], expected_chem_pm2['request_options'])
+        ret_nodelist = chem_pm22['query']['nodes']
+        self.assertEqual(len(ret_nodelist), 2)
+        self.assertEqual(ret_nodelist[0]['type'], 'terminal')
+        self.assertEqual(ret_nodelist[0]['service'], 'chemical')
+        self.assertEqual(ret_nodelist[0]['parameters']['type'], 'descriptor')
+        self.assertEqual(ret_nodelist[0]['parameters']['value'], valList22[0])
+        self.assertEqual(ret_nodelist[0]['parameters']['descriptor_type'], search_type2)
+        self.assertEqual(ret_nodelist[0]['parameters']['match_type'], 'graph-exact')
+        self.assertEqual(ret_nodelist[1]['parameters']['value'], valList22[1])
+
+    #@unittest.skip('test_run_rcsb_search_seq')
+    def test_run_rcsb_search_seq(self):
+        srch_type = "sequence"
+        val_list1 = self.inputJsonObj1['sequence'][0]
+        json_qry_obj1 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type, val_list1)
+        ret_list1 = self.rcsb_util._run_rcsb_search(json_qry_obj1)
+        exp_list1 = ['1A62', '1A63', '1A8V', '1PV4', '1PVO', '1XPO', '1XPR', '1XPU', '2A8V',
+                     '2HT1', '3ICE', '5JJI', '5JJK', '5JJL', '6DUQ', '6WA8', '6XAS', '6XAV',
+                     '6Z9P', '6Z9Q', '6Z9R', '6Z9S', '6Z9T', '7ADB', '7ADC', '7ADD', '7ADE',
+                     '7X2R', '8E3H', '8E5L', '8E5P', '8E6W', '8E70']
+        self.assertCountEqual(ret_list1, exp_list1)
+        val_list2 = self.inputJsonObj1['sequence'][1]
+        json_qry_obj2 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type, val_list2)
+        ret_list2 = self.rcsb_util._run_rcsb_search(json_qry_obj2)
+        exp_list2 = ['1A69', '1ECP', '1K9S', '1OTX', '1OTY', '1OU4', '1OUM', '1OV6', '1OVG', '1PK7',
+                     '1PK9', '1PKE', '1PR0', '1PR1', '1PR2', '1PR4', '1PR5', '1PR6', '1PW7', '1VHJ',
+                     '1VHW', '3OCC', '3OF3', '3ONV', '3OOE', '3OOH', '3OPV', '3UT6', '4RJ2', '4TS3',
+                     '4TS9', '4TTA', '4TTI', '4TTJ', '5I3C', '5IU6', '6XZ2']
+        self.assertCountEqual(ret_list2, exp_list2)
+
+        # test the logical 'or' sequence search
+        val_list1.extend(val_list2)
+        json_qry_obj3 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type, val_list1)
+        ret_list3 = self.rcsb_util._run_rcsb_search(json_qry_obj3)
+        exp_list1.extend(exp_list2)
+        self.assertCountEqual(ret_list3, exp_list1)
+
+    #@unittest.skip('test_run_rcsb_search_seq_ec_uniprot')
+    def test_run_rcsb_search_seq_ec_uniprot(self):
+        srch_type1 = "sequence"
+        val_list1 = self.inputJsonObj1['sequence']
+        json_qry_obj1 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type1, val_list1)
+        ret_list1 = self.rcsb_util._run_rcsb_search(json_qry_obj1)
+        exp_list1 = ['1A62', '1A63', '1A8V', '1PV4', '1PVO', '1XPO', '1XPR', '1XPU', '2A8V', '2HT1',
+                     '3ICE', '5JJI', '5JJK', '5JJL', '6DUQ', '6WA8', '6XAS', '6XAV', '6Z9P', '6Z9Q',
+                     '6Z9R', '6Z9S', '6Z9T', '7ADB', '7ADC', '7ADD', '7ADE', '7X2R', '8E3H', '8E5L',
+                     '8E5P', '8E6W', '8E70', '1A69', '1ECP', '1K9S', '1OTX', '1OTY', '1OU4', '1OUM',
+                     '1OV6', '1OVG', '1PK7', '1PK9', '1PKE', '1PR0', '1PR1', '1PR2', '1PR4', '1PR5',
+                     '1PR6', '1PW7', '1VHJ', '1VHW', '3OCC', '3OF3', '3ONV', '3OOE', '3OOH', '3OPV',
+                     '3UT6', '4RJ2', '4TS3', '4TS9', '4TTA', '4TTI', '4TTJ', '5I3C', '5IU6', '6XZ2']
+        self.assertCountEqual(ret_list1, exp_list1)
+
+        srch_type2 = "uniprot_ids"
+        val_list2 = self.inputJsonObj1['uniprot_id']  # ["Q01532", "R9RYW2"]
+        json_qry_obj2 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type2, val_list2)
+        ret_list2 = self.rcsb_util._run_rcsb_search(json_qry_obj2)
+        exp_list2 = ['1A6R', '1GCB', '2DZY', '2DZZ', '2E00', '2E01', '2E02', '2E03',
+                      '3GCB','5FAL', '5FAN']
+        self.assertCountEqual(ret_list2, exp_list2)
+
+        srch_type3 = "ec_numbers"
+        val_list3 = self.inputJsonObj1['ec_number']  # ["3.5.2.6", "3.4.13.9"]
+        json_qry_obj3 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type3, val_list3)
+        ret_list3 = self.rcsb_util._run_rcsb_search(json_qry_obj3)
+        self.assertEqual(len(ret_list3), 1744)
+
     @unittest.skip('test_get_pdb_ids_by_sequence_uniprot_ec')
     def test_get_pdb_ids_by_sequence_uniprot_ec(self):
         ret = self.rcsb_util._get_pdb_ids(self.inputJsonObj1)
@@ -249,14 +410,13 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(len(ret[k2]), ret[k1])
         print(f'RCSB query by chem returned {ret[k1]} ids.')
 
-    #@unittest.skip('test_get_graphql_data')
+    @unittest.skip('test_get_graphql_data')
     def test_get_graphql_data(self):
         id_list = ['1A0I', '1A49', '1A5U', '1A82', '1AQ2']
         gql_ret = self.rcsb_util._get_graphql_data(id_list)
 
         expected_keys = ['total_count', 'id_list']
         expected_keys.extend(id_list)
-        #print(gql_ret)
         for k in expected_keys:
             self.assertIn(k, gql_ret)
 

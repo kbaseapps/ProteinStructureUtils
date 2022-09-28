@@ -116,7 +116,8 @@ class RCSBUtil:
                                             return the seqEcUniprotJsonObject
         """
         seqEcUniprotJsonObject = {}
-        if searchType not in ('sequence', 'sequence_strings', 'uniprot_ids', 'ec_numbers'):
+        if searchType not in ('sequence', 'sequence_strings', 'uniprot_id',
+                              'uniprot_ids','ec_number', 'ec_numbers'):
             return seqEcUniprotJsonObject
         #
         if searchType == "sequence_strings" or searchType == "sequence":
@@ -162,7 +163,7 @@ class RCSBUtil:
                     }
                 }
             #
-        elif searchType == "uniprot_ids":
+        elif searchType == "uniprot_id" or searchType == 'uniprot_ids':
             seqEcUniprotJsonObject = {
                 "query": {
                     "type": "group",
@@ -198,7 +199,7 @@ class RCSBUtil:
                     "return_all_hits": True
                 }
             }
-        elif searchType == "ec_numbers":
+        elif searchType == "ec_number" or searchType == 'ec_numbers':
             seqEcUniprotJsonObject = {
                 "query": {
                     "type": "terminal",
@@ -226,7 +227,7 @@ class RCSBUtil:
                                   return the chemJsonObject
         """
         chemJsonObject = {}
-        if searchType not in ("InChI", "SMILES", "InChIKey"):
+        if searchType not in ("InChI", "SMILES", "InChIKey", 'inchis', 'smiles'):
             return chemJsonObject
         #
         if len(valList) == 1:
@@ -302,7 +303,11 @@ class RCSBUtil:
         try:
             reqH = requests.post(self.__baseSearchUrl, json=jsonQueryObj)
             reqH.raise_for_status()
-        except Exception as e:
+        except ConnectionError as e:  # not raising error to allow continue
+            logging.info(f'Querying RCSB db had a Connection Error:************\n {e}.\n'
+                          'Or database connection request had no response!')
+            raise e
+        except (RuntimeError, TypeError, KeyError, ValueError) as e:
             err_msg = f'Requesting data from RCSB db errored with message: {e.message}'
             logging.info(err_msg)
             raise ValueError(err_msg)
@@ -366,9 +371,9 @@ class RCSBUtil:
             graphql_ret = self.__graphqlClient.execute(query=queryString)
             # asyncio.run() is available ONLY for python 3.7 or newer
             # graphql_ret = asyncio.run(self.__graphqlClient.execute_async(query=queryString))
-        except ConnectionError as e:  # not raising error to allow continue
-            logging.info('Querying RCSB GraphQL had a Connection Error or no response!')
-            print(e)
+        except ConnectionError as e:  # not raising error to allow continue with other chunks
+            logging.info(f'Querying RCSB GraphQL had a Connection Error:************\n {e}.\n'
+                         'Or database connection request had no response!')
             return {}
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             err_msg = f'Querying RCSB errored with message: {e.message} and data: {e.data}'
@@ -457,9 +462,10 @@ class RCSBUtil:
             i = 0
             for searchType, valList in inputJsonObj.items():
                 params = {}
-                if searchType in ('InChI', 'InChIKey', 'SMILES'):
+                if searchType in ('InChI', 'InChIKey', 'SMILES', 'inchis', 'smiles'):
                     params = self._create_chem_params(searchType, valList)
-                elif searchType in ('sequence', 'uniprot_id', 'ec_number'):
+                elif searchType in ('sequence', 'sequence_strings', 'uniprot_id', 'ec_number',
+                                    'uniprot_ids', 'ec_numbers'):
                     params = self._create_seq_ec_uniprot_params(searchType, valList)
                 if not params:
                     continue
