@@ -474,7 +474,7 @@ class RCSBUtil:
         #
         return dic
 
-    def _get_pdb_ids(self, inputJsonObj, logic=0):
+    def _get_pdb_ids(self, inputJsonObj, logic_and=0):
         """
             _get_pdb_ids: creates rcsb query parameters & run the query to fetch a lost of rcsb_ids
         """
@@ -503,20 +503,23 @@ class RCSBUtil:
                     i = 1
                     continue
 
-                if logic:
+                if logic_and:
                     # print('AND logic')
                     retIdList = list(set(retIdList) & set(new_list))
                 else:
                     # print('OR logic')
                     retIdList.extend(new_list)
-            #
+
             retIdList = sorted(list(set(retIdList)))
-            #
+
+            if not retIdList or not inputJsonObj:
+                return {}
+
             outputObj = {}
             outputObj['total_count'] = len(retIdList)
             outputObj['id_list'] = retIdList
             outputObj['inputJsonObj'] = inputJsonObj
-            logging.info(f'Fetched rcsd_ids with the actual query filter {inputJsonObj}')
+            logging.info(f'Fetched {len(retIdList)} rcsd_ids with query filter {inputJsonObj}')
             return outputObj
         except Exception as e:
             raise e
@@ -555,6 +558,7 @@ class RCSBUtil:
 
             expl_method = '<br>'.join(pdb_struct.get('method', []))
             prim_cite = pdb_struct.get('primary_citation', {})
+            """
             if prim_cite:
                 prim_cite_str = '<br>'.join([prim_cite.get('title', ''),
                                              ','.join(prim_cite.get('rcsb_authors', [])),
@@ -562,7 +566,7 @@ class RCSBUtil:
                                              str(prim_cite.get('year', 'TBD'))])
             else:
                 prim_cite_str = ''
-
+            """
             prot_sequences = []
             pdb_chains = []
             src_organisms = []
@@ -632,13 +636,16 @@ class RCSBUtil:
         dir_name = os.path.dirname(__file__)
         report_template_file = os.path.join(dir_name, 'templates', 'rcsb_query_report_template.html')
         report_html = os.path.join(dir_name, 'query_structures.html')
+        qry_details = json.dumps(input_json, indent=4)
+        qry_details += f'\n\nWith Evalue_cutoff={str(self.EVALUE_CUTOFF)} and '
+        qry_details += f'\nIdentity_cutoff={str(self.IDENTITY_CUTOFF)}'
 
         with open(report_html, 'w') as report_html_pt:
             with open(report_template_file, 'r') as report_template_pt:
                 # Fetch & fill in detailed info into template HTML
                 struct_list_html_report = report_template_pt.read()\
                     .replace('<!--replace query result body-->', pdblist_html)\
-                    .replace('<!--replace query details-->', json.dumps(input_json, indent=4))
+                    .replace('<!--replace query details-->', qry_details)
                 report_html_pt.write(struct_list_html_report)
 
         structs_html_report_path = os.path.join(output_directory, 'rcsb_query_report.html')
@@ -697,18 +704,19 @@ class RCSBUtil:
         idlist = []
         struct_info = {}
         returnVal = {}
-        try:
-            rcsb_output = self._get_pdb_ids(inputJsonObj, self.LOGICAL_AND)
-            logging.info(f'{rcsb_output["total_count"]} RCSB Structures found.')
-            idlist = rcsb_output.get('id_list', [])
+        returnVal['rcsb_ids'] = []
+        returnVal['report_ref'] = None
+        returnVal['report_name'] = None
+
+        rcsb_output = self._get_pdb_ids(inputJsonObj, self.LOGICAL_AND)
+        logging.info(f'{rcsb_output["total_count"]} RCSB Structures found.')
+        idlist = rcsb_output.get('id_list', [])
+        if idlist:
             struct_info = self._get_graphql_data(idlist)
             logging.info('Retrieved structure information:')
             logging.info(f'total_count={struct_info.get("total_count", 0)}')
-            returnVal['rcsb_ids'] = idlist
+            returnVal['rcsb_ids'] = struct_info.get("id_list", [])
             report_output = self._generate_query_report(
                 workspace_name, struct_info, rcsb_output.get('inputJsonObj'))
             returnVal.update(report_output)
-        except (RuntimeError, TypeError, KeyError, ValueError) as e:
-            logging.info(e)
-        else:
-            return returnVal
+        return returnVal

@@ -28,9 +28,9 @@ parameters :
         ui-name : |
             Proten Sequences
         short-hint : |
-            a list of sequences
+            Provide a list of sequences
         long-hint  : |
-            a list of sequences
+            Provide a list of sequences
 
     uniprot_ids :
         ui-name : |
@@ -76,17 +76,17 @@ parameters :
         ui-name : |
             Evalue Cutoff
         short-hint : |
-            a threshold value for homology search
+            A threshold value for homology search
         long-hint : |
-            a threshold value for homology search
+            A threshold value for homology search
 
     identity_cutoff :
         ui-name : |
             Identity Cutoff
         short-hint : |
-            a threshold value for sequence match
+            A threshold value for sequence match
         long-hint : |
-            a threshold value for sequence match
+            A threshold value for sequence match
 
 description : |
     <p> Query RCSB Databases with a given list of constraints</p>

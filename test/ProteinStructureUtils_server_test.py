@@ -13,7 +13,7 @@ from ProteinStructureUtils.authclient import KBaseAuth as _KBaseAuth
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.WorkspaceClient import Workspace
 
-from ProteinStructureUtils.Utils.PDBUtils import PDBUtil
+from ProteinStructureUtils.Utils.PDBUtil import PDBUtil
 
 from Bio import PDB
 
@@ -177,7 +177,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
         return {'copy_file_path': file_path}
 
-    # Testing PDBUtils module functions
+    # Testing PDBUtil module functions
     #@unittest.skip('test_validate_file')
     def test_validate_file(self):
         not_exist_file = 'abc.csv'
@@ -708,7 +708,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'input_file_path': pdb_file_path,
             'input_staging_file_path': '',
             'structure_name': 'test_pdb_structure_1fat',
-            'description': 'for test PDBUtils.import_pdb_file_nopatch',
+            'description': 'for test PDBUtil.import_pdb_file_nopatch',
             'workspace_name': self.wsName
         }
         ret_data, ret_info = self.pdb_util.import_pdb_file(params)
@@ -729,7 +729,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'pdb_info': {'narrative_id': narr_id,
                          'genome_name': genome_name,
                          'feature_id': feat_id},
-            'description': 'for test PDBUtils.import_pdb_file_nopatch',
+            'description': 'for test PDBUtil.import_pdb_file_nopatch',
             'workspace_name': self.wsName
         }
         ret_data, ret_info = self.pdb_util.import_pdb_file(params)
@@ -745,7 +745,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'input_file_path': '',
             'input_staging_file_path': fileName,
             'structure_name': 'test_pdb_structure_1fat',
-            'description': 'for test PDBUtils.import_pdb_file_patch',
+            'description': 'for test PDBUtil.import_pdb_file_patch',
             'workspace_name': self.wsName
         }
         ret_data, ret_info = self.pdb_util.import_pdb_file(params)
@@ -764,7 +764,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'pdb_info': {'narrative_id': narr_id,
                          'genome_name': genome_name,
                          'feature_id': feat_id},
-            'description': 'for test PDBUtils.import_pdb_file_patch',
+            'description': 'for test PDBUtil.import_pdb_file_patch',
             'workspace_name': self.wsName
         }
         ret_data, ret_info = self.pdb_util.import_pdb_file(params)
@@ -802,7 +802,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'input_file_path': pdb_file_path,
             'input_staging_file_path': '',
             'structure_name': 'test_pdb_structure_name',
-            'description': 'for test PDBUtils.import_mmcif_file',
+            'description': 'for test PDBUtil.import_mmcif_file',
             'workspace_name': self.wsName
         }
         ret_data, ret_info = self.pdb_util.import_mmcif_file(params)
@@ -818,7 +818,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'input_file_path': '',
             'input_staging_file_path': fileName,
             'structure_name': 'test_pdb_structure_name',
-            'description': 'for test PDBUtils.import_mmcif_file',
+            'description': 'for test PDBUtil.import_mmcif_file',
             'workspace_name': self.wsName
         }
         ret_data, ret_info = self.pdb_util.import_mmcif_file(params)
@@ -938,7 +938,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_ids'])
 
-    @unittest.skip('test_dfu_save_proteinstructure')
+    #@unittest.skip('test_dfu_save_proteinstructure')
     def test_dfu_save_proteinstructure(self):
         """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
 

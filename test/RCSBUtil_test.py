@@ -100,7 +100,7 @@ class RCSBUtilsTest(unittest.TestCase):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
 
-    @unittest.skip('test_check_input_jsons')
+    #@unittest.skip('test_check_input_jsons')
     def test_check_input_jsons(self):
         keys1 = ['sequence', 'ec_number', 'uniprot_id']
         for k1 in keys1:
@@ -132,7 +132,7 @@ class RCSBUtilsTest(unittest.TestCase):
             self.assertIn(k6, self.prd_data)
 
     # Testing RCSBUtil module functions
-    @unittest.skip('test_create_seq_ec_uniprot_params_seq')
+    #@unittest.skip('test_create_seq_ec_uniprot_params_seq')
     def test_create_seq_ec_uniprot_params_seq(self):
         # test single sequence
         search_type11 = 'sequence'
@@ -173,7 +173,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(ret_nodelist[0]['parameters']['value'], valList12[0])
         self.assertEqual(ret_nodelist[1]['parameters']['value'], valList12[1])
 
-    @unittest.skip('test_create_seq_ec_uniprot_params_uniprot')
+    #@unittest.skip('test_create_seq_ec_uniprot_params_uniprot')
     def test_create_seq_ec_uniprot_params_uniprot(self):
         search_type2 = "uniprot_ids"
         valList2 = ["Q01532", "R9RYW2"]
@@ -220,7 +220,7 @@ class RCSBUtilsTest(unittest.TestCase):
         pm_empty = self.rcsb_util._create_seq_ec_uniprot_params(search_type2b, valList2)
         self.assertFalse(pm_empty)
 
-    @unittest.skip('test_create_seq_ec_uniprot_params_ec')
+    #@unittest.skip('test_create_seq_ec_uniprot_params_ec')
     def test_create_seq_ec_uniprot_params_ec(self):
         search_type3 = "ec_numbers"
         valList3 = ["3.5.2.6", "3.4.13.9"]
@@ -249,7 +249,7 @@ class RCSBUtilsTest(unittest.TestCase):
         pm_empty = self.rcsb_util._create_seq_ec_uniprot_params(search_type3b, valList3)
         self.assertFalse(pm_empty)
 
-    @unittest.skip('test_create_chem_params_inchi')
+    #@unittest.skip('test_create_chem_params_inchi')
     def test_create_chem_params_inchi(self):
         # test single InChI
         search_type1 = "InChI"
@@ -301,7 +301,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(ret_nodelist[0]['parameters']['match_type'], 'graph-exact')
         self.assertEqual(ret_nodelist[1]['parameters']['value'], valList12[1])
 
-    @unittest.skip('test_create_chem_params_smiles')
+    #@unittest.skip('test_create_chem_params_smiles')
     def test_create_chem_params_smiles(self):
         # test single SMILES
         search_type2 = "SMILES"
@@ -354,7 +354,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(ret_nodelist[0]['parameters']['match_type'], 'graph-exact')
         self.assertEqual(ret_nodelist[1]['parameters']['value'], valList22[1])
 
-    @unittest.skip('test_run_rcsb_search_seq')
+    #@unittest.skip('test_run_rcsb_search_seq')
     def test_run_rcsb_search_seq(self):
         srch_type = "sequence"
         val_list1 = [self.inputJsonObj1['sequence'][0]]
@@ -372,9 +372,9 @@ class RCSBUtilsTest(unittest.TestCase):
         json_qry_obj2 = self.rcsb_util._create_seq_ec_uniprot_params(srch_type, val_list2)
         ret_list2 = self.rcsb_util._run_rcsb_search(json_qry_obj2)
         exp_list2 = ['1A69', '1ECP', '1K9S', '1OTX', '1OTY', '1OU4', '1OUM', '1OV6', '1OVG', '1PK7',
-                     '1PK9', '1PKE', '1PR0', '1PR1', '1PR2', '1PR4', '1PR5', '1PR6', '1PW7', '1VHJ',
-                     '1VHW', '3OCC', '3OF3', '3ONV', '3OOE', '3OOH', '3OPV', '3UT6', '4RJ2', '4TS3',
-                     '4TS9', '4TTA', '4TTI', '4TTJ', '5I3C', '5IU6', '6XZ2']
+                     '1PK9', '1PKE', '1PR0', '1PR1', '1PR2', '1PR4', '1PR5', '1PR6', '1PW7', '3OCC',
+                     '3ONV', '3OOE', '3OOH', '3OPV', '3UT6', '4RJ2', '4TS3', '4TS9', '4TTA', '4TTI',
+                     '4TTJ', '5I3C', '5IU6', '6XZ2']
         if ret_list2:
             self.assertGreaterEqual(set(ret_list2), set(exp_list2))
 
@@ -387,7 +387,7 @@ class RCSBUtilsTest(unittest.TestCase):
             # self.assertCountEqual(ret_list3, exp_list1)
             self.assertGreaterEqual(set(ret_list3), set(exp_list1))
 
-    @unittest.skip('test_run_rcsb_search_seq_ec_uniprot')
+    #@unittest.skip('test_run_rcsb_search_seq_ec_uniprot')
     def test_run_rcsb_search_seq_ec_uniprot(self):
         srch_type1 = "sequence"
         val_list1 = self.inputJsonObj1['sequence']
@@ -398,11 +398,10 @@ class RCSBUtilsTest(unittest.TestCase):
                      '6Z9R', '6Z9S', '6Z9T', '7ADB', '7ADC', '7ADD', '7ADE', '7X2R', '8E3H', '8E5L',
                      '8E5P', '8E6W', '8E70', '1A69', '1ECP', '1K9S', '1OTX', '1OTY', '1OU4', '1OUM',
                      '1OV6', '1OVG', '1PK7', '1PK9', '1PKE', '1PR0', '1PR1', '1PR2', '1PR4', '1PR5',
-                     '1PR6', '1PW7', '1VHJ', '1VHW', '3OCC', '3OF3', '3ONV', '3OOE', '3OOH', '3OPV',
-                     '3UT6', '4RJ2', '4TS3', '4TS9', '4TTA', '4TTI', '4TTJ', '5I3C', '5IU6', '6XZ2']
+                     '1PR6', '1PW7', '3OCC', '3ONV', '3OOE', '3OOH', '3OPV', '3UT6', '4RJ2', '4TS3',
+                     '4TS9', '4TTA', '4TTI', '4TTJ', '5I3C', '5IU6', '6XZ2']
         # Use assertGreaterEqual() to make sure the test is True even after the remote db expands
         if ret_list1:
-            # self.assertCountEqual(ret_list1, exp_list1)
             self.assertGreaterEqual(set(ret_list1), set(exp_list1))
 
         srch_type2 = "uniprot_ids"
@@ -422,7 +421,7 @@ class RCSBUtilsTest(unittest.TestCase):
         if ret_list3:
             self.assertGreaterEqual(len(ret_list3), 1740)
 
-    @unittest.skip('test_run_rcsb_search_chem')
+    #@unittest.skip('test_run_rcsb_search_chem')
     def test_run_rcsb_search_chem(self):
         srch_type = "InChI"
         val_list1 = self.inputJsonObj3['InChI']
@@ -439,7 +438,7 @@ class RCSBUtilsTest(unittest.TestCase):
         if ret_list2:
             self.assertGreaterVyEqual(len(ret_list2), 2185)
 
-    @unittest.skip('test_get_pdb_ids_by_sequence_uniprot_ec')
+    #@unittest.skip('test_get_pdb_ids_by_sequence_uniprot_ec')
     def test_get_pdb_ids_by_sequence_uniprot_ec(self):
         ret = self.rcsb_util._get_pdb_ids(self.inputJsonObj1)
         k1 = 'total_count'
@@ -449,6 +448,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(len(ret[k2]), ret[k1])
         print(f'RCSB query by sequence/ecnum/uniprotid returned {ret[k1]} ids.')
 
+    # Not implemented yet, so skipped for now
     @unittest.skip('test_get_pdb_ids_by_source_organism')
     def test_get_pdb_ids_by_source_organism(self):
         ret = self.rcsb_util._get_pdb_ids(self.inputJsonObj2)
@@ -459,7 +459,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(len(ret[k2]), ret[k1])
         print(f'RCSB query by source organism returned {ret[k1]} ids.')
 
-    @unittest.skip('test_get_pdb_ids_by_chem')
+    #@unittest.skip('test_get_pdb_ids_by_chem')
     def test_get_pdb_ids_by_chem(self):
         ret = self.rcsb_util._get_pdb_ids(self.inputJsonObj3)
         k1 = 'total_count'
@@ -469,7 +469,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(len(ret[k2]), ret[k1])
         print(f'RCSB query by chem returned {ret[k1]} ids.')
 
-    @unittest.skip('test_queryGraphql')
+    #@unittest.skip('test_queryGraphql')
     def test_queryGraphql(self):
         id_list = ['1A0I', '1A49']
         gqlData = self.rcsb_util._queryGraphql(id_list).get('data', {})
@@ -502,7 +502,7 @@ class RCSBUtilsTest(unittest.TestCase):
                                 self.assertIn('database_accession', pei)
                                 self.assertIn('database_name', pei)
 
-    @unittest.skip('test_formatRCSBJson')
+    #@unittest.skip('test_formatRCSBJson')
     def test_formatRCSBJson(self):
         formatted_json = self.rcsb_util._formatRCSBJson(self.gql_data)
         expected_keys = ['1A0I', '1A49']
@@ -532,7 +532,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertCountEqual(gql_itms['1A0I'], self.gqldata_items['1A0I'])
         self.assertCountEqual(gql_itms['1A49'], self.gqldata_items['1A49'])
 
-    @unittest.skip('test_get_graphql_data')
+    #@unittest.skip('test_get_graphql_data')
     def test_get_graphql_data(self):
         id_list = ['1A0I', '1A49', '1A5U', '1A82', '1AQ2']
         gql_itms = self.rcsb_util._get_graphql_data(id_list)
@@ -550,7 +550,9 @@ class RCSBUtilsTest(unittest.TestCase):
     #@unittest.skip('test_write_struct_info')
     def test_write_struct_info(self):
         tbody_html = self.rcsb_util._write_struct_info(self.gqldata_items)
-        self.assertEqual(tbody_html.count('<tr>'), 2)
+        self.assertEqual(tbody_html.count('</tr>'), 2)
+        self.assertIn('1A0I', tbody_html)
+        self.assertIn('1A49', tbody_html)
 
     #@unittest.skip('test_querey_structure_info')
     def test_querey_structure_info(self):
@@ -562,13 +564,32 @@ class RCSBUtilsTest(unittest.TestCase):
             'inchis': self.inputJsonObj3['InChI'],
             'smiles': self.inputJsonObj3['SMILES'],
             'evalue_cutoff': 0.2,
-            'identity_cutoff': 0.9
+            'identity_cutoff': 0.9,
+            'logical_and': 1
         }
 
         struct_ret = self.rcsb_util.querey_structure_info(params)
         if struct_ret:
             rcsb_ids = struct_ret.get('rcsb_ids', [])
-            print(f'returned {len(rcsb_ids)} pdbs')
+            print(f'Returned {len(rcsb_ids)} pdbs')
             self.assertIn('rcsb_ids', struct_ret)
             self.assertIn('report_name', struct_ret)
             self.assertIn('report_ref', struct_ret)
+
+    # Testing self.serviceImpl functions
+    #@unittest.skip('test_Impl_query_rcsb_structures')
+    def test_Impl_query_rcsb_structures(self):
+        params = {
+            'workspace_name': self.wsName,
+            'sequence_strings': self.inputJsonObj1['sequence'],
+            'uniprot_ids': self.inputJsonObj1['uniprot_id'],
+            'ec_numbers': self.inputJsonObj1['ec_number'],
+            'inchis': self.inputJsonObj3['InChI'],
+            'smiles': self.inputJsonObj3['SMILES'],
+            'evalue_cutoff': 0.2,
+            'identity_cutoff': 0.9,
+            'logical_and': 0
+        }
+        qry_ret = self.serviceImpl.query_rcsb_structures(self.ctx, params)
+        if qry_ret:
+            self.assertCountEqual(qry_ret[0].keys(), ["rcsb_ids", "report_ref", "report_name"])

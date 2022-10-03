@@ -141,7 +141,7 @@ class PDBUtil:
                     'proteins': protein_data
                 }
             else:
-                logging.info(f'Parsing pdb file {file_path} failed to match KBase genome/features!')
+                logging.info(f'PDB file {file_path} failed to match KBase genome/features!')
                 pdb_data = {}
         finally:
             return pdb_data, pp_no, params
@@ -212,7 +212,7 @@ class PDBUtil:
                 }
             else:
                 mmcif_data = {}
-                logging.info(f'Parsing pdb file {file_path} failed to match KBase genome/features!')
+                logging.info(f'PDB file {file_path} failed to match KBase genome/features!')
         finally:
             return mmcif_data, pp_no, params
 
@@ -569,9 +569,9 @@ class PDBUtil:
             'pack': 'gzip',
             'make_handle': True,
         }
-        hdl = self.dfu.file_to_shock(file_to_shock_params)[0]['handle']
+        shock_id = self.dfu.file_to_shock(file_to_shock_params)['handle']['hid']
 
-        return hdl
+        return shock_id
 
     def _generate_report_html(self, pdb_name, pdb_path):
         """
@@ -682,7 +682,7 @@ class PDBUtil:
 
             return: lists model_pdb_file_paths, exp_pdb_file_paths and dict kbase_meta_data
         """
-        logging.info(f'parsing metadata from input file {metadata_file_path}...')
+        logging.info(f'Parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
                             'PDB filename', 'Is model']

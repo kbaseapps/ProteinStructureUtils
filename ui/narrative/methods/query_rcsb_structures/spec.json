@@ -100,7 +100,7 @@
       "service-mapping" : {
         "url" : "",
         "name" : "ProteinStructureUtils",
-        "method" : "batch_import_pdbs_from_metafile",
+        "method" : "query_rcsb_structures",
         "input_mapping" : [
           {
             "narrative_system_variable": "workspace",
