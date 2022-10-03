@@ -1,0 +1,94 @@
+#
+# define display information
+#
+name     : Query RCSB databases for protein structures
+subtitle : Given a json format query constraint, query RCSB databases for a list of protein structures
+tooltip  : Given a json format query constraint, query RCSB databases for a list of protein structures
+
+icon: data-blue.png
+
+screenshots :
+    []
+
+suggestions :
+    apps:
+        related :
+            []
+        next :
+            []
+    methods:
+        related :
+            []
+        next :
+            []
+
+parameters :
+
+    sequence_strings :
+        ui-name : |
+            Proten Sequences
+        short-hint : |
+            a list of sequences
+        long-hint  : |
+            a list of sequences
+
+    uniprot_ids :
+        ui-name : |
+            Uniprot IDs
+        short-hint : |
+            Provide a list of uniprot ids
+        long-hint : |
+            Provide a list of uniprot ids
+
+    ec_numbers :
+        ui-name : |
+            EC Numbers
+        short-hint : |
+            Provide a list of EC Numbers
+        long-hint : |
+            Provide a list of EC Numbers
+
+    inchis :
+        ui-name : |
+            InChI codes
+        short-hint : |
+            Provide a list of InChI codes
+        long-hint : |
+            Provide a list of InChI codes
+
+    smiles :
+        ui-name : |
+            SMILES codes
+        short-hint : |
+            Provide a list of SMILES codes
+        long-hint : |
+            Provide a list of SMILES codes
+
+    logical_and :
+        ui-name : |
+            Logical AND Operator
+        short-hint : |
+            a logical link between the above sets of constraints
+        long-hint : |
+            a logical link between the above sets of constraints
+
+    evalue_cutoff :
+        ui-name : |
+            Evalue Cutoff
+        short-hint : |
+            a threshold value for homology search
+        long-hint : |
+            a threshold value for homology search
+
+    identity_cutoff :
+        ui-name : |
+            Identity Cutoff
+        short-hint : |
+            a threshold value for sequence match
+        long-hint : |
+            a threshold value for sequence match
+
+description : |
+    <p> Query RCSB Databases with a given list of constraints</p>
+
+technical-description : none

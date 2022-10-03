@@ -29,6 +29,7 @@ class RCSBUtil:
     # Set thresholds to restrict which alignments will be significant or sequence identity matches
     EVALUE_CUTOFF = 0.1
     IDENTITY_CUTOFF = 0.75
+    LOGICAL_AND = 0
 
     def __init__(self, config):
         self.callback_url = config['SDK_CALLBACK_URL']
@@ -100,6 +101,15 @@ class RCSBUtil:
             if p not in params:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
+        if params.get('evalue_cutoff', None):
+            self.EVALUE_CUTOFF = params['evalue_cutoff']
+
+        if params.get('identity_cutoff', None):
+            self.IDENTITY_CUTOFF = params['identity_cutoff']
+
+        if params.get('logical_and', None):
+            self.LOGICAL_AND = params['logical_and']
+
         # check for queriable parameters
         inputJsonObj = {}
         for p in ['sequence_strings', 'uniprot_ids', 'ec_numbers', 'inchis', 'smiles']:
@@ -107,7 +117,7 @@ class RCSBUtil:
                 inputJsonObj[p] = params[p]
 
         if not inputJsonObj:
-            raise ValueError('No queriable parameters found!')
+            raise ValueError('At least one (1) queriable parameter should be specified!')
 
         return inputJsonObj, params.get('workspace_name')
 
@@ -119,7 +129,7 @@ class RCSBUtil:
         """
         seqEcUniprotJsonObject = {}
         if searchType not in ('sequence', 'sequence_strings', 'uniprot_id',
-                              'uniprot_ids','ec_number', 'ec_numbers'):
+                              'uniprot_ids', 'ec_number', 'ec_numbers'):
             return seqEcUniprotJsonObject
         #
         if searchType == "sequence_strings" or searchType == "sequence":
@@ -412,7 +422,8 @@ class RCSBUtil:
             dic[entry['rcsb_id']] = {
                 'method': [entry['exptl'][0]['method']],
                 'primary_citation': entry[prim_cite],
-                'polymer_entities': []
+                'polymer_entities': [],
+                'nonpolymer_entities': []
             }
             for pe in entry['polymer_entities']:
                 pe_dic = {
@@ -463,10 +474,11 @@ class RCSBUtil:
         #
         return dic
 
-    def _get_pdb_ids(self, inputJsonObj, logic='or'):
+    def _get_pdb_ids(self, inputJsonObj, logic=0):
         """
             _get_pdb_ids: creates rcsb query parameters & run the query to fetch a lost of rcsb_ids
         """
+        logging.info(f'Fetching the list of rcsd_ids with query filter {inputJsonObj}')
         try:
             retIdList = []
             i = 0
@@ -478,15 +490,20 @@ class RCSBUtil:
                                     'uniprot_ids', 'ec_numbers'):
                     params = self._create_seq_ec_uniprot_params(searchType, valList)
                 if not params:
+                    inputJsonObj = {k: v for k, v in inputJsonObj.items() if k != searchType}
                     continue
 
                 new_list = self._run_rcsb_search(jsonQueryObj=params)
+                if not new_list:
+                    inputJsonObj = {k: v for k, v in inputJsonObj.items() if k != searchType}
+                    continue
+
                 if i == 0:
                     retIdList = new_list
                     i = 1
                     continue
 
-                if logic == 'and':
+                if logic:
                     # print('AND logic')
                     retIdList = list(set(retIdList) & set(new_list))
                 else:
@@ -498,6 +515,8 @@ class RCSBUtil:
             outputObj = {}
             outputObj['total_count'] = len(retIdList)
             outputObj['id_list'] = retIdList
+            outputObj['inputJsonObj'] = inputJsonObj
+            logging.info(f'Fetched rcsd_ids with the actual query filter {inputJsonObj}')
             return outputObj
         except Exception as e:
             raise e
@@ -522,7 +541,7 @@ class RCSBUtil:
 
         return output_obj
 
-    def _write_struct_info(self, output_dir, struct_info):
+    def _write_struct_info(self, struct_info):
         """
             _write_struct_info: write the query result info to replace the string
                                 '<!--replace query result tbody-->' in the jQuery
@@ -534,61 +553,71 @@ class RCSBUtil:
             pdb_struct = struct_info[rcsb_id]
             tbody_html += '<tr>'
 
-            expl_method = ';'.join(pdb_struct.get('method', []))
+            expl_method = '<br>'.join(pdb_struct.get('method', []))
             prim_cite = pdb_struct.get('primary_citation', {})
             if prim_cite:
-                prim_cite_str = ';'.join([prim_cite.get('title', ''),
-                                          ','.join(prim_cite.get('rcsb_authors', [])),
-                                          prim_cite.get('journal_abbrev', ''),
-                                          str(prim_cite.get('year', 'TBD'))])
+                prim_cite_str = '<br>'.join([prim_cite.get('title', ''),
+                                             ','.join(prim_cite.get('rcsb_authors', [])),
+                                             prim_cite.get('journal_abbrev', ''),
+                                             str(prim_cite.get('year', 'TBD'))])
             else:
                 prim_cite_str = ''
+
             prot_sequences = []
             pdb_chains = []
             src_organisms = []
             src_dbs = []
             ec_numbers = []
             for poly_entity in pdb_struct['polymer_entities']:
-                if poly_entity.get('one_letter_code_sequence', None):
-                    prot_sequences.extend(poly_entity['one_letter_code_sequence'])
+                if poly_entity.get('one_letter_code_sequence', ''):
+                    prot_sequences.append(poly_entity['one_letter_code_sequence'])
                 if poly_entity.get('pdb_chain_ids', None):
-                    pdb_chains.extend(poly_entity['pdb_chain_ids'])
+                    pdb_chains.append('[' + ','.join(poly_entity['pdb_chain_ids']) +']')
                 if poly_entity.get('source_organism', None):
-                    src_organisms.extend(poly_entity['source_organism'])
-                if poly_entity.get('identifiers', None):
-                    src_dbs.extend(poly_entity['identifiers'])
+                    for srcg in poly_entity['source_organism']:
+                        sci_name = srcg.get('ncbi_scientific_name', '')
+                        ncbi_num = f"({srcg.get('ncbi_taxonomy_id', '')})"
+                        if sci_name and ncbi_num:
+                            src_organisms.append(''.join([sci_name, ncbi_num]))
+                if (poly_entity.get('identifiers', None) and
+                        poly_entity['identifiers'].get('reference_sequence_identifiers', None)):
+                    for poly_en in poly_entity['identifiers']['reference_sequence_identifiers']:
+                        db_acc = f"({poly_en.get('database_accession', '')})"
+                        db_nm = poly_en.get('database_name', '')
+                        if db_acc and db_nm:
+                            src_dbs.append(''.join([db_nm, db_acc]))
                 if poly_entity.get('ec_numbers', None):
-                    ec_numbers.extend(poly_entity['ec_numbers'])
+                    ec_numbers.append('[' + ','.join(poly_entity['ec_numbers']) +']')
 
             inchis = []
             inchikeys = []
             smiles = []
             for nonpoly in pdb_struct['nonpolymer_entities']:
                 if nonpoly.get('InChI', None):
-                    inchis.extend(nonpoly['InChIKey'])
+                    inchis.append('[' + ','.join(nonpoly['InChI']) + ']')
                 if nonpoly.get('InChIKey', None):
-                    inchikeys.extend(nonpoly['InChIKey'])
+                    inchikeys.append('[' + ','.join(nonpoly['InChIKey']) + ']')
                 if nonpoly.get('SMILES', None):
-                    smiles.extend(nonpoly['SMILES'])
+                    smiles.append('[' + ','.join(nonpoly['SMILES']) + ']')
 
             tbody_html += (f'\n<td><a href="https://www.rcsb.org/3d-view/{rcsb_id}"'
-                           f'style="cursor: pointer;" '
+                           f'style="cursor: pointer;" target="_blank" '
                            f'title="3D Structure Viewer">{rcsb_id}</a></td>')
             tbody_html += f'\n<td>{expl_method} </td>'
-            tbody_html += (f'\n<td>{prim_cite_str} </td>')
-            tbody_html += f'\n<td>{pdb_chains} </td>'
-            tbody_html += f'\n<td>{src_organisms}</td>'
-            tbody_html += f'\n<td>{ec_numbers} </td>'
-            tbody_html += f'\n<td>{src_dbs}</td>'
-            tbody_html += f'\n<td>{inchis} </td>'
-            tbody_html += f'\n<td>{inchikeys} </td>'
-            tbody_html += f'\n<td>{smiles}</td>'
-            tbody_html += f'\n<td>{prot_sequences} </td>'
+            tbody_html += f'\n<td>{"<br>".join(src_organisms)}</td>'
+            tbody_html += f'\n<td>{"<br>".join(ec_numbers)} </td>'
+            tbody_html += f'\n<td>{"<br>".join(pdb_chains)} </td>'
+            tbody_html += f'\n<td>{"<br>".join(src_dbs)}</td>'
+            tbody_html += f'\n<td>{"<br>".join(inchis)} </td>'
+            tbody_html += f'\n<td>{"<br>".join(inchikeys)} </td>'
+            tbody_html += f'\n<td>{"<br>".join(smiles)}</td>'
+            #tbody_html += f'\n<td>{"<br>".join(prot_sequences)}</td>'
+            #tbody_html += f'\n<td>{prim_cite_str} </td>'
             tbody_html += '\n</tr>'
 
         return tbody_html
 
-    def _query_rcsb_report_html(self, struct_info):
+    def _query_rcsb_report_html(self, struct_info, input_json):
         """
             _query_rcsb_report_html: generates the HTML for the query result-a list of PDB ids
         """
@@ -598,7 +627,7 @@ class RCSBUtil:
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
 
-        pdblist_html = self._write_struct_info(output_directory, struct_info)
+        pdblist_html = self._write_struct_info(struct_info)
 
         dir_name = os.path.dirname(__file__)
         report_template_file = os.path.join(dir_name, 'templates', 'rcsb_query_report_template.html')
@@ -608,7 +637,8 @@ class RCSBUtil:
             with open(report_template_file, 'r') as report_template_pt:
                 # Fetch & fill in detailed info into template HTML
                 struct_list_html_report = report_template_pt.read()\
-                    .replace('<!--replace query result body-->', pdblist_html)
+                    .replace('<!--replace query result body-->', pdblist_html)\
+                    .replace('<!--replace query details-->', json.dumps(input_json, indent=4))
                 report_html_pt.write(struct_list_html_report)
 
         structs_html_report_path = os.path.join(output_directory, 'rcsb_query_report.html')
@@ -621,12 +651,12 @@ class RCSBUtil:
 
         return html_report
 
-    def _generate_query_report(self, workspace_name, struct_info):
+    def _generate_query_report(self, workspace_name, struct_info, input_json):
         """
             _generate_query_report: generate summary report for the query
         """
         struct_count = struct_info.get('total_count', 0)
-        output_html_file = self._query_rcsb_report_html(struct_info)
+        output_html_file = self._query_rcsb_report_html(struct_info, input_json)
 
         report_params = {'message': f'Query has resulted in {struct_count} structures in RCSB DB.',
                          'html_links': output_html_file,
@@ -668,18 +698,17 @@ class RCSBUtil:
         struct_info = {}
         returnVal = {}
         try:
-            rcsb_output = self._get_pdb_ids(inputJsonObj)
+            rcsb_output = self._get_pdb_ids(inputJsonObj, self.LOGICAL_AND)
             logging.info(f'{rcsb_output["total_count"]} RCSB Structures found.')
             idlist = rcsb_output.get('id_list', [])
             struct_info = self._get_graphql_data(idlist)
+            logging.info('Retrieved structure information:')
+            logging.info(f'total_count={struct_info.get("total_count", 0)}')
+            returnVal['rcsb_ids'] = idlist
+            report_output = self._generate_query_report(
+                workspace_name, struct_info, rcsb_output.get('inputJsonObj'))
+            returnVal.update(report_output)
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             logging.info(e)
-            return {}
         else:
-            print('Retrieved structure information:')
-            print(f'total_count={struct_info.get("total_count", 0)}')
-            print(f'first structure: {struct_info.get(idlist[0]).get("primary_citation")}')
-            returnVal['rcsb_ids'] = idlist
-            report_output = self._generate_query_report(workspace_name, struct_info)
-            returnVal.update(report_output)
             return returnVal

@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "3afe07ad1afd9c6134ef55a1615813443222f990"
+    GIT_COMMIT_HASH = "5a7ed542834f26d2c7500fb032fc064227cba4d5"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -104,18 +104,23 @@ class ProteinStructureUtils:
 
     def query_rcsb_structures(self, ctx, params):
         """
-        :param params: instance of type "RCSBImportParams" (Input/output of
-           the query_rcsb_structures function sequence_strings: a list of
-           protein sequences uniprot_ids: a list of uniprot ids ec_numbers: a
-           list of ec numbers inchis: a list of InChI strings smiles: a list
-           of SMILES strings workspace_name: workspace name for objects to be
-           saved to @optional sequence_strings uniprot_ids ec_numbers inchis
-           smiles) -> structure: parameter "sequence_strings" of list of
-           String, parameter "uniprot_ids" of list of String, parameter
-           "ec_numbers" of list of String, parameter "inchis" of list of
-           String, parameter "smiles" of list of String, parameter
-           "workspace_name" of type "workspace_name" (workspace name of the
-           object)
+        :param params: instance of type "QueryRCSBStructsParams"
+           (Input/output of the query_rcsb_structures function
+           sequence_strings: a list of protein sequences uniprot_ids: a list
+           of uniprot ids ec_numbers: a list of ec numbers inchis: a list of
+           InChI strings smiles: a list of SMILES strings evalue_cutoff:
+           threshold of homology search identity_cutoff: threshold for
+           sequence identity match workspace_name: workspace name for objects
+           to be saved to @optional sequence_strings uniprot_ids ec_numbers
+           inchis smiles evalue_cutoff identity_cutoff) -> structure:
+           parameter "sequence_strings" of list of String, parameter
+           "uniprot_ids" of list of String, parameter "ec_numbers" of list of
+           String, parameter "inchis" of list of String, parameter "smiles"
+           of list of String, parameter "evalue_cutoff" of Double, parameter
+           "identity_cutoff" of Double, parameter "logical_and" of type
+           "boolean" (A boolean - 0 for false, 1 for true. @range (0, 1)),
+           parameter "workspace_name" of type "workspace_name" (workspace
+           name of the object)
         :returns: instance of type "QueryRCSBStructsOutput" -> structure:
            parameter "rcsb_ids" of list of String, parameter "report_name" of
            String, parameter "report_ref" of String

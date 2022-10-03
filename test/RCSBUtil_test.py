@@ -64,13 +64,22 @@ class RCSBUtilsTest(unittest.TestCase):
         file1 = 'input_sequence_uniprot_ec.json'
         file2 = 'input_source_organism.json'
         file3 = 'input_chemical_descriptor.json'
+        file4 = 'gql_ret.json'
+        file5 = 'gqldata_itms.json'
+        file6 = 'input_chemical_pyridine.json'
 
         cls.inputjson_file_path1 = os.path.join(cls.scratch, file1)
         cls.inputjson_file_path2 = os.path.join(cls.scratch, file2)
         cls.inputjson_file_path3 = os.path.join(cls.scratch, file3)
+        cls.gqlret_file_path = os.path.join(cls.scratch, file4)
+        cls.gqldata_itm_path = os.path.join(cls.scratch, file5)
+        cls.pyridine_file_path = os.path.join(cls.scratch, file6)
         shutil.copy(os.path.join('data/rcsb_data', file1), cls.inputjson_file_path1)
         shutil.copy(os.path.join('data/rcsb_data', file2), cls.inputjson_file_path2)
         shutil.copy(os.path.join('data/rcsb_data', file3), cls.inputjson_file_path3)
+        shutil.copy(os.path.join('data/rcsb_data', file4), cls.gqlret_file_path)
+        shutil.copy(os.path.join('data/rcsb_data', file5), cls.gqldata_itm_path)
+        shutil.copy(os.path.join('data/rcsb_data', file6), cls.pyridine_file_path)
 
         with open(cls.inputjson_file_path1) as DATA1:
             cls.inputJsonObj1 = json.load(DATA1)
@@ -78,6 +87,12 @@ class RCSBUtilsTest(unittest.TestCase):
             cls.inputJsonObj2 = json.load(DATA2)
         with open(cls.inputjson_file_path3) as DATA3:
             cls.inputJsonObj3 = json.load(DATA3)
+        with open(cls.gqlret_file_path) as GQL_DATA:
+            cls.gql_data = json.load(GQL_DATA)
+        with open(cls.gqldata_itm_path) as ITM_DATA:
+            cls.gqldata_items = json.load(ITM_DATA)
+        with open(cls.pyridine_file_path) as PRD_DATA:
+            cls.prd_data = json.load(PRD_DATA)
 
     @classmethod
     def tearDownClass(cls):
@@ -100,6 +115,21 @@ class RCSBUtilsTest(unittest.TestCase):
         keys3 = ['InChI', 'SMILES']
         for k3 in keys3:
             self.assertIn(k3, self.inputJsonObj3)
+
+        keys4 = ['rcsb_id', 'exptl', 'rcsb_primary_citation',
+                 'polymer_entities', 'nonpolymer_entities']
+        for k4 in keys4:
+            gql_ret_entries = self.gql_data.get('data').get('entries')
+            self.assertIn(k4, gql_ret_entries[0])
+            self.assertIn(k4, gql_ret_entries[1])
+
+        keys5 = ['total_count', 'id_list', '1A0I', '1A49']
+        for k5 in keys5:
+            self.assertIn(k5, self.gqldata_items)
+
+        keys6 = ['InChI', 'SMILES', 'InChIKey']
+        for k6 in keys6:
+            self.assertIn(k6, self.prd_data)
 
     # Testing RCSBUtil module functions
     @unittest.skip('test_create_seq_ec_uniprot_params_seq')
@@ -400,7 +430,7 @@ class RCSBUtilsTest(unittest.TestCase):
         ret_list1 = self.rcsb_util._run_rcsb_search(json_qry_obj1)
 
         if ret_list1:
-            # Use assertGreaterEqual() to make sure the test is True even after the remote db expands
+            # Use assertGreaterEqual() to make sure the test is True even after remote dbs expand
             self.assertGreaterEqual(len(ret_list1), 2054)
 
         val_list2 = self.inputJsonObj3['SMILES']
@@ -439,18 +469,88 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(len(ret[k2]), ret[k1])
         print(f'RCSB query by chem returned {ret[k1]} ids.')
 
+    @unittest.skip('test_queryGraphql')
+    def test_queryGraphql(self):
+        id_list = ['1A0I', '1A49']
+        gqlData = self.rcsb_util._queryGraphql(id_list).get('data', {})
+        gqlqry_entries = gqlData.get('entries', [])
+
+        self.assertEqual(len(gqlqry_entries), len(id_list))
+
+        expected_keys = ['rcsb_id', 'exptl', 'rcsb_primary_citation',
+                         'polymer_entities', 'nonpolymer_entities']
+        for ent in gqlqry_entries:
+            for k in expected_keys:
+                self.assertIn(k, ent)
+
+            if ent.get('polymer_entities', None):
+                poly_en = ent.get('polymer_entities', None)
+                for pe in poly_en:
+                    if pe.get('entity_poly', None):
+                        self.assertIn('pdbx_seq_one_letter_code', pe['entity_poly'])
+                        self.assertIn('pdbx_strand_id', pe['entity_poly'])
+                    if pe.get('rcsb_entity_source_organism', None):
+                        pe_srcg = pe['rcsb_entity_source_organism']
+                        for pes in pe_srcg:
+                            self.assertIn('ncbi_taxonomy_id', pes)
+                            self.assertIn('ncbi_scientific_name', pes)
+                    if pe.get('rcsb_polymer_entity_container_identifiers', None):
+                        pe_cont = pe['rcsb_polymer_entity_container_identifiers']
+                        if pe_cont.get('reference_sequence_identifiers', None):
+                            pe_idfs = pe_cont['reference_sequence_identifiers']
+                            for pei in pe_idfs:
+                                self.assertIn('database_accession', pei)
+                                self.assertIn('database_name', pei)
+
+    @unittest.skip('test_formatRCSBJson')
+    def test_formatRCSBJson(self):
+        formatted_json = self.rcsb_util._formatRCSBJson(self.gql_data)
+        expected_keys = ['1A0I', '1A49']
+        self.assertIn(expected_keys[0], formatted_json)
+        self.assertIn(expected_keys[1], formatted_json)
+        for k in expected_keys:
+            struct = formatted_json.get(k, {})
+            self.assertIn('method', struct)
+            self.assertIn('primary_citation', struct)
+            self.assertIn('polymer_entities', struct)
+            self.assertIn('nonpolymer_entities', struct)
+            if struct.get('polymer_entities', None):
+                for pe in struct.get('polymer_entities', None):
+                    self.assertIn('pdb_chain_ids', pe)
+                    self.assertIn('source_organism', pe)
+                    self.assertIn('identifiers', pe)
+                    self.assertIn('ec_numbers', pe)
+            if struct.get('nonpolymer_entities', None):
+                for npe in struct.get('nonpolymer_entities', None):
+                    self.assertIn('InChI', npe)
+                    self.assertIn('InChIKey', npe)
+                    self.assertIn('SMILES', npe)
+
+        gql_itms = {}
+        for key, val in formatted_json.items():
+            gql_itms[key] = val
+        self.assertCountEqual(gql_itms['1A0I'], self.gqldata_items['1A0I'])
+        self.assertCountEqual(gql_itms['1A49'], self.gqldata_items['1A49'])
+
     @unittest.skip('test_get_graphql_data')
     def test_get_graphql_data(self):
         id_list = ['1A0I', '1A49', '1A5U', '1A82', '1AQ2']
-        gql_ret = self.rcsb_util._get_graphql_data(id_list)
+        gql_itms = self.rcsb_util._get_graphql_data(id_list)
 
         expected_keys = ['total_count', 'id_list']
         expected_keys.extend(id_list)
         for k in expected_keys:
-            self.assertIn(k, gql_ret)
+            self.assertIn(k, gql_itms)
 
-        self.assertEqual(gql_ret['total_count'], len(id_list))
-        self.assertEqual(gql_ret['id_list'], id_list)
+        self.assertEqual(gql_itms['total_count'], len(id_list))
+        self.assertEqual(gql_itms['id_list'], id_list)
+        self.assertCountEqual(gql_itms['1A0I'], self.gqldata_items['1A0I'])
+        self.assertCountEqual(gql_itms['1A49'], self.gqldata_items['1A49'])
+
+    #@unittest.skip('test_write_struct_info')
+    def test_write_struct_info(self):
+        tbody_html = self.rcsb_util._write_struct_info(self.gqldata_items)
+        self.assertEqual(tbody_html.count('<tr>'), 2)
 
     #@unittest.skip('test_querey_structure_info')
     def test_querey_structure_info(self):
@@ -460,10 +560,15 @@ class RCSBUtilsTest(unittest.TestCase):
             'uniprot_ids': self.inputJsonObj1['uniprot_id'],
             'ec_numbers': self.inputJsonObj1['ec_number'],
             'inchis': self.inputJsonObj3['InChI'],
-            'smiles': self.inputJsonObj3['SMILES']
+            'smiles': self.inputJsonObj3['SMILES'],
+            'evalue_cutoff': 0.2,
+            'identity_cutoff': 0.9
         }
 
         struct_ret = self.rcsb_util.querey_structure_info(params)
-        rcsb_ids = struct_ret.get('rcsb_ids', [])
-        print(f'returned {len(rcsb_ids)} pdbs')
-        self.assertTrue(struct_ret)
+        if struct_ret:
+            rcsb_ids = struct_ret.get('rcsb_ids', [])
+            print(f'returned {len(rcsb_ids)} pdbs')
+            self.assertIn('rcsb_ids', struct_ret)
+            self.assertIn('report_name', struct_ret)
+            self.assertIn('report_ref', struct_ret)

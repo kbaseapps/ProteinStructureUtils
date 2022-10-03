@@ -55,8 +55,10 @@ module ProteinStructureUtils {
     ec_numbers: a list of ec numbers
     inchis: a list of InChI strings
     smiles: a list of SMILES strings
+    evalue_cutoff: threshold of homology search
+    identity_cutoff: threshold for sequence identity match
     workspace_name: workspace name for objects to be saved to
-    @optional sequence_strings uniprot_ids ec_numbers inchis smiles
+    @optional sequence_strings uniprot_ids ec_numbers inchis smiles evalue_cutoff identity_cutoff
   */
   typedef structure {
       list<string> sequence_strings;
@@ -64,8 +66,11 @@ module ProteinStructureUtils {
       list<string> ec_numbers;
       list<string> inchis;
       list<string> smiles;
+      float evalue_cutoff;
+      float identity_cutoff;
+      boolean logical_and;
       workspace_name workspace_name;
-  } RCSBImportParams;
+  } QueryRCSBStructsParams;
 
   typedef structure {
       list<string> rcsb_ids;
@@ -73,5 +78,5 @@ module ProteinStructureUtils {
       string report_ref;
   } QueryRCSBStructsOutput;
 
-  funcdef query_rcsb_structures (RCSBImportParams params) returns (QueryRCSBStructsOutput result) authentication required;
+  funcdef query_rcsb_structures (QueryRCSBStructsParams params) returns (QueryRCSBStructsOutput result) authentication required;
 };

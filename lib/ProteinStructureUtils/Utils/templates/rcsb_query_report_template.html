@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css"-->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <title>Protein Structures by Querying RCSB Database</title>
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Responsive columns */
+        @media screen and (max-width: 600px) {
+          .column {
+            width: 100%;
+            display: block;
+            margin-bottom: 20px;
+          }
+        }
+    </style>
+
+    <!--script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.3.1.js"></script-->
+    <!--script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script-->
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script>
+      $(document).ready( function () {
+          $('#rcsb_ids').DataTable();
+      });
+  </script>
+</head>
+<body>
+  <h2>Protein structures returned by queryint the RCSB database</h2>
+
+  <table id="rcsb_ids" class="display" style="width: 100%;">
+      <thead>
+          <tr>
+            <th>RCSB ID</th>
+            <th>Experimental Method</th>
+            <th>Source Organism</th>
+            <th>EC Numbers</th>
+            <th>Chains</th>
+            <th>Data Source</th>
+            <th>InChIs</th>
+            <th>InChIKeys</th>
+            <th>SMILES</th>
+            <!--th>Sequence</th>
+            <th>Primary Citation</th-->
+          </tr>
+      </thead>
+      <tbody>
+          <!--replace query result body-->
+      </tbody>
+  </table>
+  
+  <div id="query_details">
+    <h3>The actual query used to query RCSB to get the above results:</h3>
+    <textarea id="query_text" rows="10" cols="120" readonly>
+      <!--replace query details-->
+    </textarea>
+  </div>
+</body>
+</html> 

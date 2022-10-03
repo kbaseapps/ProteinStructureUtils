@@ -1,0 +1,160 @@
+{
+    "ver" : "",
+    "authors" : ["qzhang"],
+    "contact" : "http://kbase.us/contact-us/",
+    "visible" : true,
+    "categories" : ["upload"],
+    "widgets": {
+      "input": "kbaseNarrativeMethodInput",
+      "output" : "no-display"
+    },
+    "parameters" : [
+      {
+        "id" : "sequence_strings",
+        "optional" : false,
+        "advanced" : false,
+        "allow_multiple" : true,
+        "default_values" : [ "" ],
+        "field_type" : "text",
+        "text_options" : {}
+      },
+      {
+        "id" : "uniprot_ids",
+        "optional" : true,
+        "advanced" : false,
+        "allow_multiple" : true,
+        "default_values" : [ "" ],
+        "field_type" : "text",
+        "text_options" : {}
+      },
+      {
+        "id" : "ec_numbers",
+        "optional" : true,
+        "advanced" : false,
+        "allow_multiple" : true,
+        "default_values" : [ "" ],
+        "field_type" : "text",
+        "text_options" : {}
+      },
+      {
+        "id" : "inchis",
+        "optional" : true,
+        "advanced" : false,
+        "allow_multiple" : true,
+        "default_values" : [ "" ],
+        "field_type" : "text",
+        "text_options" : {}
+      },
+      {
+        "id" : "smiles",
+        "optional" : true,
+        "advanced" : false,
+        "allow_multiple" : true,
+        "default_values" : [ "" ],
+        "field_type" : "text",
+        "text_options" : {}
+      },
+      {
+        "id" : "logical_and",
+        "optional" : false,
+        "advanced" : false,
+        "allow_multiple" : false,
+        "default_values" : [ "0" ],
+        "field_type" : "checkbox",
+        "checkbox_options" : {
+           "checked_value" : 1,
+           "unchecked_value" : 0
+        },
+        "text_options" : {
+           "valid_ws_types" : []
+        }
+      },
+      {
+        "id" : "evalue_cutoff",
+        "optional" : false,
+        "advanced" : false,
+        "allow_multiple" : false,
+        "default_values" : [ "0.1" ],
+        "field_type" : "text",
+        "text_options": {
+           "validate_as" : "float",
+           "min_float" : 0.1,
+           "max_float" : 1
+         }
+      },
+      {
+        "id" : "identity_cutoff",
+        "optional" : false,
+        "advanced" : false,
+        "allow_multiple" : false,
+        "default_values" : [ "0.75" ],
+        "field_type" : "text",
+        "text_options" : {
+           "validate_as" : "float",
+           "min_float" : 0.75,
+           "max_float" : 1.0
+        }
+      }
+    ],
+    "behavior" : {
+      "service-mapping" : {
+        "url" : "",
+        "name" : "ProteinStructureUtils",
+        "method" : "batch_import_pdbs_from_metafile",
+        "input_mapping" : [
+          {
+            "narrative_system_variable": "workspace",
+            "target_property": "workspace_name"
+          },
+          {
+            "input_parameter": "sequence_strings",
+            "target_property": "sequence_strings"
+          },
+          {
+            "input_parameter": "uniprot_ids",
+            "target_property": "uniprot_ids"
+          },
+          {
+            "input_parameter": "ec_numbers",
+            "target_property": "ec_numbers"
+          },
+          {
+            "input_parameter": "inchis",
+            "target_property": "inchis"
+          },
+          {
+            "input_parameter": "smiles",
+            "target_property": "smiles"
+          },
+          {
+            "input_parameter": "evalue_cutoff",
+            "target_property": "evalue_cutoff"
+          },
+          {
+            "input_parameter": "identity_cutoff",
+            "target_property": "identity_cutoff"
+          },
+          {
+            "input_parameter": "logical_and",
+            "target_property": "logical_and"
+          }
+        ],
+        "output_mapping" : [
+          {
+              "service_method_output_path": [0, "report_name"],
+              "target_property": "report_name"
+          },
+          {
+              "service_method_output_path": [0, "report_ref"],
+              "target_property": "report_ref"
+          },
+          {
+              "constant_value": "16",
+              "target_property": "report_window_line_height"
+          }
+        ]
+      }
+    },
+    "job_id_output_field": "docker"
+  }
+  
