@@ -101,7 +101,11 @@ class RCSBUtil:
             if p not in params:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
-        queriable_keys = ['sequence_strings', 'uniprot_ids', 'ec_numbers', 'inchis', 'smiles']
+        queriables = {'sequence_strings': 'sequence',
+                      'uniprot_id': 'uniprot_ids',
+                      'ec_numbers': 'ec_number',
+                      'inchis': 'InChI',
+                      'smiles': 'SMILES'}
 
         if params.get('evalue_cutoff', None):
             self.EVALUE_CUTOFF = params['evalue_cutoff']
@@ -114,9 +118,9 @@ class RCSBUtil:
 
         # check for queriable parameters
         inputJsonObj = {}
-        for p in queriable_keys:
-            if params.get(p, None):
-                inputJsonObj[p] = params[p]
+        for pk in queriables:
+            if params.get(pk, None):
+                inputJsonObj[queriables[pk]] = params[pk]
 
         if not inputJsonObj:
             raise ValueError('At least one (1) queriable parameter should be specified!')
@@ -486,10 +490,9 @@ class RCSBUtil:
             i = 0
             for searchType, valList in inputJsonObj.items():
                 params = {}
-                if searchType in ('InChI', 'InChIKey', 'SMILES', 'inchis', 'smiles'):
+                if searchType in ('InChI', 'InChIKey', 'SMILES'):
                     params = self._create_chem_params(searchType, valList)
-                elif searchType in ('sequence', 'sequence_strings', 'uniprot_id', 'ec_number',
-                                    'uniprot_ids', 'ec_numbers'):
+                elif searchType in ('sequence', 'uniprot_id', 'ec_number'):
                     params = self._create_seq_ec_uniprot_params(searchType, valList)
                 if not params:
                     inputJsonObj = {k: v for k, v in inputJsonObj.items() if k != searchType}
@@ -555,11 +558,13 @@ class RCSBUtil:
         tbody_html = ''
         id_list = struct_info.get('id_list', [])
         for rcsb_id in id_list:
+            if not struct_info.get(rcsb_id, None):
+                continue
             pdb_struct = struct_info[rcsb_id]
             tbody_html += '<tr>'
 
             expl_method = '<br>'.join(pdb_struct.get('method', []))
-            prim_cite = pdb_struct.get('primary_citation', {})
+            #prim_cite = pdb_struct.get('primary_citation', {})
             """
             if prim_cite:
                 prim_cite_str = '<br>'.join([prim_cite.get('title', ''),
@@ -702,7 +707,6 @@ class RCSBUtil:
 
         # fetch the query filters and assemble them into a json object
         inputJsonObj, workspace_name = self._validate_rcsb_query_params(params)
-
         idlist = []
         struct_info = {}
         returnVal = {}

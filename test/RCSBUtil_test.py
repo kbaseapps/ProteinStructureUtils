@@ -565,7 +565,7 @@ class RCSBUtilsTest(unittest.TestCase):
             'smiles': self.inputJsonObj3['SMILES'],
             'evalue_cutoff': 0.2,
             'identity_cutoff': 0.9,
-            'logical_and': 1
+            'logical_and': 0
         }
 
         struct_ret = self.rcsb_util.querey_structure_info(params)
@@ -575,6 +575,10 @@ class RCSBUtilsTest(unittest.TestCase):
             self.assertIn('rcsb_ids', struct_ret)
             self.assertIn('report_name', struct_ret)
             self.assertIn('report_ref', struct_ret)
+
+        params['logical_and'] = 1
+        struct_ret_and = self.rcsb_util.querey_structure_info(params)
+        self.assertEqual(struct_ret_and.get('rcsb_ids', []), [])
 
     # Testing self.serviceImpl functions
     #@unittest.skip('test_Impl_query_rcsb_structures')
