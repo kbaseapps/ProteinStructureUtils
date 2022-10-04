@@ -101,6 +101,8 @@ class RCSBUtil:
             if p not in params:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
+        queriable_keys = ['sequence_strings', 'uniprot_ids', 'ec_numbers', 'inchis', 'smiles']
+
         if params.get('evalue_cutoff', None):
             self.EVALUE_CUTOFF = params['evalue_cutoff']
 
@@ -112,7 +114,7 @@ class RCSBUtil:
 
         # check for queriable parameters
         inputJsonObj = {}
-        for p in ['sequence_strings', 'uniprot_ids', 'ec_numbers', 'inchis', 'smiles']:
+        for p in queriable_keys:
             if params.get(p, None):
                 inputJsonObj[p] = params[p]
 
