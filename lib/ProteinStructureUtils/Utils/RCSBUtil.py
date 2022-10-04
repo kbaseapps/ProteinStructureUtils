@@ -711,9 +711,10 @@ class RCSBUtil:
         returnVal['report_name'] = None
 
         rcsb_output = self._get_pdb_ids(inputJsonObj, self.LOGICAL_AND)
-        logging.info(f'{rcsb_output["total_count"]} RCSB Structures found.')
+        total_count = rcsb_output.get("total_count", 0)
         idlist = rcsb_output.get('id_list', [])
-        if idlist:
+        if total_count and idlist:
+            logging.info(f'{total_count} RCSB Structures found.')
             struct_info = self._get_graphql_data(idlist)
             logging.info('Retrieved structure information:')
             logging.info(f'total_count={struct_info.get("total_count", 0)}')
