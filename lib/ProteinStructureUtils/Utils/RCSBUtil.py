@@ -331,20 +331,24 @@ class RCSBUtil:
             return {}
 
     def _readRCSBResult(self, rcsb_retObj):
-        """parse the RCSB query result and return a PDB ID list
+        """
+            _readRCSBResult: parse the RCSB query result and return a PDB ID list
         """
         total_number = 0
-        retIdList = []
         if rcsb_retObj and rcsb_retObj.get('total_count', None):
             total_number = rcsb_retObj["total_count"]
         else:
-            return []
+            return [], {}
 
         # Read entry ID from "result_set" list
+        retIdList = []
+        retIdScores = {}
         if "result_set" in rcsb_retObj:
             for obj in rcsb_retObj["result_set"]:
                 if "identifier" in obj:
-                    retIdList.append(obj["identifier"])
+                    rcsb_id = obj['identifier']
+                    retIdList.append(rcsb_id)
+                    retIdScores[rcsb_id] = obj['score']
             if len(retIdList) > 1:
                 retIdList.sort()
 
@@ -353,28 +357,30 @@ class RCSBUtil:
                       "but only got {len(retIdList)} id(s) from result_set.")
             raise ValueError(errMsg)
 
-        return retIdList
+        return retIdList, retIdScores
 
     def _run_rcsb_search(self, jsonQueryObj={}):
-        """ Run search API to get return PDB ID list like:
+        """ Run search API to return an object that has a PDB ID list like:
                 [
                     "117E",
                     "11AS",
                     "12AS",
-                    "148L",
-                    "1A04",
-                    "1A0A",
-                    "1A0B",
-                    "1A0F",
                   ......
-               ]
+                ]
+            and an id_score dictionary like:
+                {
+                    "117E": "score": 1.0,
+                    "11AS": "score": 1.0,
+                    "12AS": "score": 1.0,
+                  ......
+                }
         """
         if not jsonQueryObj:
-            return []
+            return [], {}
         #
         retJsonObj = self._queryRCSB(jsonQueryObj)
         if not retJsonObj:
-            return []
+            return [], {}
         return self._readRCSBResult(retJsonObj)
 
     def _queryGraphql(self, id_list=[]):
@@ -393,10 +399,9 @@ class RCSBUtil:
             evt_loop = asyncio.get_event_loop()
             graphql_ret = evt_loop.run_until_complete(
                           self.__graphqlClient.execute_async(query=queryString))
-            #logging.info(f'Querying GraphQL db returned the structures {graphql_ret}')
             return graphql_ret
         except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
-            logging.info('Connecting to RCSB GraphQL host with URL "{self.__baseGraphqlUrl} errored.')
+            logging.info(f'Connecting to RCSB GraphQL host at "{self.__baseGraphqlUrl} errored.')
             return {}
         except (HTTPError, ConnectionError, RequestException) as e:
             # not raising error to allow continue with other chunks
@@ -487,6 +492,7 @@ class RCSBUtil:
         logging.info(f'Fetching the list of rcsd_ids with query filter {inputJsonObj}')
         try:
             retIdList = []
+            id_score_dict = {}
             i = 0
             for searchType, valList in inputJsonObj.items():
                 params = {}
@@ -497,30 +503,35 @@ class RCSBUtil:
                 if not params:
                     continue
 
-                new_list = self._run_rcsb_search(jsonQueryObj=params)
+                new_list, new_scoreDict = self._run_rcsb_search(jsonQueryObj=params)
                 if not new_list:
                     continue
 
                 if i == 0:
                     retIdList = new_list
+                    id_score_dict = new_scoreDict
                     i = 1
                     continue
 
                 if logic_and:
                     # print('AND logic')
+                    # intersecting two lists and two dictionaries using & operator
                     retIdList = list(set(retIdList) & set(new_list))
+                    id_score_dict = dict(id_score_dict.items() & new_scoreDict.items())
                 else:
                     # print('OR logic')
                     retIdList.extend(new_list)
+                    id_score_dict.update(new_scoreDict)
 
             retIdList = sorted(list(set(retIdList)))
 
-            if not retIdList or not inputJsonObj:
+            if not retIdList:
                 return {}
 
             outputObj = {}
             outputObj['total_count'] = len(retIdList)
             outputObj['id_list'] = retIdList
+            outputObj['id_score_dict'] = id_score_dict
             outputObj['inputJsonObj'] = inputJsonObj
             logging.info(f'Fetched {len(retIdList)} rcsd_ids with query filter {inputJsonObj}')
             return outputObj
