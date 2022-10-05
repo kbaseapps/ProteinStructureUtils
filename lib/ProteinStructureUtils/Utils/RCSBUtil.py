@@ -102,7 +102,7 @@ class RCSBUtil:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
         queriables = {'sequence_strings': 'sequence',
-                      'uniprot_id': 'uniprot_ids',
+                      'uniprot_ids': 'uniprot_id',
                       'ec_numbers': 'ec_number',
                       'inchis': 'InChI',
                       'smiles': 'SMILES'}
@@ -495,12 +495,10 @@ class RCSBUtil:
                 elif searchType in ('sequence', 'uniprot_id', 'ec_number'):
                     params = self._create_seq_ec_uniprot_params(searchType, valList)
                 if not params:
-                    inputJsonObj = {k: v for k, v in inputJsonObj.items() if k != searchType}
                     continue
 
                 new_list = self._run_rcsb_search(jsonQueryObj=params)
                 if not new_list:
-                    inputJsonObj = {k: v for k, v in inputJsonObj.items() if k != searchType}
                     continue
 
                 if i == 0:
