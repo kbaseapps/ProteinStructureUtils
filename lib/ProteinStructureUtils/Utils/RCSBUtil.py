@@ -637,10 +637,13 @@ class RCSBUtil:
 
         return tbody_html
 
-    def _query_rcsb_report_html(self, struct_info, input_json):
+    def _query_rcsb_report_html(self, struct_info, rcsb_out):
         """
             _query_rcsb_report_html: generates the HTML for the query result-a list of PDB ids
         """
+        input_json = rcsb_out.get('inputJsonObj', {})
+        id_score_dict = rcsb_out.get('id_score_dict', {})
+
         html_report = list()
 
         # Make report directory and copy over uploaded pdb files
@@ -655,6 +658,14 @@ class RCSBUtil:
         qry_details = json.dumps(input_json, indent=4)
         qry_details += f'\n\nWith Evalue_cutoff={str(self.EVALUE_CUTOFF)} and '
         qry_details += f'\nIdentity_cutoff={str(self.IDENTITY_CUTOFF)}'
+
+        # Write the query returned rcsb_ids to the scratch directory
+        idscore_json = os.path.join(dir_name, 'idscore.json')
+        with open(idscore_json, 'w') as rcsbids_pt:
+            rcsbids_pt.write(json.dumps(id_score_dict, indent=4))
+        idscores_path = os.path.join(output_directory, 'query_idscores.json')
+        shutil.copy(idscore_json, idscores_path)
+        logging.info(f'The JSON file containing the rcsb_ids has been written to {idscores_path}.')
 
         with open(report_html, 'w') as report_html_pt:
             with open(report_template_file, 'r') as report_template_pt:
@@ -674,12 +685,15 @@ class RCSBUtil:
 
         return html_report
 
-    def _generate_query_report(self, workspace_name, struct_info, input_json):
+    def _generate_query_report(self, workspace_name, struct_info, rcsb_out):
         """
             _generate_query_report: generate summary report for the query
         """
         struct_count = struct_info.get('total_count', 0)
-        output_html_file = self._query_rcsb_report_html(struct_info, input_json)
+        if not struct_count:
+            return {'report_name': None, 'report_ref': None}
+
+        output_html_file = self._query_rcsb_report_html(struct_info, rcsb_out)
 
         report_params = {'message': f'Query has resulted in {struct_count} structures in RCSB DB.',
                          'html_links': output_html_file,
@@ -712,7 +726,7 @@ class RCSBUtil:
         """
             query_structure_info: with given constraints, query structure info from RCSB database
         """
-        logging.info(f'query_structure_info with params: {params}')
+        # logging.info(f'query_structure_info with params: {params}')
 
         # fetch the query filters and assemble them into a json object
         inputJsonObj, workspace_name = self._validate_rcsb_query_params(params)
@@ -735,7 +749,6 @@ class RCSBUtil:
             logging.info(f"total_count={struct_info.get('total_count', 0)}")
             returnVal['rcsb_ids'] = struct_info.get('id_list', [])
             returnVal['rcsb_scores'] = id_score_dict
-            report_output = self._generate_query_report(
-                workspace_name, struct_info, rcsb_output.get('inputJsonObj'))
+            report_output = self._generate_query_report(workspace_name, struct_info, rcsb_output)
             returnVal.update(report_output)
         return returnVal
