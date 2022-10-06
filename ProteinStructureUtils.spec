@@ -74,6 +74,7 @@ module ProteinStructureUtils {
 
   typedef structure {
       list<string> rcsb_ids;
+      UnspecifiedObject rcsb_scores;
       string report_name;
       string report_ref;
   } QueryRCSBStructsOutput;

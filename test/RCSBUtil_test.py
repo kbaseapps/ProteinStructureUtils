@@ -389,6 +389,7 @@ class RCSBUtilsTest(unittest.TestCase):
             # self.assertCountEqual(ret_list3, exp_list1)
             self.assertGreaterEqual(set(ret_list3), set(exp_list1))
             self.assertCountEqual(score_dict3.keys(), ret_list3)
+            print(score_dict3)
 
     #@unittest.skip('test_run_rcsb_search_seq_ec_uniprot')
     def test_run_rcsb_search_seq_ec_uniprot(self):
@@ -452,11 +453,12 @@ class RCSBUtilsTest(unittest.TestCase):
         k1 = 'total_count'
         k2 = 'id_list'
         k3 = 'id_score_dict'
-        self.assertIn(k1, ret, f'Key {k1} not in returned object')
-        self.assertIn(k2, ret, f'Key {k2} not in returned object')
-        self.assertIn(k3, ret, f'Key {k3} not in returned object')
-        self.assertEqual(len(ret[k2]), ret[k1])
-        print(f'RCSB query by sequence/ecnum/uniprotid returned {ret[k1]} ids.')
+        if ret:
+            self.assertIn(k1, ret, f'Key {k1} not in returned object')
+            self.assertIn(k2, ret, f'Key {k2} not in returned object')
+            self.assertIn(k3, ret, f'Key {k3} not in returned object')
+            self.assertEqual(len(ret[k2]), ret[k1])
+            print(f'RCSB query by sequence/ecnum/uniprotid returned {ret[k1]} ids.')
 
     # Not implemented yet, so skipped for now
     @unittest.skip('test_get_pdb_ids_by_source_organism')
@@ -465,11 +467,12 @@ class RCSBUtilsTest(unittest.TestCase):
         k1 = 'total_count'
         k2 = 'id_list'
         k3 = 'id_score_dict'
-        self.assertIn(k1, ret, f'Key {k1} not in returned object')
-        self.assertIn(k2, ret, f'Key {k2} not in returned object')
-        self.assertIn(k3, ret, f'Key {k3} not in returned object')
-        self.assertEqual(len(ret[k2]), ret[k1])
-        print(f'RCSB query by source organism returned {ret[k1]} ids.')
+        if ret:
+            self.assertIn(k1, ret, f'Key {k1} not in returned object')
+            self.assertIn(k2, ret, f'Key {k2} not in returned object')
+            self.assertIn(k3, ret, f'Key {k3} not in returned object')
+            self.assertEqual(len(ret[k2]), ret[k1])
+            print(f'RCSB query by source organism returned {ret[k1]} ids.')
 
     #@unittest.skip('test_get_pdb_ids_by_chem')
     def test_get_pdb_ids_by_chem(self):
@@ -477,11 +480,12 @@ class RCSBUtilsTest(unittest.TestCase):
         k1 = 'total_count'
         k2 = 'id_list'
         k3 = 'id_score_dict'
-        self.assertIn(k1, ret, f'Key {k1} not in returned object')
-        self.assertIn(k2, ret, f'Key {k2} not in returned object')
-        self.assertIn(k3, ret, f'Key {k3} not in returned object')
-        self.assertEqual(len(ret[k2]), ret[k1])
-        print(f'RCSB query by chem returned {ret[k1]} ids.')
+        if ret:
+            self.assertIn(k1, ret, f'Key {k1} not in returned object')
+            self.assertIn(k2, ret, f'Key {k2} not in returned object')
+            self.assertIn(k3, ret, f'Key {k3} not in returned object')
+            self.assertEqual(len(ret[k2]), ret[k1])
+            print(f'RCSB query by chem returned {ret[k1]} ids.')
 
     #@unittest.skip('test_queryGraphql')
     def test_queryGraphql(self):
@@ -489,32 +493,33 @@ class RCSBUtilsTest(unittest.TestCase):
         gqlData = self.rcsb_util._queryGraphql(id_list).get('data', {})
         gqlqry_entries = gqlData.get('entries', [])
 
-        self.assertEqual(len(gqlqry_entries), len(id_list))
+        if gqlqry_entries:
+            self.assertEqual(len(gqlqry_entries), len(id_list))
 
-        expected_keys = ['rcsb_id', 'exptl', 'rcsb_primary_citation',
-                         'polymer_entities', 'nonpolymer_entities']
-        for ent in gqlqry_entries:
-            for k in expected_keys:
-                self.assertIn(k, ent)
+            expected_keys = ['rcsb_id', 'exptl', 'rcsb_primary_citation',
+                             'polymer_entities', 'nonpolymer_entities']
+            for ent in gqlqry_entries:
+                for k in expected_keys:
+                    self.assertIn(k, ent)
 
-            if ent.get('polymer_entities', None):
-                poly_en = ent.get('polymer_entities', None)
-                for pe in poly_en:
-                    if pe.get('entity_poly', None):
-                        self.assertIn('pdbx_seq_one_letter_code', pe['entity_poly'])
-                        self.assertIn('pdbx_strand_id', pe['entity_poly'])
-                    if pe.get('rcsb_entity_source_organism', None):
-                        pe_srcg = pe['rcsb_entity_source_organism']
-                        for pes in pe_srcg:
-                            self.assertIn('ncbi_taxonomy_id', pes)
-                            self.assertIn('ncbi_scientific_name', pes)
-                    if pe.get('rcsb_polymer_entity_container_identifiers', None):
-                        pe_cont = pe['rcsb_polymer_entity_container_identifiers']
-                        if pe_cont.get('reference_sequence_identifiers', None):
-                            pe_idfs = pe_cont['reference_sequence_identifiers']
-                            for pei in pe_idfs:
-                                self.assertIn('database_accession', pei)
-                                self.assertIn('database_name', pei)
+                if ent.get('polymer_entities', None):
+                    poly_en = ent.get('polymer_entities', None)
+                    for pe in poly_en:
+                        if pe.get('entity_poly', None):
+                            self.assertIn('pdbx_seq_one_letter_code', pe['entity_poly'])
+                            self.assertIn('pdbx_strand_id', pe['entity_poly'])
+                        if pe.get('rcsb_entity_source_organism', None):
+                            pe_srcg = pe['rcsb_entity_source_organism']
+                            for pes in pe_srcg:
+                                self.assertIn('ncbi_taxonomy_id', pes)
+                                self.assertIn('ncbi_scientific_name', pes)
+                        if pe.get('rcsb_polymer_entity_container_identifiers', None):
+                            pe_cont = pe['rcsb_polymer_entity_container_identifiers']
+                            if pe_cont.get('reference_sequence_identifiers', None):
+                                pe_idfs = pe_cont['reference_sequence_identifiers']
+                                for pei in pe_idfs:
+                                    self.assertIn('database_accession', pei)
+                                    self.assertIn('database_name', pei)
 
     #@unittest.skip('test_formatRCSBJson')
     def test_formatRCSBJson(self):
@@ -610,4 +615,5 @@ class RCSBUtilsTest(unittest.TestCase):
         }
         qry_ret = self.serviceImpl.query_rcsb_structures(self.ctx, params)
         if qry_ret:
-            self.assertCountEqual(qry_ret[0].keys(), ["rcsb_ids", "report_ref", "report_name"])
+            self.assertCountEqual(qry_ret[0].keys(),
+                                  ['rcsb_ids', 'rcsb_scores', 'report_ref', 'report_name'])

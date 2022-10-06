@@ -548,8 +548,8 @@ class RCSBUtil:
         idListChunks = [id_list[i:i+chunkSize] for i in range(0, len(id_list), chunkSize)]
 
         output_obj = {}
-        output_obj["total_count"] = len(id_list)
-        output_obj["id_list"] = id_list
+        output_obj['total_count'] = len(id_list)
+        output_obj['id_list'] = id_list
 
         for idChunk in idListChunks:
             retData = self._queryGraphql(id_list=idChunk)
@@ -720,18 +720,21 @@ class RCSBUtil:
         struct_info = {}
         returnVal = {}
         returnVal['rcsb_ids'] = []
+        returnVal['rcsb_scores'] = {}
         returnVal['report_ref'] = None
         returnVal['report_name'] = None
 
         rcsb_output = self._get_pdb_ids(inputJsonObj, self.LOGICAL_AND)
-        total_count = rcsb_output.get("total_count", 0)
+        total_count = rcsb_output.get('total_count', 0)
         idlist = rcsb_output.get('id_list', [])
+        id_score_dict = rcsb_output.get('id_score_dict', {})
         if total_count and idlist:
             logging.info(f'{total_count} RCSB Structures found.')
             struct_info = self._get_graphql_data(idlist)
             logging.info('Retrieved structure information:')
-            logging.info(f'total_count={struct_info.get("total_count", 0)}')
-            returnVal['rcsb_ids'] = struct_info.get("id_list", [])
+            logging.info(f"total_count={struct_info.get('total_count', 0)}")
+            returnVal['rcsb_ids'] = struct_info.get('id_list', [])
+            returnVal['rcsb_scores'] = id_score_dict
             report_output = self._generate_query_report(
                 workspace_name, struct_info, rcsb_output.get('inputJsonObj'))
             returnVal.update(report_output)

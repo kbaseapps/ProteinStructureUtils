@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "5a7ed542834f26d2c7500fb032fc064227cba4d5"
+    GIT_COMMIT_HASH = "7ef5049f8f9116488d814d32aede3a21819a1757"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -122,8 +122,9 @@ class ProteinStructureUtils:
            parameter "workspace_name" of type "workspace_name" (workspace
            name of the object)
         :returns: instance of type "QueryRCSBStructsOutput" -> structure:
-           parameter "rcsb_ids" of list of String, parameter "report_name" of
-           String, parameter "report_ref" of String
+           parameter "rcsb_ids" of list of String, parameter "rcsb_scores" of
+           unspecified object, parameter "report_name" of String, parameter
+           "report_ref" of String
         """
         # ctx is the context object
         # return variables are: result
