@@ -649,16 +649,19 @@ class RCSBUtil:
         query_json = os.path.join(dir_name, 'query.json')
         with open(query_json, 'w') as query_pt:
             query_pt.write(json.dumps(input_json, indent=4))
+
         query_path = os.path.join(output_directory, 'rcsb_query.json')
         shutil.copy(query_json, query_path)
         logging.info(f'The JSON query sent to rcsb has been written to {query_path}.')
 
-        idscore_json = os.path.join(dir_name, 'idscore.json')
-        with open(idscore_json, 'w') as rcsbids_pt:
+        idscores_json = os.path.join(dir_name, 'idscores.json')
+        with open(idscores_json, 'w') as rcsbids_pt:
             rcsbids_pt.write(json.dumps(id_score_dict, indent=4))
-        idscores_path = os.path.join(output_directory, 'query_idscores.json')
-        shutil.copy(idscore_json, idscores_path)
+
+        idscores_path = os.path.join(output_directory, 'rcsb_ids_scores.json')
+        shutil.copy(idscores_json, idscores_path)
         logging.info(f'The rcsb_ids and scores JSON files have been written to {idscores_path}.')
+        return (query_path, idscores_path)
 
     def _query_rcsb_report_html(self, struct_info, rcsb_out, output_directory):
         """
@@ -694,7 +697,8 @@ class RCSBUtil:
 
         return html_report
 
-    def _generate_query_report(self, workspace_name, struct_info, rcsb_out, output_directory):
+    def _generate_query_report(self, workspace_name, struct_info, rcsb_out,
+                               output_directory, rcsb_query, rcsb_ids_scores):
         """
             _generate_query_report: generate summary report for the query
         """
@@ -703,6 +707,12 @@ class RCSBUtil:
             return {'report_name': None, 'report_ref': None}
 
         output_html_file = self._query_rcsb_report_html(struct_info, rcsb_out, output_directory)
+        output_html_file.append({'path': output_directory,
+                                 'name': os.path.basename(rcsb_query),
+                                 'description': 'Query applied for retrieving RCSB results'})
+        output_html_file.append({'path': output_directory,
+                                 'name': os.path.basename(rcsb_ids_scores),
+                                 'description': 'RCSB results with scores'})
 
         report_params = {'message': f'Query has resulted in {struct_count} structures in RCSB DB.',
                          'html_links': output_html_file,
@@ -762,8 +772,8 @@ class RCSBUtil:
             logging.info(f"total_count={struct_info.get('total_count', 0)}")
             returnVal['rcsb_ids'] = struct_info.get('id_list', [])
             returnVal['rcsb_scores'] = id_score_dict
-            self._write_queryNresults(rcsb_output, output_directory)
+            (query_json, ids_scores) = self._write_queryNresults(rcsb_output, output_directory)
             report_output = self._generate_query_report(workspace_name, struct_info, rcsb_output,
-                                                        output_directory)
+                                                        output_directory, query_json, ids_scores)
             returnVal.update(report_output)
         return returnVal

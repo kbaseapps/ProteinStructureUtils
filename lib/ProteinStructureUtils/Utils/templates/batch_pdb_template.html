@@ -104,14 +104,14 @@
   </script>
 </head>
 <body>
-<!-- Tab links -->
-<div class="tab">
-  <button class="tablinks" onclick="openTab(event, 'StructureInfo')" id="defaultOpen">Structure Info</button>
-  <button class="tablinks" onclick="openTab(event, 'StructureViewer')" id="molstarviewer">Structure Viewer</button>
-</div>
+  <!-- Tab links -->
+  <div class="tab">
+    <button class="tablinks" onclick="openTab(event, 'StructureInfo')" id="defaultOpen">Structure Info</button>
+    <button class="tablinks" onclick="openTab(event, 'StructureViewer')" id="molstarviewer">Structure Viewer</button>
+  </div>
 
-<!-- Begin Tab content1 -->
-<div id="StructureInfo" class="tabcontent">
+  <!-- Begin Tab content1 -->
+  <div id="StructureInfo" class="tabcontent">
     <!--Begin PDBs successfully uploaded-->
     <h2>Protein structures successfully uploaded</h2>
     <table id="pdbs" class="display" style="width: 100%;">
@@ -129,18 +129,19 @@
         </tbody>
     </table>
     <!--End PDBs successfully uploaded-->
-</div>
-<!-- End Tab content1 -->
+  </div>
+  <!-- End Tab content1 -->
 
-<!-- Begin Tab content2 -->
-<div id="StructureViewer" class="tabcontent">
-  <script type="text/javascript" src="./molstar.js"></script>
-    <!--replace StructureViewer subtabs-->
-    <!--Begin Sub Tab content-->
-    <!--replace subtab content multi-->
-    <!--replace subtab content single-->
-    <!--End Sub Tab content-->
-<!-- End Tab content2 -->
+  <!-- Begin Tab content2 -->
+  <div id="StructureViewer" class="tabcontent">
+    <script type="text/javascript" src="./molstar.js"></script>
+      <!--replace StructureViewer subtabs-->
+      <!--Begin Sub Tab content-->
+      <!--replace subtab content multi-->
+      <!--replace subtab content single-->
+      <!--End Sub Tab content-->
+  </div>
+  <!-- End Tab content2 -->
 
   <!--Managing tab states -->
   <script>

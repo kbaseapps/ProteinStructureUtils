@@ -916,7 +916,8 @@ class PDBUtil:
                 seq_idens = succ_pdb['sequence_identities']
 
             tbody_html += (f'\n<td><div class="subtablinks" '
-                           f'onclick="openSubTab(event, this, false)" style="cursor: pointer;" '
+                           f'onclick="openSubTab(event, this, false)" '
+                           f'style="cursor:pointer;color:blue;text-decoration:underline;" '
                            f'title="Click to see in mol*">{struct_nm}</div></td>')
             tbody_html += (f'\n<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                            f' target="_blank">{genome_name}</a></td><td>{feat_id}</td>')
