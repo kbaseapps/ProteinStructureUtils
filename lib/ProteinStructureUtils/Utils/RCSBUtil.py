@@ -22,6 +22,9 @@ from installed_clients.AbstractHandleClient import AbstractHandle
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 from installed_clients.WorkspaceClient import Workspace
+from installed_clients.baseclient import ServerError as WorkspaceError
+
+from ProteinStructureUtils.Utils.PDBUtil import PDBUtil
 
 
 class RCSBUtil:
@@ -40,9 +43,11 @@ class RCSBUtil:
         self.hs = AbstractHandle(config['handle-service-url'])
         self.ws_client = Workspace(config['workspace-url'])
         self.shock_url = config['shock-url']
+        self.pdb_util = PDBUtil(config)
 
-        self.__baseSearchUrl = "https://search.rcsb.org/rcsbsearch/v2/query"
-        self.__baseGraphqlUrl = "https://data.rcsb.org/graphql"
+        self.__baseDownloadUrl = 'https://files.rcsb.org/download'
+        self.__baseSearchUrl = 'https://search.rcsb.org/rcsbsearch/v2/query'
+        self.__baseGraphqlUrl = 'https://data.rcsb.org/graphql'
         self.__graphqlClient = GraphqlClient(endpoint=self.__baseGraphqlUrl)
         self.__graphqlQueryTemplate = """{
             entries(entry_ids:["%s"]) {
@@ -323,7 +328,7 @@ class RCSBUtil:
             reqH.raise_for_status()
             return json.loads(reqH.text)
         except (HTTPError, ConnectionError, RequestException) as e:
-            logging.info(" ERROR ".center(30, "-"))
+            logging.info(" _queryRCSB ERROR ".center(30, "-"))
             logging.info(f'Querying RCSB db with {jsonQueryObj} had an Error: {e}')
             return {}
         except Exception as e:
@@ -390,7 +395,6 @@ class RCSBUtil:
         logging.info(f'Querying GraphQL db for the structures of {len(id_list)} rcsd_ids')
         if not id_list:
             return {}
-
         queryString = self.__graphqlQueryTemplate % '", "'.join(id_list)
         try:
             #graphql_ret = self.__graphqlClient.execute(query=queryString)
@@ -399,8 +403,11 @@ class RCSBUtil:
             evt_loop = asyncio.get_event_loop()
             graphql_ret = evt_loop.run_until_complete(
                           self.__graphqlClient.execute_async(query=queryString))
+            if 'errors' in graphql_ret:
+                raise ConnectionError(graphql_ret['errors'][0]['message'])
             return graphql_ret
         except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
+            logging.info(" _queryGraphql ERROR ".center(30, "-"))
             logging.info(f'Connecting to RCSB GraphQL host at "{self.__baseGraphqlUrl} errored.')
             return {}
         except (HTTPError, ConnectionError, RequestException) as e:
@@ -553,10 +560,126 @@ class RCSBUtil:
 
         for idChunk in idListChunks:
             retData = self._queryGraphql(id_list=idChunk)
-            for key, val in self._formatRCSBJson(retData).items():
-                output_obj[key] = val
+            if retData.get('data', None):
+                for key, val in self._formatRCSBJson(retData).items():
+                    output_obj[key] = val
+            else:
+                logging.info("_get_graphql_data by chunks ERROR ".center(30, "-"))
 
         return output_obj
+
+    def _fill_list_to(self, list_name, full_count):
+        """
+            _fill_list_to: Given a list by list_name, if it has fewer than full_count element,
+                          fill it with the last element in the orginal list. Return the full list.
+        """
+        list_count = len(list_name)
+        last_item = list_name[list_count - 1]
+        if list_count < full_count:
+            for i in range(list_count, full_count):
+                list_name[i] = last_item
+        return list_name
+
+    def _validate_import_rcsb_params(self, params):
+        """
+            _validate_import_rcsb_params:
+                validates input params to import_rcsb_structures
+        """
+        # check for required parameters
+        for p in ['workspace_name', 'rcsb_ids', 'structures_name', 'exts',
+                  'narrative_ids', 'genome_names', 'feature_ids', 'is_models']:
+            if p not in params:
+                raise ValueError(f'Parameter "{p}" is required, but missing!')
+
+        # Only extensions ‘.cif’ or ‘.pdb’ are valid
+        accepted_extensions = ['.pdb', '.cif']
+        rcsb_count = len(params.get('rcsb_ids'))
+        params['skipped_rcsb_ids'] = list()
+        for i in range(rcsb_count):
+            if params['exts'][i] not in accepted_extensions:
+                logging.info(f"File extension {params['exts'][i]} is not supported at this time, "
+                             f"therefore structure {params['rcsb_ids'][i]} will not be imported.")
+                params['rcsb_ids'].pop(i)
+                params['narrative_ids'].pop(i)
+                params['genome_names'].pop(i)
+                params['feature_ids'].pop(i)
+                params['is_models'].pop(i)
+                params['exts'].pop(i)
+                params['skipped_rcsb_ids'].append(params['rcsb_ids'][i])
+
+        params['narrative_ids'] = self._fill_list_to(params['narrative_ids'], rcsb_count)
+        params['genome_names'] = self._fill_list_to(params['genome_names'], rcsb_count)
+        params['feature_ids'] = self._fill_list_to(params['feature_ids'], rcsb_count)
+        params['is_models'] = self._fill_list_to(params['is_models'], rcsb_count)
+        params['exts'] = self._fill_list_to(params['exts'], rcsb_count)
+
+        return params
+
+    def _rcsb_file_download(self, rcsb_id, ext='pdb', zp='gz'):
+        """
+            _rcsb_file_download: Download the rcsb structure file and save it to the scratch area
+                                Return the saved file path
+        """
+        rcsb_filename = os.path.join(rcsb_id, ext, zp)
+        dir_name = os.path.dirname(__file__)
+        rcsb_file = os.path.join(dir_name, rcsb_filename)
+
+        if not self.download_dir:
+            self.download_dir = os.path.join(self.scratch, str(uuid.uuid4()))
+            os.mkdir(self.download_dir)
+        rcsb_filepath = os.path.join(self.download_dir, rcsb_filename)
+
+        try:
+            resp = requests.get(os.path.join(self.__baseDownloadUrl, rcsb_filename))
+            resp.raise_for_status()
+            with open(rcsb_file, 'wb') as rcsb_pt:
+                rcsb_pt.write(resp.content)
+            shutil.copy(rcsb_file, rcsb_filepath)
+            logging.info(f'The rcsb file {rcsb_filename} has been downloaded to {rcsb_filepath}.')
+            return rcsb_filepath
+        except (HTTPError, ConnectionError, RequestException) as e:
+            logging.info(" ERROR ".center(30, "-"))
+            logging.info(f'RCSB file downloading for {rcsb_id} had an Error: {e}')
+            return ''
+        except Exception as e:
+            print(e)
+            return ''
+
+    def _build_import_params(self, params):
+        """
+            _build_import_params: For the structure file given by file_path, return the params with
+                                  attribute 'file_paths' defined. Now the params has the following
+                                  data structure:
+                                  {
+                                      'file_paths': file_pasths
+                                      'file_extensions': extensions,
+                                      'narrative_ids': narrative_ids,
+                                      'genome_names': genome_names,
+                                      'feature_ids': feature_ids,
+                                      'is_models': is_models
+                                  }
+            Note: If the file download failed, the corresponding structure entry is removed
+                  from params and will be skipped from importing.
+        """
+        params = self._validate_import_rcsb_params(params)
+
+        params['file_paths'] = []
+        for i in range(len(params.get('rcsb_ids'))):
+            file_path = self._rcsb_file_download(params['rcsb_ids'][i], params['exts'][i])
+            if file_path:
+                params['file_paths'][i] = file_path
+            else:
+                logging.info(f"File download for structure {params['rcsd_ids'][i]} failed, "
+                             f"therefore structure {params['rcsb_ids'][i]} will not be imported.")
+                params['rcsb_ids'].pop(i)
+                params['narrative_ids'].pop(i)
+                params['genome_names'].pop(i)
+                params['feature_ids'].pop(i)
+                params['is_models'].pop(i)
+                params['exts'].pop(i)
+                params['skipped_rcsb_ids'].append(params['rcsb_ids'][i])
+
+        return params
 
     def _write_struct_info(self, struct_info):
         """
@@ -777,3 +900,103 @@ class RCSBUtil:
                                                         output_directory, query_json, ids_scores)
             returnVal.update(report_output)
         return returnVal
+
+    def import_rcsbs(self, params, workspace_name):
+        pdb_objects = list()
+        pdb_infos = list()
+        successful_ids = list()
+        skipped_ids = params.get('skipped_rcsb_ids', list())
+
+        rcsb_ids = params['rcsb_ids']
+        # loop through the list of pdb_file_paths
+        for i in range(len(rcsb_ids)):
+            pdb_params = {}
+            rid = rcsb_ids[i]
+            file_path = params['file_paths'][i]
+            pdb = {
+                'file_path': file_path,
+                'file_extension':  params['exts'][i],
+                'structure_name': rid,
+                'narrative_id': params['narrative_ids'][i],
+                'genome_name': params['genome_names'][i],
+                'feature_id': params['feature_ids'][i],
+                'is_model': params['is_models'][i]
+            }
+
+            pdb_params['pdb_info'] = pdb
+            pdb_params['input_staging_file_path'] = None
+            pdb_params['input_file_path'] = file_path
+            pdb_params['input_shock_id'] = None
+            pdb_params['workspace_name'] = workspace_name
+            pdb_params['structure_name'] = rid
+            pdb_params['is_model'] = pdb['is_model']
+
+            if pdb['file_extension'] == 'pdb':
+                pdb_data, pdb_info = self.pdb_util.import_pdb_file(pdb_params)
+                if pdb_data:
+                    pdb_objects.append(pdb_data)
+                    pdb_infos.append(pdb_info)
+                    successful_ids.append(file_path)
+                else:
+                    skipped_ids.append(file_path)
+            elif pdb['file_extension'] == '.cif':
+                cif_data, pdb_info = self.pdb_util.import_mmcif_file(pdb_params)
+                if cif_data:
+                    pdb_objects.append(cif_data)
+                    pdb_infos.append(pdb_info)
+                    successful_ids.append(file_path)
+                else:
+                    skipped_ids.append(file_path)
+
+        return pdb_objects, pdb_infos, successful_ids, skipped_ids
+
+    def batch_import_rcsbs(self, params):
+        """
+            batch_import_rcsbs: download a list of rcsb files and then upload them to create a
+                                   KBaseStructure.ProteinStructures object
+            required params:
+                rcsb_ids: a list of rcsb_id's
+                structures_name: name of the ProteinStructures object to be generated
+                workspace_name: workspace name that the protein structure(s) will be saved
+            return:
+                structures_ref: return ProteinStructures object reference
+                report_name: name of generated report (if any)
+                report_ref: report reference (if any)
+
+            1. call _build_import_params to validate input params
+            2. download: call ?? the rcsb structure files one by one
+            3. upload: call ??
+            4. assemble the data for a ProteinStructures and save the data object
+            5. call PDBUtil.generate_batch_report to generate a report for batch_import_pdbs' result
+        """
+        params = self._build_import_params(params)
+
+        workspace_name = params.get('workspace_name', '')
+        structures_name = params.get('structures_name', '')
+        if not isinstance(workspace_name, int):
+            workspace_id = self.dfu.ws_name_to_id(workspace_name)
+        else:
+            workspace_id = workspace_name
+        params['workspace_id'] = workspace_id
+
+        pdb_objects = list()
+        pdb_infos = list()
+        successful_ids = list()
+        protein_structures = dict()
+
+        pdb_objects, pdb_infos,
+        successful_ids, skipped_ids = self.import_rcsbs(params, workspace_name)
+
+        if not pdb_objects:
+            logging.info("No pdb structure was created/saved!")
+            return {}
+
+        total_structures = len(pdb_objects)
+        protein_structures['protein_structures'] = pdb_objects
+        protein_structures['total_structures'] = total_structures
+        protein_structures['description'] = (f'Created {total_structures} '
+                                             f'structures in {params.get("structures_name")}')
+
+        return self.pdb_util.saveStructures_createReport(structures_name, workspace_id,
+                                                         workspace_name, protein_structures,
+                                                         pdb_infos, skipped_ids)

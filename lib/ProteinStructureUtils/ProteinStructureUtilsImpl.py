@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "7ef5049f8f9116488d814d32aede3a21819a1757"
+    GIT_COMMIT_HASH = "835a6e397b8078d13d1076b2665bb35b5531a21f"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -64,7 +64,7 @@ class ProteinStructureUtils:
         # ctx is the context object
         # return variables are: result
         #BEGIN batch_import_pdbs_from_metafile
-        logging.info('Starting batch_import_pdbs_from_metafile with params:\n{}'.format(params))
+        logging.info(f'Starting batch_import_pdbs_from_metafile with params:\n{params}.')
         self.config['USER_ID'] = ctx['user_id']
         self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.batch_import_pdbs(params)
@@ -73,6 +73,46 @@ class ProteinStructureUtils:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method batch_import_pdbs_from_metafile return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def import_rcsb_structures(self, ctx, params):
+        """
+        :param params: instance of type "ImportRCSBParams" (Input/output of
+           the import_rcsb_structures function rcsb_ids: a list of rcsb
+           structure id's exts: a list of rcsb structure file extensions
+           ('pdb' or 'cif') narrative_ids: a list of KBase narrative ids
+           genome_names: a list of KBase genome names in the respective
+           narratives of narrative_ids feature_ids: a list of KBase feature
+           ids in the respective narratives of narrative_ids is_models: a
+           list of 0s and/or 1s to indicate the structure is exprimental or
+           computational structures_name: Proteinstructures object name
+           workspace_name: workspace name for object to be saved to) ->
+           structure: parameter "rcsb_ids" of list of String, parameter
+           "exts" of list of String, parameter "narrative_ids" of list of
+           String, parameter "genome_names" of list of String, parameter
+           "feature_ids" of list of String, parameter "is_models" of list of
+           type "boolean" (A boolean - 0 for false, 1 for true. @range (0,
+           1)), parameter "structures_name" of String, parameter
+           "workspace_name" of type "workspace_name" (workspace name of the
+           object)
+        :returns: instance of type "ImportRCSBStructOutput" -> structure:
+           parameter "structures_ref" of String, parameter "report_name" of
+           String, parameter "report_ref" of String
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN import_rcsb_structures
+        logging.info(f'Starting import_rcsb_structures with params:\n{params}.')
+        self.config['USER_ID'] = ctx['user_id']
+        self.rcsb_util = RCSBUtil(self.config)
+        result = self.rcsb_util.batch_import_rcsbs(params)
+        #END import_rcsb_structures
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method import_rcsb_structures return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
@@ -89,7 +129,7 @@ class ProteinStructureUtils:
         # ctx is the context object
         # return variables are: result
         #BEGIN export_pdb_structures
-        logging.info('Starting export_pdb_structures with params:\n{}'.format(params))
+        logging.info(f'Starting export_pdb_structures with params:\n{params}.')
         self.config['USER_ID'] = ctx['user_id']
         self.pdb_util = PDBUtil(self.config)
         result = self.pdb_util.export_pdb_structures(params)
@@ -129,10 +169,10 @@ class ProteinStructureUtils:
         # ctx is the context object
         # return variables are: result
         #BEGIN query_rcsb_structures
-        logging.info('Starting query_rcsb_structures with params:\n{}'.format(params))
+        logging.info(f'Starting query_rcsb_structures with params:\n{params}.')
         self.config['USER_ID'] = ctx['user_id']
-        self.rscb_util = RCSBUtil(self.config)
-        result = self.rscb_util.querey_structure_info(params)
+        self.rcsb_util = RCSBUtil(self.config)
+        result = self.rcsb_util.querey_structure_info(params)
         #END query_rcsb_structures
 
         # At some point might do deeper type checking...

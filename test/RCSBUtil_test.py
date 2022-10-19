@@ -556,10 +556,11 @@ class RCSBUtilsTest(unittest.TestCase):
         id_list = ['1A0I', '1A49', '1A5U', '1A82', '1AQ2']
         gql_itms = self.rcsb_util._get_graphql_data(id_list)
 
-        expected_keys = ['total_count', 'id_list']
-        expected_keys.extend(id_list)
-        for k in expected_keys:
+        for k in ['total_count', 'id_list']:
             self.assertIn(k, gql_itms)
+        for id in id_list:
+            self.assertIn(id, gql_itms['id_list'])
+            self.assertIn(id, gql_itms.keys())
 
         self.assertEqual(gql_itms['total_count'], len(id_list))
         self.assertEqual(gql_itms['id_list'], id_list)

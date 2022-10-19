@@ -342,6 +342,10 @@ class Application(object):
                              name='ProteinStructureUtils.batch_import_pdbs_from_metafile',
                              types=[dict])
         self.method_authentication['ProteinStructureUtils.batch_import_pdbs_from_metafile'] = 'required'  # noqa
+        self.rpc_service.add(impl_ProteinStructureUtils.import_rcsb_structures,
+                             name='ProteinStructureUtils.import_rcsb_structures',
+                             types=[dict])
+        self.method_authentication['ProteinStructureUtils.import_rcsb_structures'] = 'required'  # noqa
         self.rpc_service.add(impl_ProteinStructureUtils.export_pdb_structures,
                              name='ProteinStructureUtils.export_pdb_structures',
                              types=[dict])

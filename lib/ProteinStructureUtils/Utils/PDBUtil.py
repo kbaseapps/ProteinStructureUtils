@@ -77,7 +77,7 @@ class PDBUtil:
     def _get_pdb_structure(self, pdb_file, pdb_id=None, quiet=True):
         """Set QUIET to False to output warnings like incomplete chains etc."""
 
-        if pdb_id is None:
+        if not pdb_id:
             pdb_id = self._get_pdb_id(pdb_file)
         parser = PDB.PDBParser(PERMISSIVE=1, get_header=True, QUIET=quiet)
         if pdb_file.endswith('.gz'):
@@ -108,9 +108,8 @@ class PDBUtil:
 
         pp_no = 0
         pdb_data = {}
-        pdb_id = self._get_pdb_id(file_path)
         try:
-            structure = self._get_pdb_structure(file_path, pdb_id, quiet=False)
+            structure = self._get_pdb_structure(file_path, pdb_id=None, quiet=False)
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             logging.info(f'PDBParser errored with message: {e.message}')
             raise
@@ -162,8 +161,7 @@ class PDBUtil:
         try:
             structure = parser.get_structure("PHA-L", cif)
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
-            logging.info(
-                f'MMCIFParser errored with message: {e.message}')
+            logging.info(f'MMCIFParser errored with message: {e.message}')
             raise
         else:
             ppb = PPBuilder()
@@ -677,10 +675,18 @@ class PDBUtil:
     def _parse_metadata_file(self, metadata_file_path, ws_id):
         """
             _parse_metadata_file:
-                From metadata_file_path, a spreadsheet file, sort out the model_pdb_file_paths,
-            exp_pdb_file_paths and the kbase_meta_data
+                From metadata_file_path, a spreadsheet file, sort out the pdb_file_paths
+                and the kbase_meta_data
 
-            return: lists model_pdb_file_paths, exp_pdb_file_paths and dict kbase_meta_data
+            return: a list pdb_file_paths containing objects of structure:
+                    {'file_path': pdb_fn,
+                     'file_extension': ext,
+                     'structure_name': struct_name,
+                     'narrative_id': narr_id,
+                     'genome_name': obj_name,
+                     'feature_id': feat_id,
+                     'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0},
+                    and kbase object lists--narrative_ids, genome_names, feature_ids
         """
         logging.info(f'Parsing metadata from input file {metadata_file_path}...')
 
@@ -696,34 +702,34 @@ class PDBUtil:
 
         # df_meta_data is a Panda DataFrame object
         df_meta_data = self._read_file_by_type(metadata_file_path)
-        df_col_list = df_meta_data.columns.values.tolist()
+        df_columns = df_meta_data.columns
+        df_col_list = df_columns.values.tolist()
 
         # check if required columns are read in correctly
         for col in required_columns:
             if col not in df_col_list:
                 raise ValueError(f'Required column "{col}" is missing!')
 
-        df_indexes = df_meta_data.columns
-        for i in range(len(df_meta_data[df_indexes[0]])):
-            narr_id = int(df_meta_data[df_indexes[0]][i])
+        for i in range(len(df_meta_data[df_columns[0]])):
+            narr_id = int(df_meta_data[df_columns[0]][i])
             if not pd.isna(narr_id):
                 narrative_ids.append(narr_id)
             else:
                 raise ValueError(f'Please fill all the rows in column: {required_columns[0]}!')
 
-            obj_name = df_meta_data[df_indexes[1]][i]
+            obj_name = df_meta_data[df_columns[1]][i]
             if not pd.isna(obj_name):
                 genome_names.append(obj_name)
             else:
                 raise ValueError('Please fill all the rows in column: Object name!')
 
-            feat_id = df_meta_data[df_indexes[2]][i]
+            feat_id = df_meta_data[df_columns[2]][i]
             if not pd.isna(feat_id):
                 feature_ids.append(feat_id)
             else:
                 raise ValueError(f'Please fill all the rows in column: {required_columns[2]}!')
 
-            pdb_fn = df_meta_data[df_indexes[3]][i]  # pdb_fn does not have staging dir prefix
+            pdb_fn = df_meta_data[df_columns[3]][i]  # pdb_fn does not have staging dir prefix
             if pd.isna(pdb_fn):
                 raise ValueError(f'Please fill all the rows in column: {required_columns[3]}!')
 
@@ -732,7 +738,7 @@ class PDBUtil:
                 # raise ValueError('Only files with extensions ".cif" or ".pdb" are accepted.')
                 print('Only files with extensions ".cif" or ".pdb" are accepted.')
 
-            is_model = df_meta_data[df_indexes[4]][i]
+            is_model = df_meta_data[df_columns[4]][i]
             if not pd.isna(is_model):
                 pdb_file_paths.append(
                     {'file_path': pdb_fn,
@@ -1117,15 +1123,43 @@ class PDBUtil:
             'result_dir': export_package_dir
         }
 
+    def saveStructures_createReport(self, structures_name, workspace_id, workspace_name,
+                                    protein_structures, pdb_infos, failed_files):
+        """
+            saveStructures_createReport: With given inputs, save the ProteinStructures object
+                                         create a report and return the final results
+        """
+        returnVal = {}
+        try:
+            info = self.dfu.save_objects({
+                'id': workspace_id,
+                'objects': [
+                    {'type': 'KBaseStructure.ProteinStructures',
+                     'name': structures_name,
+                     'data': protein_structures}]
+            })[0]
+        except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
+            err_msg = f'DFU.save_objects errored with message: {e.message} and data: {e.data}'
+            raise ValueError(err_msg)
+        else:
+            structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
+            returnVal = {'structures_ref': structs_ref}
+            report_output = self._generate_batch_report(
+                        workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
+            returnVal.update(report_output)
+            logging.info(f'ProteinStructures data structure saved as:\n{structs_ref}')
+        finally:
+            return returnVal
+
     def batch_import_pdbs(self, params):
         """
-            batch_import_pdbs: upload two sets of pdb files and create a
+            batch_import_pdbs: upload a list of pdb files and create a
                                    KBaseStructure.ProteinStructures object
             required params:
                 metadata_staging_file_path: a metafile from the user's staging area that must be a
                     subdirectory file path in staging area,
-                    e.g., /data/bulk/user_name/metadata_staging_file_path
-                          staging_file_subdir_path is metadata_staging_file_path
+                    e.g., /data/bulk/user_name/staging_file_subdir_path
+                          where staging_file_subdir_path is metadata_staging_file_path
                 structures_name: name of the ProteinStructures object to be generated
                 workspace_name: workspace name that the protein structure(s) will be saved
             return:
@@ -1137,10 +1171,10 @@ class PDBUtil:
             2. call _parse_metadata to parse for model_pdb_files, exp_pdb_files and kbase_meta_data
             3. call import_pdb_file on each entry in pdb_paths, and/or
                call import_mmcif_file on each entry in pdb_paths
-            4. assemble the data for a ProteinStructures and save the data object
-            5. call _generate_batch_report to generate a report for batch_import_pdbs' result
+            4. assemble the data for a ProteinStructures for saving the data object
+            5. call saveStructures_createReport to save the object and
+               generate a report for batch_import_pdbs' result
         """
-
         (metadata_file_path, workspace_name,
          structures_name) = self._validate_batch_import_params(params)
 
@@ -1159,9 +1193,9 @@ class PDBUtil:
         failed_files = list()
         protein_structures = dict()
 
-        pdb_params = {}
         # loop through the list of pdb_file_paths
         for pdb in pdb_file_paths:
+            pdb_params = {}
             pdb_params['pdb_info'] = pdb
             pdb_params['input_staging_file_path'] = pdb['file_path']
             pdb_params['input_file_path'] = None
@@ -1197,24 +1231,5 @@ class PDBUtil:
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
 
-        returnVal = {}
-        try:
-            info = self.dfu.save_objects({
-                'id': workspace_id,
-                'objects': [
-                    {'type': 'KBaseStructure.ProteinStructures',
-                     'name': structures_name,
-                     'data': protein_structures}]
-            })[0]
-        except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
-            err_msg = f'DFU.save_objects errored with message: {e.message} and data: {e.data}'
-            raise ValueError(err_msg)
-        else:
-            structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
-            returnVal = {'structures_ref': structs_ref}
-            report_output = self._generate_batch_report(
-                        workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
-            returnVal.update(report_output)
-            logging.info(f'ProteinStructures data structure saved as:\n{structs_ref}')
-        finally:
-            return returnVal
+        return self.saveStructures_createReport(structures_name, workspace_id, workspace_name,
+                                                protein_structures, pdb_infos, failed_files)
