@@ -12,9 +12,11 @@ import errno
 import pathlib
 import subprocess
 from urllib.parse import urlparse
+from copy import deepcopy
 
 import json, requests
 import aiohttp, asyncio
+#import modelseedpy
 from requests.exceptions import ConnectionError, HTTPError, RequestException
 from python_graphql_client import GraphqlClient
 
@@ -30,7 +32,7 @@ from ProteinStructureUtils.Utils.PDBUtil import PDBUtil
 class RCSBUtil:
 
     # Set thresholds to restrict which alignments will be significant or sequence identity matches
-    EVALUE_CUTOFF = 0.1
+    EVALUE_CUTOFF = 1e-5
     IDENTITY_CUTOFF = 0.75
     LOGICAL_AND = 0
 
@@ -60,6 +62,7 @@ class RCSBUtil:
                     rcsb_authors
                     journal_abbrev
                     year
+                    pdbx_database_id_PubMed
                 }
                 polymer_entities {
                     rcsb_id
@@ -82,6 +85,17 @@ class RCSBUtil:
                             id
                         }
                     }
+                    uniprots {
+                      rcsb_uniprot_protein {
+                        name {
+                          value
+                        }
+                        ec {
+                          number
+                          provenance_code
+                        }
+                      }
+                    }
                 }
                 nonpolymer_entities {
                   nonpolymer_comp {
@@ -95,6 +109,24 @@ class RCSBUtil:
             }
         }
         """
+
+    def _validate_rcsb_seqquery_params(self, params):
+        """
+            _validate_rcsb_seqquery_params:
+                validates input params to query_structure_info
+        """
+        # check for required parameters
+        for p in ['workspace_name', 'sequence_strings']:
+            if p not in params:
+                raise ValueError(f'Parameter "{p}" is required, but missing!')
+
+        if params.get('evalue_cutoff', None):
+            self.EVALUE_CUTOFF = float(params['evalue_cutoff'])
+
+        if params.get('identity_cutoff', None):
+            self.IDENTITY_CUTOFF = params['identity_cutoff']
+
+        return params
 
     def _validate_rcsb_query_params(self, params):
         """
@@ -113,7 +145,7 @@ class RCSBUtil:
                       'smiles': 'SMILES'}
 
         if params.get('evalue_cutoff', None):
-            self.EVALUE_CUTOFF = params['evalue_cutoff']
+            self.EVALUE_CUTOFF = float(params['evalue_cutoff'])
 
         if params.get('identity_cutoff', None):
             self.IDENTITY_CUTOFF = params['identity_cutoff']
@@ -337,7 +369,7 @@ class RCSBUtil:
 
     def _readRCSBResult(self, rcsb_retObj):
         """
-            _readRCSBResult: parse the RCSB query result and return a PDB ID list
+            _readRCSBResult: parse the RCSB query result and return a PDB ID list & an id_score list
         """
         total_number = 0
         if rcsb_retObj and rcsb_retObj.get('total_count', None):
@@ -382,7 +414,7 @@ class RCSBUtil:
         """
         if not jsonQueryObj:
             return [], {}
-        #
+
         retJsonObj = self._queryRCSB(jsonQueryObj)
         if not retJsonObj:
             return [], {}
@@ -394,7 +426,7 @@ class RCSBUtil:
         """
         logging.info(f'Querying GraphQL db for the structures of {len(id_list)} rcsd_ids')
         if not id_list:
-            return {}
+            return {'data': None}
         queryString = self.__graphqlQueryTemplate % '", "'.join(id_list)
         try:
             #graphql_ret = self.__graphqlClient.execute(query=queryString)
@@ -409,53 +441,84 @@ class RCSBUtil:
         except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
             logging.info(" _queryGraphql ERROR ".center(30, "-"))
             logging.info(f'Connecting to RCSB GraphQL host at "{self.__baseGraphqlUrl} errored.')
-            return {}
+            return {'data': None}
         except (HTTPError, ConnectionError, RequestException) as e:
             # not raising error to allow continue with other chunks
             logging.info(f'Querying RCSB GraphQL had a Connection Error:************\n {e}.\n'
                          'Or database connection request had no response!')
-            return {}
+            return {'data': None}
         except (RuntimeError, TypeError, KeyError, ValueError) as e:
             err_msg = f'Querying RCSB errored with message: {e.message} and data: {e.data}'
             raise ValueError(err_msg)
 
-    def _formatRCSBJson(self, data):
+    def _formatRCSBJson(self, entries):
         """
-            _formatRCSBJson: Format rcsb GraphQL returned data into Json objects per rcsb structure
+            _formatRCSBJson:Format rcsb GraphQL returned entries into one Json object per rcsb entry
+                            Return an unspecifiedObject as the following:
+                    dic[entry['rcsb_id']] = {
+                        'method': [entry['exptl'][0]['method']],
+                        'primary_citation': entry[prim_cite]<references>,
+                        'polymer_entities': [{
+                            'id': '1',
+                            'one_letter_code_sequence': 'VNIKTNPFKAVSFVESAIKKALDNAGYLIAEI...',
+                            'pdbx_strand_id': ['A'],
+                            'source_organism': [{'ncbi_taxonomy_id': 10760, 'ncbi_scientific_name': 'Escherichia phage T7'}],
+                            'taxonomy': [(10760, 'Escherichia phage T7')],
+                            'uniprotID': ['P00969'],
+                            'ref_sequence_ids': [{'database_accession': 'P00969', 'database_name': 'UniProt'}],
+                            'uniprot_name': ['Hemoglobin subunit beta'],
+                            'ec_numbers': ['6', '6.5', '6.5.1', '6.5.1.1'],
+                            'uniprot_ec': []
+                        },...],
+                        'nonpolymer_entities': [{
+                            'InChIKey': [...]
+                        },...]
+                    }
         """
-        if not data:
+        if not entries:
             return {}
 
-        dic = {}
         # short-naming the long rcsb data attribute strings
         src_organism = 'rcsb_entity_source_organism'
-        prim_cite = 'rcsb_primary_citation'
         polym_entity = 'rcsb_polymer_entity'
         ec_lineage = 'rcsb_ec_lineage'
         entity_container_ids = 'rcsb_polymer_entity_container_identifiers'
-        ref_seq_ids = 'reference_sequence_identifiers'
+        ref_sequence_ids = 'reference_sequence_identifiers'
+        uprot_prot = 'rcsb_uniprot_protein'
         chem_comp_desc = 'rcsb_chem_comp_descriptor'
 
-        for entry in data['data']['entries']:
+        dic = {}
+        for entry in entries:
             dic[entry['rcsb_id']] = {
-                'method': [entry['exptl'][0]['method']],
-                'primary_citation': entry[prim_cite],
+                'primary_citation': entry.get('rcsb_primary_citation', ''),
                 'polymer_entities': [],
                 'nonpolymer_entities': []
             }
+            methods = []
+            for exp in entry.get('exptl', []):
+                if exp.get('method', ''):
+                    methods.append(exp['method'])
+            dic[entry['rcsb_id']]['method'] = methods
+
             for pe in entry['polymer_entities']:
                 pe_dic = {
                     'id': pe['rcsb_id'].split("_")[1],
                     'one_letter_code_sequence': pe['entity_poly']['pdbx_seq_one_letter_code'],
-                    'pdb_chain_ids': pe['entity_poly']['pdbx_strand_id'].split(',')
+                    'pdbx_strand_id': pe['entity_poly']['pdbx_strand_id'].split(',')
                 }
                 if (pe.get(src_organism, None)):
                     pe_dic['source_organism'] = pe[src_organism]
-                #
+                    pe_dic['taxonomy'] = []
+                    for srco in pe[src_organism]:
+                        pe_dic['taxonomy'].append(
+                          (srco.get('ncbi_taxonomy_id', ''), srco.get('ncbi_scientific_name', '')))
                 if (pe.get(entity_container_ids, None) and
-                        pe[entity_container_ids].get(ref_seq_ids, None)):
-                    pe_dic['identifiers'] = pe[entity_container_ids]
-                #
+                        pe[entity_container_ids].get(ref_sequence_ids, None)):
+                    pe_dic['uniprotID'] = []
+                    pe_dic['ref_sequence_ids'] = pe[entity_container_ids][ref_sequence_ids]
+                    for rsid in pe_dic['ref_sequence_ids']:
+                        pe_dic['uniprotID'].append(rsid.get('database_accession', ''))
+
                 if (pe.get(polym_entity, None) and pe[polym_entity].get(ec_lineage, None)):
                     ec_numbers = []
                     for idic in pe[polym_entity][ec_lineage]:
@@ -464,32 +527,35 @@ class RCSBUtil:
 
                     if ec_numbers:
                         pe_dic['ec_numbers'] = ec_numbers
-                #
+
+                if pe.get('uniprots', None):
+                    for unp in pe['uniprots']:
+                        pe_dic['uniprot_name'] = []
+                        pe_dic['uniprot_ec'] = []
+                        if unp.get(uprot_prot, None):
+                            uniprot_prot = unp[uprot_prot]
+                            if uniprot_prot.get('name', None):
+                                pe_dic['uniprot_name'].append(
+                                    uniprot_prot['name'].get('value', ''))
+                            if uniprot_prot.get('ec', None):
+                                pe_dic['uniprot_ec'].extend(uniprot_prot['ec'])
+
                 dic[entry['rcsb_id']]['polymer_entities'].append(pe_dic)
-            #
+
             dic[entry['rcsb_id']]['nonpolymer_entities'] = []
             if entry.get('nonpolymer_entities', None):
-                for nonpolymerDic in entry['nonpolymer_entities']:
-                    descriptorDic = {}
-                    if (not nonpolymerDic.get('nonpolymer_comp', None) or not
-                       nonpolymerDic['nonpolymer_comp'].get('rcsb_chem_comp_descriptor', None)):
-                        continue
-                    #
-                    for desType in ('InChI', 'InChIKey', 'SMILES'):
-                        if not nonpolymerDic['nonpolymer_comp'][chem_comp_desc].get(desType, None):
-                            continue
-                        #
-                        dt_val = nonpolymerDic['nonpolymer_comp'][chem_comp_desc][desType]
-                        if desType in descriptorDic:
-                            descriptorDic[desType].append(dt_val)
-                        else:
-                            descriptorDic[desType] = [dt_val]
-                        #
-                    #
-                    dic[entry['rcsb_id']]['nonpolymer_entities'].append(descriptorDic)
-                #
-            #
-        #
+                descriptorDic = {}
+                for npe in entry['nonpolymer_entities']:
+                    if (npe.get('nonpolymer_comp', None) and
+                       npe['nonpolymer_comp'].get(chem_comp_desc, None)):
+                        # for desType in ('InChI', 'InChIKey', 'SMILES'):
+                        if npe['nonpolymer_comp'][chem_comp_desc].get('InChIKey', None):
+                            dt_val = npe['nonpolymer_comp'][chem_comp_desc]['InChIKey']
+                            if 'InChIKey' in descriptorDic:
+                                descriptorDic['InChIKey'].append(dt_val)
+                            else:
+                                descriptorDic['InChIKey'] = [dt_val]
+                dic[entry['rcsb_id']]['nonpolymer_entities'].append(descriptorDic)
         return dic
 
     def _get_pdb_ids(self, inputJsonObj, logic_and=0):
@@ -545,6 +611,80 @@ class RCSBUtil:
         except Exception as e:
             raise e
 
+    def _filter_by_identity(self, seq_idens, evals, iden_cutoff):
+        """
+            _filter_by_identity: Filter the max sequence identity with the iden_cutoff
+        """
+        seq_identity = 0.0
+        e_val = 0.0
+        exact_match = 0
+
+        if seq_idens:
+            seq_idens.sort()
+            max_iden = seq_idens.pop()
+            if max_iden >= iden_cutoff:  # get the good match
+                seq_identity = max_iden
+                e_val = evals['Eval_' + str(max_iden)]
+                exact_match = 1 if max_iden > 0.99 else 0
+
+        return seq_identity, exact_match, e_val
+
+    def _blastRCSBSequence(self, input_seq, gql_data, evalue_cutoff, identity_cutoff):
+        """
+            _blastRCSBSequence: Call self.pdb_util._compute_sequence_identity(seq1, seq2, Eval)
+                                 and self._filter_by_identity(seq_idens, iden_cutoff) to fetch the
+                                 best sequence identity (similarity) matches
+        """
+        logging.info(f'Blast {input_seq} against rcsb matches...')
+
+        if not gql_data:
+            return []
+
+        rcsb_hits = []
+        entries = gql_data['data']['entries']
+        rcsb_data = self._formatRCSBJson(entries)
+        for entry in entries:
+            rcsb_id = entry['rcsb_id']
+            rcsb_data_entry = rcsb_data[rcsb_id]
+            method = rcsb_data_entry.get('method', [])
+            if rcsb_data_entry.get('nonpolymer_entities', []):
+                components = rcsb_data_entry['nonpolymer_entities'][0]
+            else:
+                components = {}
+            prim_cite = rcsb_data_entry.get('primary_citation', {})
+            if prim_cite:
+                references = [prim_cite.get('pdbx_database_id_PubMed', ''),
+                              prim_cite.get('title', ''),
+                              prim_cite.get('journal_abbrev', ''),
+                              prim_cite.get('rcsb_authors', [])[0],  # Show first author only
+                              str(prim_cite.get('year', 'TBD'))]
+            else:
+                references = []
+
+            for pe in rcsb_data_entry['polymer_entities']:
+                pe_seq = pe['one_letter_code_sequence']
+                seq_idens, exact_mats, evals = self.pdb_util._compute_sequence_identity(
+                                                input_seq, pe_seq, evalue_threshold=evalue_cutoff)
+                seq_iden, e_mat, e_val = self._filter_by_identity(seq_idens, evals, identity_cutoff)
+                # assemble the data per downstream app requirements
+                if seq_iden >= identity_cutoff:
+                    rcsb_hits.append({
+                        'rcsbid': '_'.join([rcsb_id, pe['id']]),
+                        'name': pe.get('uniprot_name', []),
+                        'pdbx_sequence': pe_seq,
+                        'rcsbec': pe.get('ec_numbers', []),
+                        'uniprotec': pe.get('uniprot_ec', []),
+                        'identity': seq_iden,
+                        'uniprotID': pe.get('uniprotID', []),
+                        'pdbx_strand_id': pe.get('pdbx_strand_id', []),
+                        'taxonomy': pe.get('taxonomy', []),
+                        'evalue': e_val,
+                        'method': method,
+                        'components': components,
+                        'references': references
+                    })
+        return rcsb_hits
+
     def _get_graphql_data(self, id_list=[]):
         """
             _get_graphql_data - Query the RCSB GraphQL API, fetch data from GraphQL return
@@ -556,64 +696,44 @@ class RCSBUtil:
 
         output_obj = {}
         output_obj['total_count'] = len(id_list)
-        output_obj['id_list'] = id_list
+        output_obj['id_list'] = []
 
         for idChunk in idListChunks:
             retData = self._queryGraphql(id_list=idChunk)
-            if retData.get('data', None):
-                for key, val in self._formatRCSBJson(retData).items():
+            if retData.get('data', None) and retData['data'].get('entries', None):
+                for key, val in self._formatRCSBJson(retData['data']['entries']).items():
                     output_obj[key] = val
+                output_obj['id_list'].extend(idChunk)
             else:
                 logging.info("_get_graphql_data by chunks ERROR ".center(30, "-"))
 
         return output_obj
 
-    def _fill_list_to(self, list_name, full_count):
+    def _get_graphql_data_with_cutoffs(self, id_list, input_seq, evalue_cutoff, identity_cutoff):
         """
-            _fill_list_to: Given a list by list_name, if it has fewer than full_count element,
-                          fill it with the last element in the orginal list. Return the full list.
+            _get_graphql_data_with_cutoffs - Query the RCSB GraphQL API, fetch data from GraphQL,
+                                             then compute using specified Evalue and filter with
+                                             sequence similarity threshold; return formatted data
         """
-        list_count = len(list_name)
-        last_item = list_name[list_count - 1]
-        if list_count < full_count:
-            for i in range(list_count, full_count):
-                list_name[i] = last_item
-        return list_name
+        logging.info(f'Fetch and filter GraphQL data for the structures of {len(id_list)} rcsd_ids')
+        # Split large id list into multiple 100 id lists to avoid server connection time-out problem
+        chunkSize = 100
+        idListChunks = [id_list[i:i+chunkSize] for i in range(0, len(id_list), chunkSize)]
 
-    def _validate_import_rcsb_params(self, params):
-        """
-            _validate_import_rcsb_params:
-                validates input params to import_rcsb_structures
-        """
-        # check for required parameters
-        for p in ['workspace_name', 'rcsb_ids', 'structures_name', 'exts',
-                  'narrative_ids', 'genome_names', 'feature_ids', 'is_models']:
-            if p not in params:
-                raise ValueError(f'Parameter "{p}" is required, but missing!')
+        output_obj = {}
+        output_obj['id_list'] = []
+        output_obj[input_seq] = []
+        for idChunk in idListChunks:
+            retData = self._queryGraphql(id_list=idChunk)
+            if retData.get('data', None):
+                blast_hits = self._blastRCSBSequence(input_seq, retData,
+                                                     evalue_cutoff, identity_cutoff)
+                output_obj['id_list'].extend(idChunk)
+                output_obj[input_seq].extend(blast_hits)
+            else:
+                logging.info("_get_graphql_data_with_cutoffs by chunks ERROR ".center(30, "-"))
 
-        # Only extensions ‘.cif’ or ‘.pdb’ are valid
-        accepted_extensions = ['.pdb', '.cif']
-        rcsb_count = len(params.get('rcsb_ids'))
-        params['skipped_rcsb_ids'] = list()
-        for i in range(rcsb_count):
-            if params['exts'][i] not in accepted_extensions:
-                logging.info(f"File extension {params['exts'][i]} is not supported at this time, "
-                             f"therefore structure {params['rcsb_ids'][i]} will not be imported.")
-                params['rcsb_ids'].pop(i)
-                params['narrative_ids'].pop(i)
-                params['genome_names'].pop(i)
-                params['feature_ids'].pop(i)
-                params['is_models'].pop(i)
-                params['exts'].pop(i)
-                params['skipped_rcsb_ids'].append(params['rcsb_ids'][i])
-
-        params['narrative_ids'] = self._fill_list_to(params['narrative_ids'], rcsb_count)
-        params['genome_names'] = self._fill_list_to(params['genome_names'], rcsb_count)
-        params['feature_ids'] = self._fill_list_to(params['feature_ids'], rcsb_count)
-        params['is_models'] = self._fill_list_to(params['is_models'], rcsb_count)
-        params['exts'] = self._fill_list_to(params['exts'], rcsb_count)
-
-        return params
+        return output_obj
 
     def _rcsb_file_download(self, rcsb_id, ext='pdb', zp='gz'):
         """
@@ -645,40 +765,64 @@ class RCSBUtil:
             print(e)
             return ''
 
-    def _build_import_params(self, params):
+    def _validate_import_rcsb_params(self, params):
         """
-            _build_import_params: For the structure file given by file_path, return the params with
-                                  attribute 'file_paths' defined. Now the params has the following
-                                  data structure:
-                                  {
-                                      'file_paths': file_pasths
-                                      'file_extensions': extensions,
-                                      'narrative_ids': narrative_ids,
-                                      'genome_names': genome_names,
-                                      'feature_ids': feature_ids,
-                                      'is_models': is_models
-                                  }
+            _validate_import_rcsb_params:
+                1) validates input params to import_rcsb_structures and remove unsupported rcsb_id's
+                2) For the structure ids given by params['rcsb_ids'], return the
+                params with rcsb_infos having the attribute 'file_path' defined.
+                Now the params has the following data structure:
+                    {
+                      'rcsb_infos': [{
+                          'file_path': file_path,
+                          'file_extension': extension,
+                          'narrative_id': narrative_id,
+                          'genome_name': genome_name,
+                          'feature_id': feature_id,
+                          'is_model': is_model
+                      }, ...],
+                      'structures_name': structures_name,
+                      'workspace_name': workspace_name
+                    }
             Note: If the file download failed, the corresponding structure entry is removed
                   from params and will be skipped from importing.
         """
-        params = self._validate_import_rcsb_params(params)
+        # check for required parameters
+        for p in ['workspace_name', 'rcsb_infos', 'structures_name']:
+            if p not in params:
+                raise ValueError(f'Parameter "{p}" is required, but missing!')
 
-        params['file_paths'] = []
-        for i in range(len(params.get('rcsb_ids'))):
-            file_path = self._rcsb_file_download(params['rcsb_ids'][i], params['exts'][i])
+        # Only extensions ‘.cif’ or ‘.pdb’ are valid
+        accepted_extensions = ['.pdb', '.cif']
+        rcsb_infos = params.get('rcsb_infos', None)
+        params['skipped_rcsb_ids'] = list()
+
+        rinfos_deepcopy = deepcopy(rcsb_infos)
+        for rinfo in rinfos_deepcopy:
+            ext = rinfo.get('extension', '')
+            if ext:
+                if ext.find('.') == -1:
+                    ext = '.' + ext
+
+            if ext not in accepted_extensions:
+                logging.info(f"File extension {ext} is not supported at this time, "
+                             f"therefore structure {rinfo['rcsb_id']} will not be imported.")
+                rcsb_infos.remove(rinfo)
+                params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
+                continue
+
+        rinfos_deepcopy = deepcopy(rcsb_infos)
+        for rinfo in rinfos_deepcopy:
+            file_path = self._rcsb_file_download(rinfo['rcsb_id'], rinfo['extension'])
             if file_path:
-                params['file_paths'][i] = file_path
+                rinfo['file_path'] = file_path
             else:
-                logging.info(f"File download for structure {params['rcsd_ids'][i]} failed, "
-                             f"therefore structure {params['rcsb_ids'][i]} will not be imported.")
-                params['rcsb_ids'].pop(i)
-                params['narrative_ids'].pop(i)
-                params['genome_names'].pop(i)
-                params['feature_ids'].pop(i)
-                params['is_models'].pop(i)
-                params['exts'].pop(i)
-                params['skipped_rcsb_ids'].append(params['rcsb_ids'][i])
+                logging.info(f"File download for structure {rinfo['rcsb_id']} failed, "
+                             f"therefore structure {rinfo['rcsb_id']} will not be imported.")
+                rcsb_infos.remove(rinfo)
+                params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
 
+        params['rcsb_infos'] = rcsb_infos
         return params
 
     def _write_struct_info(self, struct_info):
@@ -696,8 +840,8 @@ class RCSBUtil:
             tbody_html += '<tr>'
 
             expl_method = '<br>'.join(pdb_struct.get('method', []))
-            #prim_cite = pdb_struct.get('primary_citation', {})
             """
+            prim_cite = pdb_struct.get('primary_citation', {})
             if prim_cite:
                 prim_cite_str = '<br>'.join([prim_cite.get('title', ''),
                                              ','.join(prim_cite.get('rcsb_authors', [])),
@@ -714,23 +858,22 @@ class RCSBUtil:
             for poly_entity in pdb_struct['polymer_entities']:
                 if poly_entity.get('one_letter_code_sequence', ''):
                     prot_sequences.append(poly_entity['one_letter_code_sequence'])
-                if poly_entity.get('pdb_chain_ids', None):
-                    pdb_chains.append('[' + ','.join(poly_entity['pdb_chain_ids']) +']')
+                if poly_entity.get('pdbx_strand_id', None):
+                    pdb_chains.append('[' + ','.join(poly_entity['pdbx_strand_id']) + ']')
                 if poly_entity.get('source_organism', None):
                     for srcg in poly_entity['source_organism']:
                         sci_name = srcg.get('ncbi_scientific_name', '')
                         ncbi_num = f"({srcg.get('ncbi_taxonomy_id', '')})"
                         if sci_name and ncbi_num:
                             src_organisms.append(''.join([sci_name, ncbi_num]))
-                if (poly_entity.get('identifiers', None) and
-                        poly_entity['identifiers'].get('reference_sequence_identifiers', None)):
-                    for poly_en in poly_entity['identifiers']['reference_sequence_identifiers']:
+                if poly_entity.get('ref_sequence_ids', None):
+                    for poly_en in poly_entity['ref_sequence_ids']:
                         db_acc = f"({poly_en.get('database_accession', '')})"
                         db_nm = poly_en.get('database_name', '')
                         if db_acc and db_nm:
                             src_dbs.append(''.join([db_nm, db_acc]))
                 if poly_entity.get('ec_numbers', None):
-                    ec_numbers.append('[' + ','.join(poly_entity['ec_numbers']) +']')
+                    ec_numbers.append('[' + ','.join(poly_entity['ec_numbers']) + ']')
 
             inchis = []
             inchikeys = []
@@ -864,9 +1007,9 @@ class RCSBUtil:
         except Exception as e:
             raise e
 
-    def querey_structure_info(self, params):
+    def querey_structure_anno(self, params, create_report=0):
         """
-            query_structure_info: with given constraints, query structure info from RCSB database
+            query_structure_anno: with given constraints, query structure info from RCSB database
         """
         # logging.info(f'query_structure_info with params: {params}')
 
@@ -895,58 +1038,79 @@ class RCSBUtil:
             logging.info(f"total_count={struct_info.get('total_count', 0)}")
             returnVal['rcsb_ids'] = struct_info.get('id_list', [])
             returnVal['rcsb_scores'] = id_score_dict
-            (query_json, ids_scores) = self._write_queryNresults(rcsb_output, output_directory)
-            report_output = self._generate_query_report(workspace_name, struct_info, rcsb_output,
-                                                        output_directory, query_json, ids_scores)
-            returnVal.update(report_output)
+            if create_report:
+                (query_json, ids_scores) = self._write_queryNresults(rcsb_output, output_directory)
+                report_output = self._generate_query_report(workspace_name, struct_info,
+                                                            rcsb_output, output_directory,
+                                                            query_json, ids_scores)
+                returnVal.update(report_output)
+            else:
+                returnVal['report_ref'] = None
+                returnVal['report_name'] = None
+        return returnVal
+
+    def querey_structure_info(self, params):
+        """
+            query_structure_info: with given constraints, query structure info from RCSB database
+        """
+        # logging.info(f'query_structure_info with params: {params}')
+        params = self._validate_rcsb_seqquery_params(params)
+        returnVal = {}
+
+        # search by sequence one-by-one
+        for input_seq in params['sequence_strings']:
+            rcsb_output = self._get_pdb_ids({'sequence': [input_seq]}, self.LOGICAL_AND)
+            idlist = rcsb_output.get('id_list', [])
+            returnVal[input_seq] = []
+            if idlist:
+                search_ret = self._get_graphql_data_with_cutoffs(idlist, input_seq,
+                                                                 self.EVALUE_CUTOFF,
+                                                                 self.IDENTITY_CUTOFF)
+                logging.info(f'Retrieved structure information for {input_seq}')
+                returnVal[input_seq] = search_ret[input_seq]
+
         return returnVal
 
     def import_rcsbs(self, params, workspace_name):
+        """
+            import_rcsbs: uploading the rcsb structures
+        """
         pdb_objects = list()
         pdb_infos = list()
         successful_ids = list()
         skipped_ids = params.get('skipped_rcsb_ids', list())
 
-        rcsb_ids = params['rcsb_ids']
+        rcsb_infos = params['rcsb_infos']
         # loop through the list of pdb_file_paths
-        for i in range(len(rcsb_ids)):
+        for rinfo in rcsb_infos:
             pdb_params = {}
-            rid = rcsb_ids[i]
-            file_path = params['file_paths'][i]
-            pdb = {
-                'file_path': file_path,
-                'file_extension':  params['exts'][i],
-                'structure_name': rid,
-                'narrative_id': params['narrative_ids'][i],
-                'genome_name': params['genome_names'][i],
-                'feature_id': params['feature_ids'][i],
-                'is_model': params['is_models'][i]
-            }
+            file_path = rinfo['file_path']
+            rid = rinfo['rcsb_id']
 
-            pdb_params['pdb_info'] = pdb
+            pdb_params['pdb_info'] = rinfo
             pdb_params['input_staging_file_path'] = None
             pdb_params['input_file_path'] = file_path
             pdb_params['input_shock_id'] = None
             pdb_params['workspace_name'] = workspace_name
             pdb_params['structure_name'] = rid
-            pdb_params['is_model'] = pdb['is_model']
+            pdb_params['is_model'] = rinfo['is_model']
 
-            if pdb['file_extension'] == 'pdb':
+            if 'pdb' in rinfo['file_extension']:
                 pdb_data, pdb_info = self.pdb_util.import_pdb_file(pdb_params)
                 if pdb_data:
                     pdb_objects.append(pdb_data)
                     pdb_infos.append(pdb_info)
                     successful_ids.append(file_path)
                 else:
-                    skipped_ids.append(file_path)
-            elif pdb['file_extension'] == '.cif':
+                    skipped_ids.append(rid)
+            elif 'cif' in rinfo['file_extension']:
                 cif_data, pdb_info = self.pdb_util.import_mmcif_file(pdb_params)
                 if cif_data:
                     pdb_objects.append(cif_data)
                     pdb_infos.append(pdb_info)
                     successful_ids.append(file_path)
                 else:
-                    skipped_ids.append(file_path)
+                    skipped_ids.append(rid)
 
         return pdb_objects, pdb_infos, successful_ids, skipped_ids
 
@@ -963,13 +1127,13 @@ class RCSBUtil:
                 report_name: name of generated report (if any)
                 report_ref: report reference (if any)
 
-            1. call _build_import_params to validate input params
-            2. download: call ?? the rcsb structure files one by one
-            3. upload: call ??
-            4. assemble the data for a ProteinStructures and save the data object
-            5. call PDBUtil.generate_batch_report to generate a report for batch_import_pdbs' result
+            1. call _validate_import_rcsb_params to validate input params and download
+               the rcsb structure files one by one
+            2. upload: call import_rcsbs()
+            3. assemble the data for a ProteinStructures and save the data object
+            4. call PDBUtil.saveStructures_createReport to generate a report for batch_import_pdbs'.
         """
-        params = self._build_import_params(params)
+        params = self._validate_import_rcsb_params(params)
 
         workspace_name = params.get('workspace_name', '')
         structures_name = params.get('structures_name', '')

@@ -74,12 +74,10 @@
         "optional" : false,
         "advanced" : false,
         "allow_multiple" : false,
-        "default_values" : [ "0.1" ],
+        "default_values" : [ "1e-10" ],
         "field_type" : "text",
         "text_options": {
-           "validate_as" : "float",
-           "min_float" : 0.1,
-           "max_float" : 1
+           "validate_as" : "text"
          }
       },
       {
@@ -91,7 +89,7 @@
         "field_type" : "text",
         "text_options" : {
            "validate_as" : "float",
-           "min_float" : 0.75,
+           "min_float" : 0.50,
            "max_float" : 1.0
         }
       }
@@ -100,7 +98,7 @@
       "service-mapping" : {
         "url" : "",
         "name" : "ProteinStructureUtils",
-        "method" : "query_rcsb_structures",
+        "method" : "query_rcsb_annotations",
         "input_mapping" : [
           {
             "narrative_system_variable": "workspace",

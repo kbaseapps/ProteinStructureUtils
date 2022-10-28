@@ -36,23 +36,30 @@ module ProteinStructureUtils {
   /* batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files*/
   funcdef batch_import_pdbs_from_metafile (BatchPDBImportParams params) returns (BatchPDBImportOutput result) authentication required;
 
+  /* The information required by the importing app
+    rcsb_id: rcsb structure id
+    extension: file extension for the structure ('pdb' or 'cif')
+    narrative_id: a KBase narrative id
+    genome_name: a KBase genome name in the respective narrative of narrative_id
+    feature_id: a KBase feature id in the respective narrative of narrative_id
+    is_model: a value of 0 or 1 to indicate the structure is exprimental or computational
+  */
+  typedef structure {
+      string rcsb_id;
+      string extension;
+      string narrative_id;
+      string genome_name;
+      string feature_id;
+      boolean is_model;
+  } RCSBInfoStruct;
+
   /* Input/output of the import_rcsb_structures function
-    rcsb_ids: a list of rcsb structure id's
-    exts: a list of rcsb structure file extensions ('pdb' or 'cif')
-    narrative_ids: a list of KBase narrative ids
-    genome_names: a list of KBase genome names in the respective narratives of narrative_ids
-    feature_ids: a list of KBase feature ids in the respective narratives of narrative_ids
-    is_models: a list of 0s and/or 1s to indicate the structure is exprimental or computational
+    rcsb_infos: a list of RCSBInfoStruct's
     structures_name: Proteinstructures object name
     workspace_name: workspace name for object to be saved to
   */
   typedef structure {
-      list<string> rcsb_ids;
-      list<string> exts;
-      list<string> narrative_ids;
-      list<string> genome_names;
-      list<string> feature_ids;
-      list<boolean> is_models;
+      list<RCSBInfoStruct> rcsb_infos;
       string structures_name;
       workspace_name workspace_name;
   } ImportRCSBParams;
@@ -78,7 +85,7 @@ module ProteinStructureUtils {
 
   funcdef export_pdb_structures (ExportParams params) returns (ExportStructOutput result) authentication required;
 
-  /* Input/output of the query_rcsb_structures function
+  /* Input/output of the query_rcsb_annotations function
     sequence_strings: a list of protein sequences
     uniprot_ids: a list of uniprot ids
     ec_numbers: a list of ec numbers
@@ -99,14 +106,34 @@ module ProteinStructureUtils {
       float identity_cutoff;
       boolean logical_and;
       workspace_name workspace_name;
-  } QueryRCSBStructsParams;
+  } QueryRCSBAnnotationsParams;
 
   typedef structure {
       list<string> rcsb_ids;
       UnspecifiedObject rcsb_scores;
       string report_name;
       string report_ref;
+  } QueryRCSBAnnotationsOutput;
+
+  funcdef query_rcsb_annotations(QueryRCSBAnnotationsParams params) returns (QueryRCSBAnnotationsOutput result) authentication required;
+
+  /* Input/output of the query_rcsb_structures function
+    sequence_strings: a list of protein sequences
+    evalue_cutoff: threshold of homology search
+    identity_cutoff: threshold for sequence identity match
+    workspace_name: workspace name for objects to be saved to
+    @optional evalue_cutoff identity_cutoff
+  */
+  typedef structure {
+      list<string> sequence_strings;
+      float evalue_cutoff;
+      float identity_cutoff;
+      workspace_name workspace_name;
+  } QueryRCSBStructsParams;
+
+  typedef structure {
+      UnspecifiedObject rcsb_hits;
   } QueryRCSBStructsOutput;
 
-  funcdef query_rcsb_structures (QueryRCSBStructsParams params) returns (QueryRCSBStructsOutput result) authentication required;
+  funcdef query_rcsb_structures(QueryRCSBStructsParams params) returns (QueryRCSBStructsOutput result) authentication required;
 };

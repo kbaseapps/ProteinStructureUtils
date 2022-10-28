@@ -214,15 +214,19 @@ class PDBUtil:
         finally:
             return mmcif_data, pp_no, params
 
-    def _match_features(self, params, protein_data):
+    def _match_features(self, params, protein_data, identity_threshold=None):
         """
             _match_features: match the protein_translation in feature_id with chain sequences in
                              protein_data and compute the seq_identity and determine the exact_match
             example (in appdev):
-                    genome_obj = '57196/6/1', genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome'
+                    genome_obj = '57196/6/1',
+                    genome_name = 'Synthetic_bacterium_JCVI_Syn3.0_genome',
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
+        if not identity_threshold:
+            identity_threshold = self.B_IDENTITY_THRESH
+
         pdb_info = params.get('pdb_info', None)
         if pdb_info:
             kb_feature_type = ''
@@ -257,14 +261,15 @@ class PDBUtil:
                 pdb_chain_ids = []
                 pdb_model_ids = []
                 pdb_seq_idens = []
+                pdb_seq_evals = []
                 pdb_exact_matches = []
                 for prot in protein_data:
-                    seq_idens, seq_mats = self._compute_sequence_identity(kb_feature_seq,
+                    seq_idens, seq_mats, evals = self._compute_sequence_identity(kb_feature_seq,
                                                                           prot.get('sequence', ''))
                     if seq_idens:
                         seq_idens.sort()
                         max_iden = seq_idens.pop()
-                        if max_iden >= self.B_IDENTITY_THRESH:  # get the good matches
+                        if max_iden >= identity_threshold:  # get the good matches
                             prot['seq_identity'] = max_iden
                             prot['exact_match'] = 1 if max_iden > 0.99 else 0
                             prot['genome_ref'] = gn_ref
@@ -273,7 +278,9 @@ class PDBUtil:
                             pdb_chain_ids.append(f"Model {prot['model_id']+1}.Chain {prot['chain_id']}")
                             pdb_model_ids.append(str(prot['model_id']))
                             pdb_seq_idens.append(f"{round(prot['seq_identity']*100, 2)}%")
+                            pdb_seq_evals.append(evals['Eval_' + str(max_iden)])
                             pdb_exact_matches.append(str(prot['exact_match']))
+
                 if pdb_seq_idens:
                     pdb_info['sequence_identities'] = ','.join(pdb_seq_idens)
                 if pdb_chain_ids:
@@ -289,11 +296,15 @@ class PDBUtil:
 
         return protein_data, params
 
-    def _compute_sequence_identity(self, seq1, seq2):
+    def _compute_sequence_identity(self, seq1, seq2, evalue_threshold=None):
         """
             _compute_sequence_identity: Given two input sequences, do a blast identity check and
-                                        then compute and return the matching percentage.
+                                        then compute and return a list of identity percentages
+                                        and a list of exact matches
         """
+        if not evalue_threshold:
+            evalue_threshold = self.E_VALUE_THRESH
+
         # Create two sequence files
         Seq1 = SeqRecord(Seq(seq1), id="query_seq")
         Seq2 = SeqRecord(Seq(seq2), id="subject_seq")
@@ -323,6 +334,7 @@ class PDBUtil:
         # Run BLASTp and parse the output as XML and then parse the xml file for identity matches
         exact_matches = []
         idens = []
+        evals = {}
         try:
             p = subprocess.Popen(blastp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                  universal_newlines=True)
@@ -349,7 +361,7 @@ class PDBUtil:
                     logging.info(f'query: {blast_record.query[:100]}')
                     for alignment in blast_record.alignments:
                         for hsp in alignment.hsps:
-                            if hsp.expect < self.E_VALUE_THRESH:
+                            if hsp.expect < evalue_threshold:
                                 logging.info('****Alignment****')
                                 logging.info(f'sequence: {alignment.title}')
                                 logging.info(f'length: {alignment.length}')
@@ -362,9 +374,10 @@ class PDBUtil:
                                 iden = round(hsp.identities/hsp.positives, 6)
                                 logging.info(f'identity={iden}')
                                 idens.append(iden)
+                                evals['Eval_' + str(iden)] = hsp.expect
                                 if hsp.positives == hsp.identities:
                                     exact_matches.append(alignment.title[:100])
-        return idens, exact_matches
+        return idens, exact_matches, evals
 
     def _get_genome_ref_features(self, narr_id, genome_name):
         """

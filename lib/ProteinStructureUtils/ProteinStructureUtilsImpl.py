@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "835a6e397b8078d13d1076b2665bb35b5531a21f"
+    GIT_COMMIT_HASH = "35a63b66e68552827c1bd183a4a0915ed7b65b74"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -80,23 +80,23 @@ class ProteinStructureUtils:
     def import_rcsb_structures(self, ctx, params):
         """
         :param params: instance of type "ImportRCSBParams" (Input/output of
-           the import_rcsb_structures function rcsb_ids: a list of rcsb
-           structure id's exts: a list of rcsb structure file extensions
-           ('pdb' or 'cif') narrative_ids: a list of KBase narrative ids
-           genome_names: a list of KBase genome names in the respective
-           narratives of narrative_ids feature_ids: a list of KBase feature
-           ids in the respective narratives of narrative_ids is_models: a
-           list of 0s and/or 1s to indicate the structure is exprimental or
-           computational structures_name: Proteinstructures object name
+           the import_rcsb_structures function rcsb_infos: a list of
+           RCSBInfoStruct's structures_name: Proteinstructures object name
            workspace_name: workspace name for object to be saved to) ->
-           structure: parameter "rcsb_ids" of list of String, parameter
-           "exts" of list of String, parameter "narrative_ids" of list of
-           String, parameter "genome_names" of list of String, parameter
-           "feature_ids" of list of String, parameter "is_models" of list of
-           type "boolean" (A boolean - 0 for false, 1 for true. @range (0,
-           1)), parameter "structures_name" of String, parameter
-           "workspace_name" of type "workspace_name" (workspace name of the
-           object)
+           structure: parameter "rcsb_infos" of list of type "RCSBInfoStruct"
+           (The information required by the importing app rcsb_id: rcsb
+           structure id extension: file extension for the structure ('pdb' or
+           'cif') narrative_id: a KBase narrative id genome_name: a KBase
+           genome name in the respective narrative of narrative_id
+           feature_id: a KBase feature id in the respective narrative of
+           narrative_id is_model: a value of 0 or 1 to indicate the structure
+           is exprimental or computational) -> structure: parameter "rcsb_id"
+           of String, parameter "extension" of String, parameter
+           "narrative_id" of String, parameter "genome_name" of String,
+           parameter "feature_id" of String, parameter "is_model" of type
+           "boolean" (A boolean - 0 for false, 1 for true. @range (0, 1)),
+           parameter "structures_name" of String, parameter "workspace_name"
+           of type "workspace_name" (workspace name of the object)
         :returns: instance of type "ImportRCSBStructOutput" -> structure:
            parameter "structures_ref" of String, parameter "report_name" of
            String, parameter "report_ref" of String
@@ -142,10 +142,10 @@ class ProteinStructureUtils:
         # return the results
         return [result]
 
-    def query_rcsb_structures(self, ctx, params):
+    def query_rcsb_annotations(self, ctx, params):
         """
-        :param params: instance of type "QueryRCSBStructsParams"
-           (Input/output of the query_rcsb_structures function
+        :param params: instance of type "QueryRCSBAnnotationsParams"
+           (Input/output of the query_rcsb_annotations function
            sequence_strings: a list of protein sequences uniprot_ids: a list
            of uniprot ids ec_numbers: a list of ec numbers inchis: a list of
            InChI strings smiles: a list of SMILES strings evalue_cutoff:
@@ -161,10 +161,41 @@ class ProteinStructureUtils:
            "boolean" (A boolean - 0 for false, 1 for true. @range (0, 1)),
            parameter "workspace_name" of type "workspace_name" (workspace
            name of the object)
-        :returns: instance of type "QueryRCSBStructsOutput" -> structure:
+        :returns: instance of type "QueryRCSBAnnotationsOutput" -> structure:
            parameter "rcsb_ids" of list of String, parameter "rcsb_scores" of
            unspecified object, parameter "report_name" of String, parameter
            "report_ref" of String
+        """
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN query_rcsb_annotations
+        logging.info(f'Starting query_rcsb_annotations with params:\n{params}.')
+        self.config['USER_ID'] = ctx['user_id']
+        self.rcsb_util = RCSBUtil(self.config)
+        result = self.rcsb_util.querey_structure_anno(params)
+        #END query_rcsb_annotations
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method query_rcsb_annotations return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def query_rcsb_structures(self, ctx, params):
+        """
+        :param params: instance of type "QueryRCSBStructsParams"
+           (Input/output of the query_rcsb_structures function
+           sequence_strings: a list of protein sequences evalue_cutoff:
+           threshold of homology search identity_cutoff: threshold for
+           sequence identity match workspace_name: workspace name for objects
+           to be saved to @optional evalue_cutoff identity_cutoff) ->
+           structure: parameter "sequence_strings" of list of String,
+           parameter "evalue_cutoff" of Double, parameter "identity_cutoff"
+           of Double, parameter "workspace_name" of type "workspace_name"
+           (workspace name of the object)
+        :returns: instance of type "QueryRCSBStructsOutput" -> structure:
+           parameter "rcsb_hits" of unspecified object
         """
         # ctx is the context object
         # return variables are: result

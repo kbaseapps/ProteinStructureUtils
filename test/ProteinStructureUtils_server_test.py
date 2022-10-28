@@ -482,31 +482,44 @@ class ProteinStructureUtilsTest(unittest.TestCase):
     def test_compute_sequence_identity(self):
         seq1 = 'TGTGACTA'
         seq2 = 'CATGGTCA'
-        idens, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(idens, [])
         self.assertTrue(not exact_mat)
 
         seq1 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
         seq2 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        idens, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(idens, [1.0])
         self.assertTrue(exact_mat)
 
         seq1 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNL'
         seq2 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        idens, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        self.assertEqual(idens, [1.0])
+        self.assertTrue(exact_mat)
+
+        seq3 = 'SKSHSEAGSAFIQTQQLHAAMADTFLEHMCRLDIDSAPITARNTGIICTIGPASRSVETLKEMIKSGMNVARMNFSHGTHE'
+        seq4 = 'SKSHSEAGSAFIQTQQLHAAMADTFLEHMCRLDIDSAPITARNTGIICTIGPASRSVETLKEMIKSGMNVARMNFSHGTHEYHAETIKNVRTATESFASDPILYRPVAVALDTKGPEIRTGLIKGSGTAEVELKKGATLKITLDNAYMEKCDENILWLDYKNICKVVDVGSKVYVDDGLISLQVKQKGPDFLVTEVENGGFLGSKKGVNLPGAAVDLPAVSEKDIQDLKFGVEQDVDMVFASFIRKAADVHEVRKILGEKGKNIKIISKIENHEGVRRFDEILEASDGIMVARGDLGIEIPAEKVFLAQKMIIGRCNRAGKPVICATQMLESMIKKPRPTRAEGSDVANAVLDGADCIMLSGETAKGDYPLEAVRMQHLIAREAEAAMFHRKLFEELARSSSHSTDLMEAMAMGSVEASYKCLAAALIVLTESGRSAHQVARYRPRAPIIAVTRNHQTARQAHLYRGIFPVVCKDPVQEAWAEDVDLRVNLAMNVGKARGFFKKGDVVIVLTGWRPGSGFTNTMRVVPVP'
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(seq3, seq4)
         self.assertEqual(idens, [1.0])
         self.assertTrue(exact_mat)
 
         seq1 = 'SNDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
         seq2 = 'NDIYFNFQRFNETNLILQRDASVSSSGQLRLTNLN'
-        idens, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(seq1, seq2)
         self.assertEqual(idens, [1.0])
         self.assertTrue(exact_mat)
 
         seq1 = 'FQTWEEFSRAAEKLYLADPMKVRVVLKYRHVDGNLCIKVTDDLVCLVYRTDQAQDVKKIEKF'
         seq2 = 'FQTWEEFSRAEKLYLADPMKVRVVLRYRHVDGNLCIKVTDDLICLVYRTDQAQDVKKIEKF'
-        idens, exact_mat = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(seq1, seq2)
+        expected_iden = 0.967213
+        self.assertEqual(idens, [expected_iden])
+        self.assertTrue(not exact_mat)
+
+        # Change the Evalue and identity threshold
+        idens, exact_mat, evals = self.pdb_util._compute_sequence_identity(
+                                                            seq1, seq2, evalue_threshold=1e-10)
         expected_iden = 0.967213
         self.assertEqual(idens, [expected_iden])
         self.assertTrue(not exact_mat)
@@ -938,7 +951,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_ids'])
 
-    #@unittest.skip('test_dfu_save_proteinstructure')
+    @unittest.skip('test_dfu_save_proteinstructure')
     def test_dfu_save_proteinstructure(self):
         """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
 

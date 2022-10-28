@@ -7,7 +7,6 @@ MAINTAINER KBase Developer
 # install line here, a git checkout to download code, or run any other
 # installation scripts.
 
-# RUN apt-get update
 RUN pip install --upgrade pip \
     && pip install biopython --upgrade \
     && pip install --upgrade requests \
@@ -20,7 +19,13 @@ RUN pip install --upgrade pip \
 
 RUN apt-get update \
     && apt-get -y install wget \
-    && apt-get -y install libgomp1
+    && apt-get -y install libgomp1 \
+    && apt-get install -y gcc
+#RUN rm -rf /miniconda/lib/python3.6/site-packages/numpy
+#RUN rm -rf /miniconda/lib/python3.6/site-packages/ruamel*
+#RUN pip install networkx
+#RUN pip install --use-deprecated=legacy-resolver git+https://github.com/ModelSEED/ModelSEEDpy.git@28de76a315c607944c992ce21984f303b2cf4e4b
+
 
 ENV BLAST_VERSION='2.13.0'
 
