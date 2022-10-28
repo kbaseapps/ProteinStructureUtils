@@ -1007,7 +1007,7 @@ class RCSBUtil:
         except Exception as e:
             raise e
 
-    def query_structure_info(self, params, create_report=0):
+    def query_structure_info(self, params, create_report=1):
         """
             query_structure_info: with given constraints, query structure info from RCSB database
         """
