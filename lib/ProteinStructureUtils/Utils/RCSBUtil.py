@@ -113,7 +113,7 @@ class RCSBUtil:
     def _validate_rcsb_seqquery_params(self, params):
         """
             _validate_rcsb_seqquery_params:
-                validates input params to query_structure_info
+                validates input params to query_structure_anno
         """
         # check for required parameters
         for p in ['workspace_name', 'sequence_strings']:
@@ -1007,14 +1007,14 @@ class RCSBUtil:
         except Exception as e:
             raise e
 
-    def querey_structure_anno(self, params, create_report=0):
+    def query_structure_info(self, params, create_report=0):
         """
-            query_structure_anno: with given constraints, query structure info from RCSB database
+            query_structure_info: with given constraints, query structure info from RCSB database
         """
         # logging.info(f'query_structure_info with params: {params}')
-
         # fetch the query filters and assemble them into a json object
         inputJsonObj, workspace_name = self._validate_rcsb_query_params(params)
+
         idlist = []
         struct_info = {}
         returnVal = {}
@@ -1049,11 +1049,11 @@ class RCSBUtil:
                 returnVal['report_name'] = None
         return returnVal
 
-    def querey_structure_info(self, params):
+    def query_structure_anno(self, params):
         """
-            query_structure_info: with given constraints, query structure info from RCSB database
+            query_structure_anno: with given constraints, query structure info from RCSB database
         """
-        # logging.info(f'query_structure_info with params: {params}')
+        # logging.info(f'query_structure_anno with params: {params}')
         params = self._validate_rcsb_seqquery_params(params)
         returnVal = {}
 

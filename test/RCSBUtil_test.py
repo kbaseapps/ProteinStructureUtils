@@ -388,7 +388,7 @@ class RCSBUtilsTest(unittest.TestCase):
             # self.assertCountEqual(ret_list3, exp_list1)
             self.assertGreaterEqual(set(ret_list3), set(exp_list1))
             self.assertCountEqual(score_dict3.keys(), ret_list3)
-            print(score_dict3)
+            #print(score_dict3)
 
     #@unittest.skip('test_run_rcsb_search_seq_ec_uniprot')
     def test_run_rcsb_search_seq_ec_uniprot(self):
@@ -603,7 +603,6 @@ class RCSBUtilsTest(unittest.TestCase):
         gql_itms = self.rcsb_util._get_graphql_data_with_cutoffs(id_list, in_seq, eval, iden)
         self.assertIn('id_list', gql_itms)
         self.assertIn(in_seq, gql_itms)
-        print(gql_itms)
 
     #@unittest.skip('test_write_struct_info')
     def test_write_struct_info(self):
@@ -612,8 +611,8 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertIn('1A0I', tbody_html)
         self.assertIn('1A49', tbody_html)
 
-    #@unittest.skip('test_querey_structure_anno')
-    def test_querey_structure_anno(self):
+    #@unittest.skip('test_query_structure_info')
+    def test_query_structure_info(self):
         params = {
             'workspace_name': self.wsName,
             'sequence_strings': self.inputJsonObj1['sequence'],
@@ -626,7 +625,7 @@ class RCSBUtilsTest(unittest.TestCase):
             'logical_and': 0
         }
 
-        struct_ret = self.rcsb_util.querey_structure_anno(params)
+        struct_ret = self.rcsb_util.query_structure_info(params)
         if struct_ret:
             rcsb_ids = struct_ret.get('rcsb_ids', [])
             print(f'Returned {len(rcsb_ids)} pdbs')
@@ -635,12 +634,12 @@ class RCSBUtilsTest(unittest.TestCase):
             self.assertIn('report_ref', struct_ret)
 
         params['logical_and'] = 1
-        struct_ret_and = self.rcsb_util.querey_structure_anno(params)
+        struct_ret_and = self.rcsb_util.query_structure_info(params)
         self.assertEqual(struct_ret_and.get('rcsb_ids', []), [])
 
     # Testing self.serviceImpl functions
-    #@unittest.skip('test_Impl_query_rcsb_annotations')
-    def test_Impl_query_rcsb_annotations(self):
+    #@unittest.skip('test_Impl_query_rcsb_structures')
+    def test_Impl_query_rcsb_structures(self):
         params = {
             'workspace_name': self.wsName,
             'sequence_strings': self.inputJsonObj1['sequence'],
@@ -652,13 +651,13 @@ class RCSBUtilsTest(unittest.TestCase):
             'identity_cutoff': 0.9,
             'logical_and': 0
         }
-        qry_ret = self.serviceImpl.query_rcsb_annotations(self.ctx, params)
+        qry_ret = self.serviceImpl.query_rcsb_structures(self.ctx, params)
         if qry_ret:
             self.assertCountEqual(qry_ret[0].keys(),
                                   ['rcsb_ids', 'rcsb_scores', 'report_ref', 'report_name'])
 
-    #@unittest.skip('test_Impl_query_rcsb_structures')
-    def test_Impl_query_rcsb_structures(self):
+    #@unittest.skip('test_Impl_query_rcsb_annotations')
+    def test_Impl_query_rcsb_annotations(self):
         params = {
             'workspace_name': self.wsName,
             'sequence_strings': self.inputJsonObj1['sequence'],
@@ -666,7 +665,7 @@ class RCSBUtilsTest(unittest.TestCase):
             'identity_cutoff': 0.999,
             'logical_and': 0
         }
-        qry_ret = self.serviceImpl.query_rcsb_structures(self.ctx, params)
+        qry_ret = self.serviceImpl.query_rcsb_annotations(self.ctx, params)
         if qry_ret:
             # print(qry_ret[0])
             self.assertCountEqual(qry_ret[0].keys(), params['sequence_strings'])

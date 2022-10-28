@@ -85,7 +85,7 @@ module ProteinStructureUtils {
 
   funcdef export_pdb_structures (ExportParams params) returns (ExportStructOutput result) authentication required;
 
-  /* Input/output of the query_rcsb_annotations function
+  /* Input/output of the query_rcsb_structures function
     sequence_strings: a list of protein sequences
     uniprot_ids: a list of uniprot ids
     ec_numbers: a list of ec numbers
@@ -106,18 +106,18 @@ module ProteinStructureUtils {
       float identity_cutoff;
       boolean logical_and;
       workspace_name workspace_name;
-  } QueryRCSBAnnotationsParams;
+  } QueryRCSBStructsParams;
 
   typedef structure {
       list<string> rcsb_ids;
       UnspecifiedObject rcsb_scores;
       string report_name;
       string report_ref;
-  } QueryRCSBAnnotationsOutput;
+  } QueryRCSBStructsOutput;
 
-  funcdef query_rcsb_annotations(QueryRCSBAnnotationsParams params) returns (QueryRCSBAnnotationsOutput result) authentication required;
+  funcdef query_rcsb_structures(QueryRCSBStructsParams params) returns (QueryRCSBStructsOutput result) authentication required;
 
-  /* Input/output of the query_rcsb_structures function
+  /* Input/output of the query_rcsb_annotations function
     sequence_strings: a list of protein sequences
     evalue_cutoff: threshold of homology search
     identity_cutoff: threshold for sequence identity match
@@ -129,11 +129,11 @@ module ProteinStructureUtils {
       float evalue_cutoff;
       float identity_cutoff;
       workspace_name workspace_name;
-  } QueryRCSBStructsParams;
+  } QueryRCSBAnnotationsParams;
 
   typedef structure {
       UnspecifiedObject rcsb_hits;
-  } QueryRCSBStructsOutput;
+  } QueryRCSBAnnotationsOutput;
 
-  funcdef query_rcsb_structures(QueryRCSBStructsParams params) returns (QueryRCSBStructsOutput result) authentication required;
+  funcdef query_rcsb_annotations(QueryRCSBAnnotationsParams params) returns (QueryRCSBAnnotationsOutput result) authentication required;
 };

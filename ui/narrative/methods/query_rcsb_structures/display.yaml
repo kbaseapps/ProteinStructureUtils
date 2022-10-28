@@ -1,7 +1,7 @@
 #
 # define display information
 #
-name     : Query RCSB databases for protein structure annotations
+name     : Query RCSB databases for protein structure structures
 subtitle : Given a json format query constraint, query RCSB databases for a list of protein structures
 tooltip  : Given a json format query constraint, query RCSB databases for a list of protein structures
 

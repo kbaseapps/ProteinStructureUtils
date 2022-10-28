@@ -98,7 +98,7 @@
       "service-mapping" : {
         "url" : "",
         "name" : "ProteinStructureUtils",
-        "method" : "query_rcsb_annotations",
+        "method" : "query_rcsb_structures",
         "input_mapping" : [
           {
             "narrative_system_variable": "workspace",

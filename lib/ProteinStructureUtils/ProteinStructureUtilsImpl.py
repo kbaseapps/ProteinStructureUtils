@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "35a63b66e68552827c1bd183a4a0915ed7b65b74"
+    GIT_COMMIT_HASH = "db4ea09d7f0b17e9354aebbcaf9237a9d17547f7"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -142,10 +142,10 @@ class ProteinStructureUtils:
         # return the results
         return [result]
 
-    def query_rcsb_annotations(self, ctx, params):
+    def query_rcsb_structures(self, ctx, params):
         """
-        :param params: instance of type "QueryRCSBAnnotationsParams"
-           (Input/output of the query_rcsb_annotations function
+        :param params: instance of type "QueryRCSBStructsParams"
+           (Input/output of the query_rcsb_structures function
            sequence_strings: a list of protein sequences uniprot_ids: a list
            of uniprot ids ec_numbers: a list of ec numbers inchis: a list of
            InChI strings smiles: a list of SMILES strings evalue_cutoff:
@@ -161,31 +161,31 @@ class ProteinStructureUtils:
            "boolean" (A boolean - 0 for false, 1 for true. @range (0, 1)),
            parameter "workspace_name" of type "workspace_name" (workspace
            name of the object)
-        :returns: instance of type "QueryRCSBAnnotationsOutput" -> structure:
+        :returns: instance of type "QueryRCSBStructsOutput" -> structure:
            parameter "rcsb_ids" of list of String, parameter "rcsb_scores" of
            unspecified object, parameter "report_name" of String, parameter
            "report_ref" of String
         """
         # ctx is the context object
         # return variables are: result
-        #BEGIN query_rcsb_annotations
-        logging.info(f'Starting query_rcsb_annotations with params:\n{params}.')
+        #BEGIN query_rcsb_structures
+        logging.info(f'Starting query_rcsb_structures with params:\n{params}.')
         self.config['USER_ID'] = ctx['user_id']
         self.rcsb_util = RCSBUtil(self.config)
-        result = self.rcsb_util.querey_structure_anno(params)
-        #END query_rcsb_annotations
+        result = self.rcsb_util.query_structure_info(params)
+        #END query_rcsb_structures
 
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
-            raise ValueError('Method query_rcsb_annotations return value ' +
+            raise ValueError('Method query_rcsb_structures return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
 
-    def query_rcsb_structures(self, ctx, params):
+    def query_rcsb_annotations(self, ctx, params):
         """
-        :param params: instance of type "QueryRCSBStructsParams"
-           (Input/output of the query_rcsb_structures function
+        :param params: instance of type "QueryRCSBAnnotationsParams"
+           (Input/output of the query_rcsb_annotations function
            sequence_strings: a list of protein sequences evalue_cutoff:
            threshold of homology search identity_cutoff: threshold for
            sequence identity match workspace_name: workspace name for objects
@@ -194,21 +194,21 @@ class ProteinStructureUtils:
            parameter "evalue_cutoff" of Double, parameter "identity_cutoff"
            of Double, parameter "workspace_name" of type "workspace_name"
            (workspace name of the object)
-        :returns: instance of type "QueryRCSBStructsOutput" -> structure:
+        :returns: instance of type "QueryRCSBAnnotationsOutput" -> structure:
            parameter "rcsb_hits" of unspecified object
         """
         # ctx is the context object
         # return variables are: result
-        #BEGIN query_rcsb_structures
-        logging.info(f'Starting query_rcsb_structures with params:\n{params}.')
+        #BEGIN query_rcsb_annotations
+        logging.info(f'Starting query_rcsb_annotations with params:\n{params}.')
         self.config['USER_ID'] = ctx['user_id']
         self.rcsb_util = RCSBUtil(self.config)
-        result = self.rcsb_util.querey_structure_info(params)
-        #END query_rcsb_structures
+        result = self.rcsb_util.query_structure_anno(params)
+        #END query_rcsb_annotations
 
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
-            raise ValueError('Method query_rcsb_structures return value ' +
+            raise ValueError('Method query_rcsb_annotations return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
