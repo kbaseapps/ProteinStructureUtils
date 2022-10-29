@@ -46,6 +46,7 @@ class RCSBUtil:
         self.ws_client = Workspace(config['workspace-url'])
         self.shock_url = config['shock-url']
         self.pdb_util = PDBUtil(config)
+        self.inchK_cpd_jsonObj = {}
 
         self.__baseDownloadUrl = 'https://files.rcsb.org/download'
         self.__baseSearchUrl = 'https://search.rcsb.org/rcsbsearch/v2/query'
@@ -629,6 +630,13 @@ class RCSBUtil:
 
         return seq_identity, exact_match, e_val
 
+    def _get_inchiK_cpd(self):
+        json_file_path = os.path.join(os.path.dirname(__file__), 'inchikey_cpd.json')
+
+        with open(json_file_path) as DATA:
+            inchK_cpd_jsonObj = json.load(DATA)
+        return inchK_cpd_jsonObj
+
     def _blastRCSBSequence(self, input_seq, gql_data, evalue_cutoff, identity_cutoff):
         """
             _blastRCSBSequence: Call self.pdb_util._compute_sequence_identity(seq1, seq2, Eval)
@@ -643,14 +651,18 @@ class RCSBUtil:
         rcsb_hits = []
         entries = gql_data['data']['entries']
         rcsb_data = self._formatRCSBJson(entries)
+        if not self.inchK_cpd_jsonObj:
+            self.inchK_cpd_jsonObj = self._get_inchiK_cpd()
+
         for entry in entries:
             rcsb_id = entry['rcsb_id']
             rcsb_data_entry = rcsb_data[rcsb_id]
             method = rcsb_data_entry.get('method', [])
+            components = []
             if rcsb_data_entry.get('nonpolymer_entities', []):
-                components = rcsb_data_entry['nonpolymer_entities'][0]
-            else:
-                components = {}
+                inchiKs = rcsb_data_entry['nonpolymer_entities'][0].get('InChIKey', [])
+                for inK in inchiKs:
+                    components.append(self.inchK_cpd_jsonObj.get(inK, {'InChIKey': inK}))
             prim_cite = rcsb_data_entry.get('primary_citation', {})
             if prim_cite:
                 references = [prim_cite.get('pdbx_database_id_PubMed', ''),
