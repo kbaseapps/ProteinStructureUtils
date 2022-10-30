@@ -100,6 +100,10 @@ class RCSBUtil:
                 }
                 nonpolymer_entities {
                   nonpolymer_comp {
+                    rcsb_chem_comp_synonyms {
+                      name
+                      provenance_source
+                    }
                     rcsb_chem_comp_descriptor {
                       InChI
                       InChIKey
@@ -455,7 +459,7 @@ class RCSBUtil:
     def _formatRCSBJson(self, entries):
         """
             _formatRCSBJson:Format rcsb GraphQL returned entries into one Json object per rcsb entry
-                            Return an unspecifiedObject as the following:
+                            with an unspecifiedObject as the following:
                     dic[entry['rcsb_id']] = {
                         'method': [entry['exptl'][0]['method']],
                         'primary_citation': entry[prim_cite]<references>,
@@ -472,9 +476,13 @@ class RCSBUtil:
                             'uniprot_ec': []
                         },...],
                         'nonpolymer_entities': [{
-                            'InChIKey': [...]
+                            'InChIKey': ...,
+                            'InChI': ...,
+                            'SMILES': ...,
+                            'pdb_ref_name': ...
                         },...]
                     }
+                    without keys of 'total_count' and 'id_list'.
         """
         if not entries:
             return {}
@@ -487,6 +495,7 @@ class RCSBUtil:
         ref_sequence_ids = 'reference_sequence_identifiers'
         uprot_prot = 'rcsb_uniprot_protein'
         chem_comp_desc = 'rcsb_chem_comp_descriptor'
+        chem_comp_synms = 'rcsb_chem_comp_synonyms'
 
         dic = {}
         for entry in entries:
@@ -544,19 +553,24 @@ class RCSBUtil:
                 dic[entry['rcsb_id']]['polymer_entities'].append(pe_dic)
 
             dic[entry['rcsb_id']]['nonpolymer_entities'] = []
-            if entry.get('nonpolymer_entities', None):
-                descriptorDic = {}
-                for npe in entry['nonpolymer_entities']:
-                    if (npe.get('nonpolymer_comp', None) and
-                       npe['nonpolymer_comp'].get(chem_comp_desc, None)):
-                        # for desType in ('InChI', 'InChIKey', 'SMILES'):
-                        if npe['nonpolymer_comp'][chem_comp_desc].get('InChIKey', None):
-                            dt_val = npe['nonpolymer_comp'][chem_comp_desc]['InChIKey']
-                            if 'InChIKey' in descriptorDic:
-                                descriptorDic['InChIKey'].append(dt_val)
-                            else:
-                                descriptorDic['InChIKey'] = [dt_val]
-                dic[entry['rcsb_id']]['nonpolymer_entities'].append(descriptorDic)
+            if not entry.get('nonpolymer_entities', None):
+                continue
+            for npe in entry.get('nonpolymer_entities', []):
+                if npe.get('nonpolymer_comp', None):
+                    descriptorDic = {}
+                    descriptorDic['pdb_ref_name'] = ''
+                    if npe['nonpolymer_comp'].get(chem_comp_synms, []):
+                        for synm in npe['nonpolymer_comp'].get(chem_comp_synms, []):
+                            # assuming at least one 'PDB Reference Data' is always available
+                            if synm['provenance_source'] == 'PDB Reference Data':
+                                descriptorDic['pdb_ref_name'] = synm['name']
+                                break
+                    if npe['nonpolymer_comp'].get(chem_comp_desc, {}):
+                        for desType in ('InChI', 'InChIKey', 'SMILES'):
+                            if npe['nonpolymer_comp'][chem_comp_desc].get(desType, None):
+                                dt_val = npe['nonpolymer_comp'][chem_comp_desc][desType]
+                                descriptorDic[desType] = dt_val
+                    dic[entry['rcsb_id']]['nonpolymer_entities'].append(descriptorDic)
         return dic
 
     def _get_pdb_ids(self, inputJsonObj, logic_and=0):
@@ -630,12 +644,29 @@ class RCSBUtil:
 
         return seq_identity, exact_match, e_val
 
-    def _get_inchiK_cpd(self):
+    def _set_inchiK_cpd_db(self):
         json_file_path = os.path.join(os.path.dirname(__file__), 'inchikey_cpd.json')
 
         with open(json_file_path) as DATA:
             inchK_cpd_jsonObj = json.load(DATA)
         return inchK_cpd_jsonObj
+
+    def _get_cpd_match(self, npe):
+        if not self.inchK_cpd_jsonObj:
+            self.inchK_cpd_jsonObj = self._set_inchiK_cpd_db()
+
+        comp = ''
+        inchiK = npe.get('InChIKey', '')
+        foundInK = 0
+        ik = inchiK[:len(inchiK) - 2]
+        for k in self.inchK_cpd_jsonObj.keys():
+            if ik in k:
+                comp = self.inchK_cpd_jsonObj[k]
+                foundInK = 1
+                break
+        if not foundInK:
+            comp = (npe.get('InChI'))
+        return comp
 
     def _blastRCSBSequence(self, input_seq, gql_data, evalue_cutoff, identity_cutoff):
         """
@@ -651,25 +682,22 @@ class RCSBUtil:
         rcsb_hits = []
         entries = gql_data['data']['entries']
         rcsb_data = self._formatRCSBJson(entries)
-        if not self.inchK_cpd_jsonObj:
-            self.inchK_cpd_jsonObj = self._get_inchiK_cpd()
 
         for entry in entries:
             rcsb_id = entry['rcsb_id']
             rcsb_data_entry = rcsb_data[rcsb_id]
             method = rcsb_data_entry.get('method', [])
             components = []
-            if rcsb_data_entry.get('nonpolymer_entities', []):
-                inchiKs = rcsb_data_entry['nonpolymer_entities'][0].get('InChIKey', [])
-                for inK in inchiKs:
-                    components.append(self.inchK_cpd_jsonObj.get(inK, {'InChIKey': inK}))
+            for npe in rcsb_data_entry.get('nonpolymer_entities', []):
+                components.append(self._get_cpd_match(npe))
+
             prim_cite = rcsb_data_entry.get('primary_citation', {})
             if prim_cite:
                 references = [prim_cite.get('pdbx_database_id_PubMed', ''),
                               prim_cite.get('title', ''),
                               prim_cite.get('journal_abbrev', ''),
                               prim_cite.get('rcsb_authors', [])[0],  # Show first author only
-                              str(prim_cite.get('year', 'TBD'))]
+                              str(prim_cite.get('year', 'NA'))]
             else:
                 references = []
 
@@ -1068,6 +1096,9 @@ class RCSBUtil:
         # logging.info(f'query_structure_anno with params: {params}')
         params = self._validate_rcsb_seqquery_params(params)
         returnVal = {}
+
+        if not self.inchK_cpd_jsonObj:
+            self.inchK_cpd_jsonObj = self._set_inchiK_cpd_db()
 
         # search by sequence one-by-one
         for input_seq in params['sequence_strings']:

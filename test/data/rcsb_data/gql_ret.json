@@ -1,113 +1,395 @@
 {
    "data": {
     "entries": [
-        {"rcsb_id": "1A0I",
-         "exptl": [{"method": "X-RAY DIFFRACTION"}],
+      {
+         "rcsb_id": "1A0I",
+         "exptl": [
+           {
+             "method": "X-RAY DIFFRACTION"
+           }
+         ],
          "rcsb_primary_citation": {
-            "title": "Crystal structure of an ATP-dependent DNA ligase from bacteriophage T7.",
-            "rcsb_authors": ["Subramanya, H.S.", "Doherty, A.J.", "Ashford, S.R.", "Wigley, D.B."],
-            "journal_abbrev": "Cell(Cambridge,Mass.)",
-            "year": 1996,
-            "pdbx_database_id_PubMed": 6726807
+           "title": "Crystal structure of an ATP-dependent DNA ligase from bacteriophage T7.",
+           "rcsb_authors": [
+             "Subramanya, H.S.",
+             "Doherty, A.J.",
+             "Ashford, S.R.",
+             "Wigley, D.B."
+           ],
+           "journal_abbrev": "Cell(Cambridge,Mass.)",
+           "year": 1996
          },
          "polymer_entities": [
-            {"rcsb_id": "1A0I_1",
+           {
+             "rcsb_id": "1A0I_1",
              "entity_poly": {
-                "pdbx_seq_one_letter_code": "VNIKTNPFKAVSFVESAIKKALDNAGYLIAEIKYDGVRGNICVDNTANSYWLSRVSKTIPALEHLNGFDVRWKRLLNDDRCFYKDGFMLDGELMVKGVDFNTGSGLLRTKWTDTKNQEFHEELFVEPIRKKDKVPFKLHTGHLHIKLYAILPLHIVESGEDCDVMTLLMQEHVKNMLPLLQEYFPEIEWQAAESYEVYDMVELQQLYEQKRAEGHEGLIVKDPMCIYKRGKKSGWWKMKPENEADGIIQGLVWGTKGLANEGKVIGFEVLLESGRLVNATNISRALMDEFTETVKEATLSQWGFFSPYGIGDNDACTINPYDGWACQISYMEETPDGSLRHPSFVMFR",
-                "pdbx_strand_id": "A"
+               "pdbx_seq_one_letter_code": "VNIKTNPFKAVSFVESAIKKALDNAGYLIAEIKYDGVRGNICVDNTANSYWLSRVSKTIPALEHLNGFDVRWKRLLNDDRCFYKDGFMLDGELMVKGVDFNTGSGLLRTKWTDTKNQEFHEELFVEPIRKKDKVPFKLHTGHLHIKLYAILPLHIVESGEDCDVMTLLMQEHVKNMLPLLQEYFPEIEWQAAESYEVYDMVELQQLYEQKRAEGHEGLIVKDPMCIYKRGKKSGWWKMKPENEADGIIQGLVWGTKGLANEGKVIGFEVLLESGRLVNATNISRALMDEFTETVKEATLSQWGFFSPYGIGDNDACTINPYDGWACQISYMEETPDGSLRHPSFVMFR",
+               "pdbx_strand_id": "A"
              },
              "rcsb_entity_source_organism": [
-                {"ncbi_taxonomy_id": 10760, "ncbi_scientific_name": "Escherichia phage T7"}],
+               {
+                 "ncbi_taxonomy_id": 10760,
+                 "ncbi_scientific_name": "Escherichia phage T7"
+               }
+             ],
              "rcsb_polymer_entity_container_identifiers": {
-                 "reference_sequence_identifiers": [
-                    {"database_accession": "P00969", "database_name": "UniProt"}]
+               "reference_sequence_identifiers": [
+                 {
+                   "database_accession": "P00969",
+                   "database_name": "UniProt"
+                 }
+               ]
              },
              "rcsb_polymer_entity": {
-                "rcsb_ec_lineage": [{"id": "6"}, {"id": "6.5"}, {"id": "6.5.1"}, {"id": "6.5.1.1"}]
+               "rcsb_ec_lineage": [
+                 {
+                   "id": "6"
+                 },
+                 {
+                   "id": "6.5"
+                 },
+                 {
+                   "id": "6.5.1"
+                 },
+                 {
+                   "id": "6.5.1.1"
+                 }
+               ]
              },
              "uniprots": [
                {
                  "rcsb_uniprot_protein": {
                    "name": {
-                     "value": "Hemoglobin subunit beta"
-                   },
-                   "ec": null
-                 }
-               }
-             ]
-            }
-         ],
-         "nonpolymer_entities": [
-         {
-            "nonpolymer_comp": {
-               "rcsb_chem_comp_descriptor": {
-                  "InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
-                  "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N",
-                  "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"
-               }
-            }
-         },
-         {
-            "nonpolymer_comp": {
-              "rcsb_chem_comp_descriptor": {
-                "InChI": "InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-3",
-                "InChIKey": "NBIIXXVUZAFLBC-UHFFFAOYSA-K",
-                "SMILES": "[O-]P(=O)([O-])[O-]"
-              }
-            }
-         }
-      ]},
-      {"rcsb_id": "1A49",
-       "exptl": [{"method": "X-RAY DIFFRACTION"}],
-       "rcsb_primary_citation": {"title": "Structure of the bis(Mg2+)-ATP-oxalate complex of the rabbit muscle pyruvate kinase at 2.1 A resolution: ATP binding over a barrel.", "rcsb_authors": ["Larsen, T.M.", "Benning, M.M.", "Rayment, I.", "Reed, G.H."], "journal_abbrev": "Biochemistry", "year": 1998, "pdbx_database_id_PubMed": 1910042},
-       "polymer_entities": [{
-         "rcsb_id": "1A49_1",
-         "entity_poly": {
-            "pdbx_seq_one_letter_code": "SKSHSEAGSAFIQTQQLHAAMADTFLEHMCRLDIDSAPITARNTGIICTIGPASRSVETLKEMIKSGMNVARMNFSHGTHEYHAETIKNVRTATESFASDPILYRPVAVALDTKGPEIRTGLIKGSGTAEVELKKGATLKITLDNAYMEKCDENILWLDYKNICKVVDVGSKVYVDDGLISLQVKQKGPDFLVTEVENGGFLGSKKGVNLPGAAVDLPAVSEKDIQDLKFGVEQDVDMVFASFIRKAADVHEVRKILGEKGKNIKIISKIENHEGVRRFDEILEASDGIMVARGDLGIEIPAEKVFLAQKMIIGRCNRAGKPVICATQMLESMIKKPRPTRAEGSDVANAVLDGADCIMLSGETAKGDYPLEAVRMQHLIAREAEAAMFHRKLFEELARSSSHSTDLMEAMAMGSVEASYKCLAAALIVLTESGRSAHQVARYRPRAPIIAVTRNHQTARQAHLYRGIFPVVCKDPVQEAWAEDVDLRVNLAMNVGKARGFFKKGDVVIVLTGWRPGSGFTNTMRVVPVP",
-            "pdbx_strand_id": "A,B,C,D,E,F,G,H"
-         },
-         "rcsb_entity_source_organism": [{
-            "ncbi_taxonomy_id": 9986, "ncbi_scientific_name": "Oryctolagus cuniculus"
-         }],
-         "rcsb_polymer_entity_container_identifiers": {"reference_sequence_identifiers": [{"database_accession": "P11974", "database_name": "UniProt"}]},
-         "rcsb_polymer_entity": {"rcsb_ec_lineage": [{"id": "2"}, {"id": "2.7"}, {"id": "2.7.1"}, {"id": "2.7.1.40"}, {"id": "2"}, {"id": "2.7"}, {"id": "2.7.11"}, {"id": "2.7.11.1"}, {"id": "2"}, {"id": "2.7"}, {"id": "2.7.10"}, {"id": "2.7.10.2"}]},
-         "uniprots": [
-               {
-                 "rcsb_uniprot_protein": {
-                  "name": {
-                     "value": "Carbonic anhydrase 2"
+                     "value": "DNA ligase"
                    },
                    "ec": [
                      {
-                       "number": "4.2.1.1",
+                       "number": "6.5.1.1",
+                       "provenance_code": "up:Protein.up:recommendedName"
+                     }
+                   ]
+                 }
+               }
+             ]
+           }
+         ],
+         "nonpolymer_entities": [
+           {
+             "nonpolymer_comp": {
+               "rcsb_chem_comp_synonyms": [
+                 {
+                   "name": "ADENOSINE-5'-TRIPHOSPHATE",
+                   "provenance_source": "PDB Reference Data"
+                 },
+                 {
+                   "name": "adenosine 5'-(tetrahydrogen triphosphate)",
+                   "provenance_source": "ACDLabs"
+                 },
+                 {
+                   "name": "[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxy-oxolan-2-yl]methoxy-hydroxy-phosphoryl] phosphono hydrogen phosphate",
+                   "provenance_source": "OpenEye OEToolkits"
+                 },
+                 {
+                   "name": "Adenosine triphosphate disodium",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine triphosphate disodium trihydrate",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "ATP",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine 5'-triphosphate",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine triphosphate",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine-5'-triphosphate",
+                   "provenance_source": "DrugBank"
+                 }
+               ],
+               "rcsb_chem_comp_descriptor": {
+                 "InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
+                 "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N",
+                 "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"
+               }
+             }
+           }
+         ]
+      },
+      {
+         "rcsb_id": "1A49",
+         "exptl": [
+           {
+             "method": "X-RAY DIFFRACTION"
+           }
+         ],
+         "rcsb_primary_citation": {
+           "title": "Structure of the bis(Mg2+)-ATP-oxalate complex of the rabbit muscle pyruvate kinase at 2.1 A resolution: ATP binding over a barrel.",
+           "rcsb_authors": [
+             "Larsen, T.M.",
+             "Benning, M.M.",
+             "Rayment, I.",
+             "Reed, G.H."
+           ],
+           "journal_abbrev": "Biochemistry",
+           "year": 1998
+         },
+         "polymer_entities": [
+           {
+             "rcsb_id": "1A49_1",
+             "entity_poly": {
+               "pdbx_seq_one_letter_code": "SKSHSEAGSAFIQTQQLHAAMADTFLEHMCRLDIDSAPITARNTGIICTIGPASRSVETLKEMIKSGMNVARMNFSHGTHEYHAETIKNVRTATESFASDPILYRPVAVALDTKGPEIRTGLIKGSGTAEVELKKGATLKITLDNAYMEKCDENILWLDYKNICKVVDVGSKVYVDDGLISLQVKQKGPDFLVTEVENGGFLGSKKGVNLPGAAVDLPAVSEKDIQDLKFGVEQDVDMVFASFIRKAADVHEVRKILGEKGKNIKIISKIENHEGVRRFDEILEASDGIMVARGDLGIEIPAEKVFLAQKMIIGRCNRAGKPVICATQMLESMIKKPRPTRAEGSDVANAVLDGADCIMLSGETAKGDYPLEAVRMQHLIAREAEAAMFHRKLFEELARSSSHSTDLMEAMAMGSVEASYKCLAAALIVLTESGRSAHQVARYRPRAPIIAVTRNHQTARQAHLYRGIFPVVCKDPVQEAWAEDVDLRVNLAMNVGKARGFFKKGDVVIVLTGWRPGSGFTNTMRVVPVP",
+               "pdbx_strand_id": "A,B,C,D,E,F,G,H"
+             },
+             "rcsb_entity_source_organism": [
+               {
+                 "ncbi_taxonomy_id": 9986,
+                 "ncbi_scientific_name": "Oryctolagus cuniculus"
+               }
+             ],
+             "rcsb_polymer_entity_container_identifiers": {
+               "reference_sequence_identifiers": [
+                 {
+                   "database_accession": "P11974",
+                   "database_name": "UniProt"
+                 }
+               ]
+             },
+             "rcsb_polymer_entity": {
+               "rcsb_ec_lineage": [
+                 {
+                   "id": "2"
+                 },
+                 {
+                   "id": "2.7"
+                 },
+                 {
+                   "id": "2.7.1"
+                 },
+                 {
+                   "id": "2.7.1.40"
+                 },
+                 {
+                   "id": "2"
+                 },
+                 {
+                   "id": "2.7"
+                 },
+                 {
+                   "id": "2.7.11"
+                 },
+                 {
+                   "id": "2.7.11.1"
+                 },
+                 {
+                   "id": "2"
+                 },
+                 {
+                   "id": "2.7"
+                 },
+                 {
+                   "id": "2.7.10"
+                 },
+                 {
+                   "id": "2.7.10.2"
+                 }
+               ]
+             },
+             "uniprots": [
+               {
+                 "rcsb_uniprot_protein": {
+                   "name": {
+                     "value": "Pyruvate kinase PKM"
+                   },
+                   "ec": [
+                     {
+                       "number": "2.7.1.40",
                        "provenance_code": "up:Protein.up:recommendedName"
                      },
                      {
-                       "number": "4.2.1.69",
+                       "number": "2.7.11.1",
+                       "provenance_code": "up:Protein.up:alternativeName"
+                     },
+                     {
+                       "number": "2.7.10.2",
                        "provenance_code": "up:Protein.up:alternativeName"
                      }
                    ]
                  }
                }
              ]
-         }],
+           }
+         ],
          "nonpolymer_entities": [
-            {"nonpolymer_comp":
-               {"rcsb_chem_comp_descriptor": {"InChI": "InChI=1S/K/q+1",
-                "InChIKey": "NPYPAHLBTDXSSS-UHFFFAOYSA-N", "SMILES": "[K+]"}}},
-            {"nonpolymer_comp":
-               {"rcsb_chem_comp_descriptor": {"InChI": "InChI=1S/C2H2O4/c3-1(4)2(5)6/h(H,3,4)(H,5,6)/p-2",
-                "InChIKey": "MUBZPKHOEPUJKR-UHFFFAOYSA-L", "SMILES": "C(=O)(C(=O)[O-])[O-]"}}},
-            {"nonpolymer_comp":
-               {"rcsb_chem_comp_descriptor": {"InChI": "InChI=1S/Mg/q+2",
-                "InChIKey": "JLVVSXFLKOJNIY-UHFFFAOYSA-N", "SMILES": "[Mg+2]"}}},
-            {"nonpolymer_comp":
-               {"rcsb_chem_comp_descriptor": {"InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
-                "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N", "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"}
+           {
+             "nonpolymer_comp": {
+               "rcsb_chem_comp_synonyms": [
+                 {
+                   "name": "POTASSIUM ION",
+                   "provenance_source": "PDB Reference Data"
+                 },
+                 {
+                   "name": "potassium",
+                   "provenance_source": "ACDLabs"
+                 },
+                 {
+                   "name": "potassium(+1) cation",
+                   "provenance_source": "OpenEye OEToolkits"
+                 },
+                 {
+                   "name": "Potassium (ion)",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "potassium(1+) ion",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Potassium cation",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Potassium ion",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "potassium(I) cation",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "potassium(1+)",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Rurina",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Telom-X-gene",
+                   "provenance_source": "DrugBank"
+                 }
+               ],
+               "rcsb_chem_comp_descriptor": {
+                 "InChI": "InChI=1S/K/q+1",
+                 "InChIKey": "NPYPAHLBTDXSSS-UHFFFAOYSA-N",
+                 "SMILES": "[K+]"
                }
-            }
+             }
+           },
+           {
+             "nonpolymer_comp": {
+               "rcsb_chem_comp_synonyms": [
+                 {
+                   "name": "OXALATE ION",
+                   "provenance_source": "PDB Reference Data"
+                 },
+                 {
+                   "name": "ethanedioate",
+                   "provenance_source": "ACDLabs"
+                 },
+                 {
+                   "name": "ethanedioate",
+                   "provenance_source": "OpenEye OEToolkits"
+                 }
+               ],
+               "rcsb_chem_comp_descriptor": {
+                 "InChI": "InChI=1S/C2H2O4/c3-1(4)2(5)6/h(H,3,4)(H,5,6)/p-2",
+                 "InChIKey": "MUBZPKHOEPUJKR-UHFFFAOYSA-L",
+                 "SMILES": "C(=O)(C(=O)[O-])[O-]"
+               }
+             }
+           },
+           {
+             "nonpolymer_comp": {
+               "rcsb_chem_comp_synonyms": [
+                 {
+                   "name": "MAGNESIUM ION",
+                   "provenance_source": "PDB Reference Data"
+                 },
+                 {
+                   "name": "magnesium",
+                   "provenance_source": "ACDLabs"
+                 },
+                 {
+                   "name": "magnesium(+2) cation",
+                   "provenance_source": "OpenEye OEToolkits"
+                 },
+                 {
+                   "name": "Magnesium cation",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Magnesium ion",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Magnesium, ion(Mg2+)",
+                   "provenance_source": "DrugBank"
+                 }
+               ],
+               "rcsb_chem_comp_descriptor": {
+                 "InChI": "InChI=1S/Mg/q+2",
+                 "InChIKey": "JLVVSXFLKOJNIY-UHFFFAOYSA-N",
+                 "SMILES": "[Mg+2]"
+               }
+             }
+           },
+           {
+             "nonpolymer_comp": {
+               "rcsb_chem_comp_synonyms": [
+                 {
+                   "name": "ADENOSINE-5'-TRIPHOSPHATE",
+                   "provenance_source": "PDB Reference Data"
+                 },
+                 {
+                   "name": "adenosine 5'-(tetrahydrogen triphosphate)",
+                   "provenance_source": "ACDLabs"
+                 },
+                 {
+                   "name": "[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxy-oxolan-2-yl]methoxy-hydroxy-phosphoryl] phosphono hydrogen phosphate",
+                   "provenance_source": "OpenEye OEToolkits"
+                 },
+                 {
+                   "name": "Adenosine triphosphate disodium",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine triphosphate disodium trihydrate",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "ATP",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine 5'-triphosphate",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine triphosphate",
+                   "provenance_source": "DrugBank"
+                 },
+                 {
+                   "name": "Adenosine-5'-triphosphate",
+                   "provenance_source": "DrugBank"
+                 }
+               ],
+               "rcsb_chem_comp_descriptor": {
+                 "InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
+                 "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N",
+                 "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"
+               }
+             }
+           }
          ]
        }
-    ]
+     ]
    }
-}
+ }

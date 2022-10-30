@@ -388,7 +388,6 @@ class RCSBUtilsTest(unittest.TestCase):
             # self.assertCountEqual(ret_list3, exp_list1)
             self.assertGreaterEqual(set(ret_list3), set(exp_list1))
             self.assertCountEqual(score_dict3.keys(), ret_list3)
-            #print(score_dict3)
 
     #@unittest.skip('test_run_rcsb_search_seq_ec_uniprot')
     def test_run_rcsb_search_seq_ec_uniprot(self):
@@ -546,9 +545,10 @@ class RCSBUtilsTest(unittest.TestCase):
                     self.assertIn('uniprotID', pe)
             if struct.get('nonpolymer_entities', None):
                 for npe in struct.get('nonpolymer_entities', None):
-                    self.assertNotIn('InChI', npe)
+                    self.assertIn('pdb_ref_name', npe)
+                    self.assertIn('InChI', npe)
                     self.assertIn('InChIKey', npe)
-                    self.assertNotIn('SMILES', npe)
+                    self.assertIn('SMILES', npe)
 
         gql_itms = {}
         for key, val in formatted_json.items():
@@ -571,8 +571,38 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertCountEqual(gql_itms['1A0I'], self.gqldata_items['1A0I'])
         self.assertCountEqual(gql_itms['1A49'], self.gqldata_items['1A49'])
 
-    #@unittest.skip('testblastRCSBSequence')
-    def testblastRCSBSequence(self):
+    #@unittest.skip('test_get_cpd_match')
+    def test_get_cpd_match(self):
+        npes = [
+            {"InChI": "InChI=1S/K/q+1",
+             "InChIKey": "NPYPAHLBTDXSSS-UHFFFAOYSA-N",
+             "SMILES": "[K+]",
+             "pdb_ref_name": "MERCURY (II) ION"},
+            {"InChI": "InChI=1S/C2H2O4/c3-1(4)2(5)6/h(H,3,4)(H,5,6)/p-2",
+             "InChIKey": "MUBZPKHOEPUJKR-UHFFFAOYSA-L",
+             "SMILES": "C(=O)(C(=O)[O-])[O-]"},
+            {"InChI": "InChI=1S/Mg/q+2",
+             "InChIKey": "JLVVSXFLKOJNIY-UHFFFAOYSA-N",
+             "SMILES": "[Mg+2]"},
+            {"InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
+             "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N",
+             "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"},
+            {"InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-fake",
+             "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXFAKE-N",
+             "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"}
+        ]
+        cpds = []
+        for npe in npes:
+            cpd = self.rcsb_util._get_cpd_match(npe)
+            cpds.append(cpd)
+        self.assertEqual(cpds[0], 'cpd00205 (K+)')
+        self.assertEqual(cpds[1], 'cpd00180 (Oxalate)')
+        self.assertEqual(cpds[2], 'cpd00254 (Mg)')
+        self.assertEqual(cpds[3], 'cpd00002 (ATP)')
+        self.assertEqual(cpds[4], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-fake')
+
+    #@unittest.skip('test_blastRCSBSequence')
+    def test_blastRCSBSequence(self):
         in_seq1 = 'VNIKTNPFKAVSFVESAIKKALDNAGYLIAEIKYDGVRGNICVDNTANSYWLSRVSKTIPALEHLNGFDVRWKRLLNDDRCFYKDGFMLDGELMVKGVDFNTGSGLLRTKWTDTKNQEFHEELFVEPIRKKDKVPFKLHTGHLHIKLYAILPLHIVESGEDCDVMTLLMQEHVKNMLPLLQEYFPEIEWQAAESYEVYDMVELQQLYEQKRAEGHEGLIVKDPMCIYKRGKKSGWWKMKPENEADGIIQGLVWGTKGLANEGKVIGFEVLLESGRLVNATNISRALMDEFTETVKEATLSQWGFFSPYGIGDNDACTINPYDGWACQISYMEETPDGSLRHPSFVMFR'
         e_val = 1e-3
         iden = 0.75
@@ -667,5 +697,4 @@ class RCSBUtilsTest(unittest.TestCase):
         }
         qry_ret = self.serviceImpl.query_rcsb_annotations(self.ctx, params)
         if qry_ret:
-            # print(qry_ret[0])
             self.assertCountEqual(qry_ret[0].keys(), params['sequence_strings'])
