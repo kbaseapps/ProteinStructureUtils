@@ -18,9 +18,9 @@
         }
     ],
     "nonpolymer_entities": [
-        {"InChI": ["InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1"],
-        "InChIKey": ["ZKHQWZAMYRWXGA-KQYNXXCUSA-N"],
-        "SMILES": ["c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"]
+        {"InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
+        "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N",
+        "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"
         }
     ]
  }, 
@@ -35,17 +35,21 @@
     "ec_numbers": ["2", "2.7", "2.7.1", "2.7.1.40", "2.7.11", "2.7.11.1", "2.7.10", "2.7.10.2"]
  }],    
  "nonpolymer_entities": [
-    {"InChI": ["InChI=1S/K/q+1"],
-     "InChIKey": ["NPYPAHLBTDXSSS-UHFFFAOYSA-N"],
-     "SMILES": ["[K+]"]},
-    {"InChI": ["InChI=1S/C2H2O4/c3-1(4)2(5)6/h(H,3,4)(H,5,6)/p-2"],
-     "InChIKey": ["MUBZPKHOEPUJKR-UHFFFAOYSA-L"],
-     "SMILES": ["C(=O)(C(=O)[O-])[O-]"]},
-    {"InChI": ["InChI=1S/Mg/q+2"],
-     "InChIKey": ["JLVVSXFLKOJNIY-UHFFFAOYSA-N"],
-     "SMILES": ["[Mg+2]"]},
-     {"InChI": ["InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1"],
-     "InChIKey": ["ZKHQWZAMYRWXGA-KQYNXXCUSA-N"],
-     "SMILES": ["c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"]}
+    {"pdb_ref_name": "POTASSIUM ION",
+     "InChI": "InChI=1S/K/q+1",
+     "InChIKey": "NPYPAHLBTDXSSS-UHFFFAOYSA-N",
+     "SMILES": "[K+]"},
+    {"pdb_ref_name": "OXALATE ION",
+     "InChI": "InChI=1S/C2H2O4/c3-1(4)2(5)6/h(H,3,4)(H,5,6)/p-2",
+     "InChIKey": "MUBZPKHOEPUJKR-UHFFFAOYSA-L",
+     "SMILES": "C(=O)(C(=O)[O-])[O-]"},
+    {"pdb_ref_name": "MAGNESIUM ION",
+     "InChI": "InChI=1S/Mg/q+2",
+     "InChIKey": "JLVVSXFLKOJNIY-UHFFFAOYSA-N",
+     "SMILES": "[Mg+2]"},
+    {"pdb_ref_name": "ADENOSINE-5'-TRIPHOSPHATE",
+     "InChI": "InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1",
+     "InChIKey": "ZKHQWZAMYRWXGA-KQYNXXCUSA-N",
+     "SMILES": "c1nc(c2c(n1)n(cn2)C3C(C(C(O3)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O)N"}
   ]
 }}

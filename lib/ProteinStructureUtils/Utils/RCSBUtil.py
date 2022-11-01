@@ -865,9 +865,9 @@ class RCSBUtil:
         params['rcsb_infos'] = rcsb_infos
         return params
 
-    def _build_taxon_string(self, taxons):
+    def _write_taxon_string(self, taxons):
         """
-            build each taxon into an archor href link:
+            Write each taxon into an archor href link:
                 e.g., https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=10760
         """
         ncbi_txn_url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?'
@@ -876,7 +876,7 @@ class RCSBUtil:
         for txn in taxons:
             t_id = txn[0]
             t_name = txn[1]
-            t_str = f'<a href="{ncbi_txn_url}id={t_id}" target="_blank">{t_name} ({t_id})</a>'
+            t_str = f'<a href="{ncbi_txn_url}id={t_id}" target="_blank">{t_id} ({t_name})</a>'
             if not taxon_str:
                 taxon_str = t_str
             else:
@@ -884,9 +884,9 @@ class RCSBUtil:
 
         return taxon_str
 
-    def _build_uniprot_string(self, uniprotIDs, uniprotNames):
+    def _write_uniprot_string(self, uniprotIDs, uniprotNames):
         """
-            build each uniprot name/id into an archor href link:
+            Write each uniprot name/id into an archor href link:
                 e.g., https://www.uniprot.org/uniprotkb/P00561/entry
         """
         uniprot_url = 'https://www.uniprot.org/uniprotkb/'
@@ -902,9 +902,32 @@ class RCSBUtil:
                 uprt_str += '<br>' + u_str
         return uprt_str
 
-    def _build_component_string(self, comps):
+    def _write_uniprotEC_string(self, uniprotECs):
         """
-            build each component into an archor href link:
+            Write each uniprot EC into an archor href link:
+                e.g., https://www.kegg.jp/entry/2.7.2.4
+            Or, if the EC number does not match (\d+\.){3}\d+$
+                e.g., 3.6.4.-,
+                https://biocyc.org/META/NEW-IMAGE?type=EC-NUMBER&object=EC-3.6.4
+        """
+        kegg_url = 'https://www.kegg.jp/entry/'
+        biocyc_url = 'https://biocyc.org/META/NEW-IMAGE?type=EC-NUMBER&object=EC-'
+        kegg_str = ''
+        for uec in uniprotECs:
+            uec_tmp = re.sub(r"(\.)+-+$", "", uec)
+            if re.match(r"^(\d+\.){3}\d+$", uec_tmp):
+                k_str = f'<a href="{kegg_url}{uec}" target="_blank">{uec}</a>'
+            else:
+                k_str = f'<a href="{biocyc_url}{uec_tmp}" target="_blank">{uec}</a>'
+            if not kegg_str:
+                kegg_str = k_str
+            else:
+                kegg_str += '<br>' + k_str
+        return kegg_str
+
+    def _write_component_string(self, comps):
+        """
+            Write each component into an archor href link:
                 e.g., https://modelseed.org/biochem/compounds/
         """
         cpd_url = 'https://modelseed.org/biochem/compounds/'
@@ -929,6 +952,60 @@ class RCSBUtil:
             return cpd_str
         else:
             return ''
+
+    def _get_poly_entity_data(self, pdb_struct):
+        """
+            _get_poly_entity_data: Parse the query returned pdb structure data to get the individual
+                                   data items for writing the html table
+        """
+        prot_sequences = []
+        pdb_chains = []
+        #src_organisms = []
+        taxons = []
+        src_dbs = []
+        ec_numbers = []
+        rcsb_ecs = []
+        uniprotIDs = []
+        uniprotNames = []
+        for poly_entity in pdb_struct['polymer_entities']:
+            if poly_entity.get('one_letter_code_sequence', ''):
+                prot_sequences.append(poly_entity['one_letter_code_sequence'])
+            if poly_entity.get('pdbx_strand_id', None):
+                pdb_chains.append('[' + ','.join(poly_entity['pdbx_strand_id']) + ']')
+            """
+            if poly_entity.get('source_organism', None):
+                for srcg in poly_entity['source_organism']:
+                    sci_name = srcg.get('ncbi_scientific_name', '')
+                    ncbi_num = f"({srcg.get('ncbi_taxonomy_id', '')})"
+                    if sci_name and ncbi_num:
+                        src_organisms.append(''.join([sci_name, ncbi_num]))
+            """
+            if poly_entity.get('ref_sequence_ids', None):
+                for poly_en in poly_entity['ref_sequence_ids']:
+                    db_acc = f"{poly_en.get('database_accession', '')}"
+                    db_nm = poly_en.get('database_name', '')
+                    if db_acc and db_nm:
+                        src_dbs.append(db_acc)    # (''.join([db_nm, db_acc]))
+            if poly_entity.get('ec_numbers', []):
+                ec_numbers.append(f"[{','.join(poly_entity['ec_numbers'])}]")
+            if poly_entity.get('uniprot_ec', []):
+                rcsb_ecs = [unp['number'] for unp in poly_entity['uniprot_ec']]
+            if poly_entity.get('uniprotID', []):
+                uniprotIDs.append(','.join(poly_entity['uniprotID']))
+            if poly_entity.get('uniprot_name', []):
+                uniprotNames.append(','.join(poly_entity['uniprot_name']))
+            if poly_entity.get('taxonomy', []):
+                taxons.append(poly_entity['taxonomy'][0])
+
+        return (prot_sequences,
+                pdb_chains,
+                #src_organisms,
+                taxons,
+                src_dbs,
+                ec_numbers,
+                rcsb_ecs,
+                uniprotIDs,
+                uniprotNames)
 
     def _write_struct_info(self, struct_info):
         """
@@ -961,41 +1038,8 @@ class RCSBUtil:
                     prim_cite_str = (f'{prim_cite.get("title", "")}.'
                                      f'{prim_cite.get("rcsb_authors", [])[0]}')
 
-            prot_sequences = []
-            pdb_chains = []
-            #src_organisms = []
-            taxons = []
-            src_dbs = []
-            ec_numbers = []
-            uniprotIDs = []
-            uniprotNames = []
-            for poly_entity in pdb_struct['polymer_entities']:
-                if poly_entity.get('one_letter_code_sequence', ''):
-                    prot_sequences.append(poly_entity['one_letter_code_sequence'])
-                if poly_entity.get('pdbx_strand_id', None):
-                    pdb_chains.append('[' + ','.join(poly_entity['pdbx_strand_id']) + ']')
-                """
-                if poly_entity.get('source_organism', None):
-                    for srcg in poly_entity['source_organism']:
-                        sci_name = srcg.get('ncbi_scientific_name', '')
-                        ncbi_num = f"({srcg.get('ncbi_taxonomy_id', '')})"
-                        if sci_name and ncbi_num:
-                            src_organisms.append(''.join([sci_name, ncbi_num]))
-                """
-                if poly_entity.get('ref_sequence_ids', None):
-                    for poly_en in poly_entity['ref_sequence_ids']:
-                        db_acc = f"{poly_en.get('database_accession', '')}"
-                        db_nm = poly_en.get('database_name', '')
-                        if db_acc and db_nm:
-                            src_dbs.append(db_acc)    # (''.join([db_nm, db_acc]))
-                if poly_entity.get('ec_numbers', None):
-                    ec_numbers.append(f"[{','.join(poly_entity['ec_numbers'])}]")
-                if poly_entity.get('uniprotID', []):
-                    uniprotIDs.append(','.join(poly_entity['uniprotID']))
-                if poly_entity.get('uniprot_name', []):
-                    uniprotNames.append(','.join(poly_entity['uniprot_name']))
-                if poly_entity.get('taxonomy', []):
-                    taxons.append(poly_entity['taxonomy'][0])
+            (prot_sequences, pdb_chains, taxons, src_dbs, ec_numbers, rcsb_ecs, uniprotIDs,
+                uniprotNames) = self._get_poly_entity_data(pdb_struct)
 
             components = []
             for npe in pdb_struct.get('nonpolymer_entities', []):
@@ -1006,11 +1050,12 @@ class RCSBUtil:
                            f'title="3D Structure Viewer">{rcsb_id}</a></td>')
             tbody_html += f'\n<td>{expl_method} </td>'
             tbody_html += f'\n<td>{"<br>".join(pdb_chains)} </td>'
-            tbody_html += f'\n<td>{self._build_taxon_string(taxons)}</td>'
-            tbody_html += f'\n<td>{self._build_uniprot_string(uniprotIDs, uniprotNames)}</td>'
+            tbody_html += f'\n<td>{self._write_taxon_string(taxons)}</td>'
+            tbody_html += f'\n<td>{self._write_uniprot_string(uniprotIDs, uniprotNames)}</td>'
             tbody_html += f'\n<td>{"<br>".join(ec_numbers)} </td>'
+            tbody_html += f'\n<td>{self._write_uniprotEC_string(rcsb_ecs)} </td>'
             #tbody_html += f'\n<td>{"<br>".join(src_dbs)}</td>'
-            tbody_html += f'\n<td>{self._build_component_string(components)} </td>'
+            tbody_html += f'\n<td>{self._write_component_string(components)} </td>'
             tbody_html += f'\n<td>{prim_cite_str}</td>'
             tbody_html += f'\n<td>{"<br>".join(prot_sequences)}</td>'
             tbody_html += '\n</tr>'
