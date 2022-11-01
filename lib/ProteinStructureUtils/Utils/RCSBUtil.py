@@ -865,6 +865,71 @@ class RCSBUtil:
         params['rcsb_infos'] = rcsb_infos
         return params
 
+    def _build_taxon_string(self, taxons):
+        """
+            build each taxon into an archor href link:
+                e.g., https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=10760
+        """
+        ncbi_txn_url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?'
+        taxon_str = ''
+
+        for txn in taxons:
+            t_id = txn[0]
+            t_name = txn[1]
+            t_str = f'<a href="{ncbi_txn_url}id={t_id}" target="_blank">{t_name} ({t_id})</a>'
+            if not taxon_str:
+                taxon_str = t_str
+            else:
+                taxon_str += '<br>' + t_str
+
+        return taxon_str
+
+    def _build_uniprot_string(self, uniprotIDs, uniprotNames):
+        """
+            build each uniprot name/id into an archor href link:
+                e.g., https://www.uniprot.org/uniprotkb/P00561/entry
+        """
+        uniprot_url = 'https://www.uniprot.org/uniprotkb/'
+        uprt_str = ''
+        uniprots = zip(uniprotIDs, uniprotNames)
+        for uprt in uniprots:
+            u_id = uprt[0]
+            u_name = uprt[1]
+            u_str = f'<a href="{uniprot_url}{u_id}/entry" target="_blank">{u_name} ({u_id})</a>'
+            if not uprt_str:
+                uprt_str = u_str
+            else:
+                uprt_str += '<br>' + u_str
+        return uprt_str
+
+    def _build_component_string(self, comps):
+        """
+            build each component into an archor href link:
+                e.g., https://modelseed.org/biochem/compounds/
+        """
+        cpd_url = 'https://modelseed.org/biochem/compounds/'
+        cpd_str = ''
+        inchi_str = ''
+        for comp in comps:
+            if re.search('(cpd\d+)\s\((.+)\)', comp):
+                m = re.search('(cpd\d+)\s\((.+)\)', comp)
+                c_str = f'<a href="{cpd_url}{m[1]}" target="_blank">{m[2]} ({m[1]})</a>'
+                if cpd_str:
+                    cpd_str += '<br>'
+                cpd_str += c_str
+            elif re.search('^InChI', comp):
+                if inchi_str:
+                    inchi_str += '<br>'
+                inchi_str += comp
+        if cpd_str and inchi_str:
+            return f'{cpd_str}<br>{inchi_str}'
+        elif not cpd_str and inchi_str:
+            return inchi_str
+        elif cpd_str and not inchi_str:
+            return cpd_str
+        else:
+            return ''
+
     def _write_struct_info(self, struct_info):
         """
             _write_struct_info: write the query result info to replace the string
@@ -880,65 +945,74 @@ class RCSBUtil:
             tbody_html += '<tr>'
 
             expl_method = '<br>'.join(pdb_struct.get('method', []))
-            """
+
             prim_cite = pdb_struct.get('primary_citation', {})
+            pubmed_url = 'https://pubmed.ncbi.nlm.nih.gov/'
+            prim_cite_str = ''
             if prim_cite:
-                prim_cite_str = '<br>'.join([prim_cite.get('title', ''),
-                                             ','.join(prim_cite.get('rcsb_authors', [])),
-                                             prim_cite.get('journal_abbrev', ''),
-                                             str(prim_cite.get('year', 'TBD'))])
-            else:
-                prim_cite_str = ''
-            """
+                pubmed = prim_cite.get('pdbx_database_id_PubMed', '')
+                if pubmed:
+                    prim_cite_str = f'<a href="{pubmed_url}{pubmed}/" target="_blank">{pubmed}</a>'
+                elif prim_cite.get('year', ''):
+                    prim_cite_str = (f'{prim_cite.get("title", "")}.'
+                                     f'{prim_cite.get("rcsb_authors", [])[0]}'
+                                     f'{prim_cite.get("year")}')
+                else:
+                    prim_cite_str = (f'{prim_cite.get("title", "")}.'
+                                     f'{prim_cite.get("rcsb_authors", [])[0]}')
+
             prot_sequences = []
             pdb_chains = []
-            src_organisms = []
+            #src_organisms = []
+            taxons = []
             src_dbs = []
             ec_numbers = []
+            uniprotIDs = []
+            uniprotNames = []
             for poly_entity in pdb_struct['polymer_entities']:
                 if poly_entity.get('one_letter_code_sequence', ''):
                     prot_sequences.append(poly_entity['one_letter_code_sequence'])
                 if poly_entity.get('pdbx_strand_id', None):
                     pdb_chains.append('[' + ','.join(poly_entity['pdbx_strand_id']) + ']')
+                """
                 if poly_entity.get('source_organism', None):
                     for srcg in poly_entity['source_organism']:
                         sci_name = srcg.get('ncbi_scientific_name', '')
                         ncbi_num = f"({srcg.get('ncbi_taxonomy_id', '')})"
                         if sci_name and ncbi_num:
                             src_organisms.append(''.join([sci_name, ncbi_num]))
+                """
                 if poly_entity.get('ref_sequence_ids', None):
                     for poly_en in poly_entity['ref_sequence_ids']:
-                        db_acc = f"({poly_en.get('database_accession', '')})"
+                        db_acc = f"{poly_en.get('database_accession', '')}"
                         db_nm = poly_en.get('database_name', '')
                         if db_acc and db_nm:
-                            src_dbs.append(''.join([db_nm, db_acc]))
+                            src_dbs.append(db_acc)    # (''.join([db_nm, db_acc]))
                 if poly_entity.get('ec_numbers', None):
-                    ec_numbers.append('[' + ','.join(poly_entity['ec_numbers']) + ']')
+                    ec_numbers.append(f"[{','.join(poly_entity['ec_numbers'])}]")
+                if poly_entity.get('uniprotID', []):
+                    uniprotIDs.append(','.join(poly_entity['uniprotID']))
+                if poly_entity.get('uniprot_name', []):
+                    uniprotNames.append(','.join(poly_entity['uniprot_name']))
+                if poly_entity.get('taxonomy', []):
+                    taxons.append(poly_entity['taxonomy'][0])
 
-            inchis = []
-            inchikeys = []
-            smiles = []
-            for nonpoly in pdb_struct['nonpolymer_entities']:
-                if nonpoly.get('InChI', None):
-                    inchis.append('[' + ','.join(nonpoly['InChI']) + ']')
-                if nonpoly.get('InChIKey', None):
-                    inchikeys.append('[' + ','.join(nonpoly['InChIKey']) + ']')
-                if nonpoly.get('SMILES', None):
-                    smiles.append('[' + ','.join(nonpoly['SMILES']) + ']')
+            components = []
+            for npe in pdb_struct.get('nonpolymer_entities', []):
+                components.append(self._get_cpd_match(npe))
 
             tbody_html += (f'\n<td><a href="https://www.rcsb.org/3d-view/{rcsb_id}"'
                            f'style="cursor: pointer;" target="_blank" '
                            f'title="3D Structure Viewer">{rcsb_id}</a></td>')
             tbody_html += f'\n<td>{expl_method} </td>'
-            tbody_html += f'\n<td>{"<br>".join(src_organisms)}</td>'
-            tbody_html += f'\n<td>{"<br>".join(ec_numbers)} </td>'
             tbody_html += f'\n<td>{"<br>".join(pdb_chains)} </td>'
-            tbody_html += f'\n<td>{"<br>".join(src_dbs)}</td>'
-            tbody_html += f'\n<td>{"<br>".join(inchis)} </td>'
-            tbody_html += f'\n<td>{"<br>".join(inchikeys)} </td>'
-            tbody_html += f'\n<td>{"<br>".join(smiles)}</td>'
-            #tbody_html += f'\n<td>{"<br>".join(prot_sequences)}</td>'
-            #tbody_html += f'\n<td>{prim_cite_str} </td>'
+            tbody_html += f'\n<td>{self._build_taxon_string(taxons)}</td>'
+            tbody_html += f'\n<td>{self._build_uniprot_string(uniprotIDs, uniprotNames)}</td>'
+            tbody_html += f'\n<td>{"<br>".join(ec_numbers)} </td>'
+            #tbody_html += f'\n<td>{"<br>".join(src_dbs)}</td>'
+            tbody_html += f'\n<td>{self._build_component_string(components)} </td>'
+            tbody_html += f'\n<td>{prim_cite_str}</td>'
+            tbody_html += f'\n<td>{"<br>".join(prot_sequences)}</td>'
             tbody_html += '\n</tr>'
 
         return tbody_html

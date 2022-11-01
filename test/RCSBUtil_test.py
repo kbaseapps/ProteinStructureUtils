@@ -522,7 +522,7 @@ class RCSBUtilsTest(unittest.TestCase):
     #@unittest.skip('test_formatRCSBJson')
     def test_formatRCSBJson(self):
         formatted_json = self.rcsb_util._formatRCSBJson(self.gql_data['data']['entries'])
-        expected_keys = ['1A0I', '1A49']
+        print(formatted_json)
         self.assertIn(expected_keys[0], formatted_json)
         self.assertIn(expected_keys[1], formatted_json)
         for k in expected_keys:
@@ -643,7 +643,7 @@ class RCSBUtilsTest(unittest.TestCase):
 
     #@unittest.skip('test_query_structure_info')
     def test_query_structure_info(self):
-        params = {
+        params1 = {
             'workspace_name': self.wsName,
             'sequence_strings': self.inputJsonObj1['sequence'],
             'uniprot_ids': self.inputJsonObj1['uniprot_id'],
@@ -655,17 +655,23 @@ class RCSBUtilsTest(unittest.TestCase):
             'logical_and': 0
         }
 
-        struct_ret = self.rcsb_util.query_structure_info(params)
+        struct_ret = self.rcsb_util.query_structure_info(params1)
         if struct_ret:
             rcsb_ids = struct_ret.get('rcsb_ids', [])
-            print(f'Returned {len(rcsb_ids)} pdbs')
+            self.assertIn(len(rcsb_ids), 4045)
             self.assertIn('rcsb_ids', struct_ret)
             self.assertIn('report_name', struct_ret)
             self.assertIn('report_ref', struct_ret)
 
-        params['logical_and'] = 1
-        struct_ret_and = self.rcsb_util.query_structure_info(params)
-        self.assertEqual(struct_ret_and.get('rcsb_ids', []), [])
+        params2 = {
+            'workspace_name': self.wsName,
+            'sequence_strings': self.inputJsonObj1['sequence'],
+            'evalue_cutoff': 0.2,
+            'identity_cutoff': 0.9,
+            'logical_and': 1
+        }
+        struct_ret_and = self.rcsb_util.query_structure_info(params2)
+        self.assertEqual(len(struct_ret_and.get('rcsb_ids', [])), 67)
 
     # Testing self.serviceImpl functions
     #@unittest.skip('test_Impl_query_rcsb_structures')
@@ -673,18 +679,28 @@ class RCSBUtilsTest(unittest.TestCase):
         params = {
             'workspace_name': self.wsName,
             'sequence_strings': self.inputJsonObj1['sequence'],
-            'uniprot_ids': self.inputJsonObj1['uniprot_id'],
-            'ec_numbers': self.inputJsonObj1['ec_number'],
-            'inchis': self.inputJsonObj3['InChI'],
-            'smiles': self.inputJsonObj3['SMILES'],
             'evalue_cutoff': 0.2,
             'identity_cutoff': 0.9,
             'logical_and': 0
         }
-        qry_ret = self.serviceImpl.query_rcsb_structures(self.ctx, params)
-        if qry_ret:
-            self.assertCountEqual(qry_ret[0].keys(),
+        qry_ret1 = self.serviceImpl.query_rcsb_structures(self.ctx, params)
+        if qry_ret1:
+            self.assertCountEqual(qry_ret1[0].keys(),
                                   ['rcsb_ids', 'rcsb_scores', 'report_ref', 'report_name'])
+            n = len(qry_ret1[0]['rcsb_ids'].keys())
+            print('Query id counts={n}')
+            self.assertEqual(len(qry_ret1[0]['rcsb_ids'].keys()), n)
+
+        params['uniprot_ids'] = self.inputJsonObj1['uniprot_id']
+        params['ec_numbers'] = self.inputJsonObj1['ec_numbers']
+        params['inchis'] = self.inputJsonObj1['inchis']
+        params['smiles'] = self.inputJsonObj1['smiles']
+
+        qry_ret2 = self.serviceImpl.query_rcsb_structures(self.ctx, params)
+        if qry_ret2:
+            self.assertCountEqual(qry_ret2[0].keys(),
+                                  ['rcsb_ids', 'rcsb_scores', 'report_ref', 'report_name'])
+            self.assertEqual(len(qry_ret2[0]['rcsb_ids'].keys()), 4045)
 
     #@unittest.skip('test_Impl_query_rcsb_annotations')
     def test_Impl_query_rcsb_annotations(self):
