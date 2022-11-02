@@ -63,7 +63,7 @@ class PDBUtil:
             error_msg += "or input_staging_file_path"
             raise ValueError(error_msg)
 
-        return file_path, params.get('workspace_name'), params.get('structure_name')
+        return file_path
 
     def _get_pdb_id(self, pdb_file):
         pdb_id = os.path.basename(pdb_file)
@@ -264,8 +264,8 @@ class PDBUtil:
                 pdb_seq_evals = []
                 pdb_exact_matches = []
                 for prot in protein_data:
-                    seq_idens, seq_mats, evals = self._compute_sequence_identity(kb_feature_seq,
-                                                                          prot.get('sequence', ''))
+                    seq_idens, seq_mats, evals = self._compute_sequence_identity(
+                                                    kb_feature_seq, prot.get('sequence', ''))
                     if seq_idens:
                         seq_idens.sort()
                         max_iden = seq_idens.pop()
@@ -1040,7 +1040,7 @@ class PDBUtil:
         logging.info(f'import_pdb_file to a pdb data structure with params: {params}')
 
         # file_path is the pdb file's working area path (after dfu.download_staging_file call)
-        file_path, workspace_name, pdb_name = self._validate_import_file_params(params)
+        file_path = self._validate_import_file_params(params)
 
         (data, n_polypeptides, params) = self._pdb_file_to_data(file_path, params)
         if not data:
@@ -1066,7 +1066,7 @@ class PDBUtil:
         logging.info(f'import_mmcif_file to a pdb structure with params: {params}')
 
         # file_path is the pdb file's working area path (after dfu.download_staging_file call)
-        file_path, workspace_name, mmcif_name = self._validate_import_file_params(params)
+        file_path = self._validate_import_file_params(params)
 
         # Parse the experimental pdb file for an experimental data structure
         (data, n_polypeptides, params) = self._mmcif_file_to_data(file_path, params)
