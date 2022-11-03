@@ -127,7 +127,6 @@ class PDBUtil:
             model = structure[0]
             protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
             (protein_data, params) = self._match_features(params, protein_data)
-
             pdb_info = params.get('pdb_info', None)
             if pdb_info and pdb_info.get('sequence_identities', None):
                 pdb_data = {

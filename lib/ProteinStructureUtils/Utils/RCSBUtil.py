@@ -47,6 +47,7 @@ class RCSBUtil:
         self.shock_url = config['shock-url']
         self.pdb_util = PDBUtil(config)
         self.inchK_cpd_jsonObj = {}
+        self.download_dir = None
 
         self.__baseDownloadUrl = 'https://files.rcsb.org/download'
         self.__baseSearchUrl = 'https://search.rcsb.org/rcsbsearch/v2/query'
@@ -780,7 +781,7 @@ class RCSBUtil:
             _rcsb_file_download: Download the rcsb structure file and save it to the scratch area
                                 Return the saved file path
         """
-        rcsb_filename = os.path.join(rcsb_id, ext, zp)
+        rcsb_filename = '.'.join([rcsb_id, ext, zp])
         dir_name = os.path.dirname(__file__)
         rcsb_file = os.path.join(dir_name, rcsb_filename)
 
@@ -815,7 +816,7 @@ class RCSBUtil:
                     {
                       'rcsb_infos': [{
                           'file_path': file_path,
-                          'file_extension': extension,
+                          'extension': extension,
                           'narrative_id': narrative_id,
                           'genome_name': genome_name,
                           'feature_id': feature_id,
@@ -832,26 +833,24 @@ class RCSBUtil:
             if p not in params:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
-        # Only extensions ‘.cif’ or ‘.pdb’ are valid
-        accepted_extensions = ['.pdb', '.cif']
+        # Only extensions ‘cif’ or ‘pdb’ are valid
+        accepted_extensions = ['pdb', 'cif']
         rcsb_infos = params.get('rcsb_infos', None)
         params['skipped_rcsb_ids'] = list()
 
         rinfos_deepcopy = deepcopy(rcsb_infos)
         for rinfo in rinfos_deepcopy:
-            ext = rinfo.get('extension', '')
-            if ext:
-                if ext.find('.') == -1:
-                    ext = '.' + ext
+            ext = rinfo.get('extension', '').replace('.', '')
 
             if ext not in accepted_extensions:
                 logging.info(f"File extension {ext} is not supported at this time, "
                              f"therefore structure {rinfo['rcsb_id']} will not be imported.")
-                rcsb_infos.remove(rinfo)
+                rinfos_deepcopy.remove(rinfo)
                 params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
                 continue
+            rinfo['extension'] = ext
 
-        rinfos_deepcopy = deepcopy(rcsb_infos)
+        rinfos_deepcopy = deepcopy(rinfos_deepcopy)
         for rinfo in rinfos_deepcopy:
             file_path = self._rcsb_file_download(rinfo['rcsb_id'], rinfo['extension'])
             if file_path:
@@ -859,10 +858,10 @@ class RCSBUtil:
             else:
                 logging.info(f"File download for structure {rinfo['rcsb_id']} failed, "
                              f"therefore structure {rinfo['rcsb_id']} will not be imported.")
-                rcsb_infos.remove(rinfo)
+                rinfos_deepcopy.remove(rinfo)
                 params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
 
-        params['rcsb_infos'] = rcsb_infos
+        params['rcsb_infos'] = rinfos_deepcopy
         return params
 
     def _write_taxon_string(self, taxons):
@@ -1023,6 +1022,10 @@ class RCSBUtil:
 
             expl_method = '<br>'.join(pdb_struct.get('method', []))
 
+            components = []
+            for npe in pdb_struct.get('nonpolymer_entities', []):
+                components.append(self._get_cpd_match(npe))
+
             prim_cite = pdb_struct.get('primary_citation', {})
             pubmed_url = 'https://pubmed.ncbi.nlm.nih.gov/'
             prim_cite_str = ''
@@ -1040,10 +1043,6 @@ class RCSBUtil:
 
             (prot_sequences, pdb_chains, taxons, src_dbs, ec_numbers, rcsb_ecs, uniprotIDs,
                 uniprotNames) = self._get_poly_entity_data(pdb_struct)
-
-            components = []
-            for npe in pdb_struct.get('nonpolymer_entities', []):
-                components.append(self._get_cpd_match(npe))
 
             tbody_html += (f'\n<td><a href="https://www.rcsb.org/3d-view/{rcsb_id}"'
                            f'style="cursor: pointer;" target="_blank" '
@@ -1233,18 +1232,22 @@ class RCSBUtil:
 
         return returnVal
 
-    def import_rcsbs(self, params, workspace_name):
+    def upload_rcsbs(self, params, workspace_name):
         """
-            import_rcsbs: uploading the rcsb structures
+            upload_rcsbs: uploading the rcsb structures defined via params['rcsb_infos']
         """
+        # Call _validate_import_rcsb_params to validate input params and
+        # download the rcsb structure files one by one.
+        params = self._validate_import_rcsb_params(params)
+        logging.info(f'Parameters modified to be used by RCSBUtil.upload_rcsbs as:\n{params}')
+
         pdb_objects = list()
         pdb_infos = list()
         successful_ids = list()
         skipped_ids = params.get('skipped_rcsb_ids', list())
 
-        rcsb_infos = params['rcsb_infos']
         # loop through the list of pdb_file_paths
-        for rinfo in rcsb_infos:
+        for rinfo in params.get('rcsb_infos', None):
             pdb_params = {}
             file_path = rinfo['file_path']
             rid = rinfo['rcsb_id']
@@ -1257,7 +1260,7 @@ class RCSBUtil:
             pdb_params['structure_name'] = rid
             pdb_params['is_model'] = rinfo['is_model']
 
-            if 'pdb' in rinfo['file_extension']:
+            if 'pdb' in rinfo['extension']:
                 pdb_data, pdb_info = self.pdb_util.import_pdb_file(pdb_params)
                 if pdb_data:
                     pdb_objects.append(pdb_data)
@@ -1289,14 +1292,10 @@ class RCSBUtil:
                 report_name: name of generated report (if any)
                 report_ref: report reference (if any)
 
-            1. call _validate_import_rcsb_params to validate input params and download
-               the rcsb structure files one by one
-            2. upload: call import_rcsbs()
-            3. assemble the data for a ProteinStructures and save the data object
-            4. call PDBUtil.saveStructures_createReport to generate a report for batch_import_pdbs'.
+            1. upload: call upload_rcsbs()
+            2. assemble the data for a ProteinStructures and save the data object
+            3. call PDBUtil.saveStructures_createReport to generate a report for batch_import_pdbs'.
         """
-        params = self._validate_import_rcsb_params(params)
-
         workspace_name = params.get('workspace_name', '')
         structures_name = params.get('structures_name', '')
         if not isinstance(workspace_name, int):
@@ -1311,7 +1310,7 @@ class RCSBUtil:
         protein_structures = dict()
 
         pdb_objects, pdb_infos,
-        successful_ids, skipped_ids = self.import_rcsbs(params, workspace_name)
+        successful_ids, skipped_ids = self.upload_rcsbs(params, workspace_name)
 
         if not pdb_objects:
             logging.info("No pdb structure was created/saved!")
