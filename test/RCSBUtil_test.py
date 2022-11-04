@@ -673,29 +673,28 @@ class RCSBUtilsTest(unittest.TestCase):
         struct_ret_and = self.rcsb_util.query_structure_info(params2)
         self.assertEqual(len(struct_ret_and.get('rcsb_ids', [])), 67)
 
-    #@unittest.skip('test_validate_import_rcsb_params')
+    @unittest.skip('test_validate_import_rcsb_params')
     def test_validate_import_rcsb_params(self):
-        id_list = ['1A0I', '1A49', '1A5U', '1A82', '1AQ2']
         params1 = {
             'workspace_name': self.wsName,
             'structures_name': 'structs_name',
             'rcsb_infos': [{
-                'rcsb_id': id_list[0],
+                'rcsb_id': '1A0I',
                 'extension': '.pdb',
                 'narrative_id': 555,
                 'genome_name': 'ATCC_49442',
                 'feature_id': 'CDS.123',
                 'is_model': 1
             }, {
-                'rcsb_id': id_list[1],
-                'extension': '.pdb',
+                'rcsb_id': '1fat',
+                'extension': 'cif',
                 'narrative_id': 555,
                 'genome_name': 'ATCC_49442',
                 'feature_id': 'CDS.133',
                 'is_model': 1
             }, {
-                'rcsb_id': id_list[3],
-                'extension': '.abcd',
+                'rcsb_id': '1A49',
+                'extension': 'abcd',
                 'narrative_id': 555,
                 'genome_name': 'ATCC_49442',
                 'feature_id': 'CDS.143',
@@ -706,8 +705,53 @@ class RCSBUtilsTest(unittest.TestCase):
         params2 = self.rcsb_util._validate_import_rcsb_params(params1)
         self.assertEqual(len(params2['rcsb_infos']), 2)
 
-    #@unittest.skip('test_upload_rcsbs')
-    def test_upload_rcsbs(self):
+    #@unittest.skip('test_upload_rcsbs_1')
+    def test_upload_rcsbs_1(self):
+        id_list = ['6ifs', '6ift', '6ifw', '1fat']
+        params = {
+            'workspace_name': self.wsName,
+            'structures_name': 'structs_name',
+            'rcsb_infos': [{
+                'rcsb_id': id_list[0],
+                'extension': '.pdb',
+                'narrative_id': 57196,
+                'genome_name': 'Synthetic_bacterium_JCVI_Syn3_genome',
+                'feature_id': 'JCVISYN3_0004',
+                'is_model': 1
+            }, {
+                'rcsb_id': id_list[1],
+                'extension': '.pdb',
+                'narrative_id': 57196,
+                'genome_name': 'Synthetic_bacterium_JCVI_Syn3_genome',
+                'feature_id': 'JCVISYN3_0004',
+                'is_model': 1
+            }, {
+                'rcsb_id': id_list[2],
+                'extension': '.pdb',
+                'narrative_id': 57196,
+                'genome_name': 'Synthetic_bacterium_JCVI_Syn3_genome',
+                'feature_id': 'JCVISYN3_0004',
+                'is_model': 1
+            }, {
+                'rcsb_id': id_list[3],
+                'extension': '.cif',
+                'narrative_id': 57196,
+                'genome_name': 'Synthetic_bacterium_JCVI_Syn3_genome',
+                'feature_id': 'JCVISYN3_0001',
+                'is_model': 0
+            }]
+        }
+        pdb_objects = list()
+        pdb_infos = list()
+        successful_ids = list()
+        skipped_ids = list()
+        pdb_objects, pdb_infos, successful_ids, skipped_ids = self.rcsb_util.upload_rcsbs(
+                                                                    params, self.wsName)
+        self.assertTrue(pdb_infos)
+        self.assertEqual(len(pdb_infos), 3)
+
+    @unittest.skip('test_upload_rcsbs_2')
+    def test_upload_rcsbs_2(self):
         id_list = ['1A0I', '1A49', '1A5U', '1A82', '1AQ2']
         params = {
             'workspace_name': self.wsName,

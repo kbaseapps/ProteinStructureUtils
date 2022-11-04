@@ -838,30 +838,30 @@ class RCSBUtil:
         rcsb_infos = params.get('rcsb_infos', None)
         params['skipped_rcsb_ids'] = list()
 
-        rinfos_deepcopy = deepcopy(rcsb_infos)
-        for rinfo in rinfos_deepcopy:
+        rinfos_deepcopy1 = deepcopy(rcsb_infos)
+        for rinfo in rinfos_deepcopy1:
             ext = rinfo.get('extension', '').replace('.', '')
 
             if ext not in accepted_extensions:
                 logging.info(f"File extension {ext} is not supported at this time, "
                              f"therefore structure {rinfo['rcsb_id']} will not be imported.")
-                rinfos_deepcopy.remove(rinfo)
+                rinfos_deepcopy1.remove(rinfo)
                 params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
                 continue
             rinfo['extension'] = ext
 
-        rinfos_deepcopy = deepcopy(rinfos_deepcopy)
-        for rinfo in rinfos_deepcopy:
+        rinfos_deepcopy2 = deepcopy(rinfos_deepcopy1)
+        for rinfo in rinfos_deepcopy2:
             file_path = self._rcsb_file_download(rinfo['rcsb_id'], rinfo['extension'])
             if file_path:
                 rinfo['file_path'] = file_path
             else:
                 logging.info(f"File download for structure {rinfo['rcsb_id']} failed, "
                              f"therefore structure {rinfo['rcsb_id']} will not be imported.")
-                rinfos_deepcopy.remove(rinfo)
+                rinfos_deepcopy2.remove(rinfo)
                 params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
 
-        params['rcsb_infos'] = rinfos_deepcopy
+        params['rcsb_infos'] = rinfos_deepcopy2
         return params
 
     def _write_taxon_string(self, taxons):
@@ -1268,7 +1268,7 @@ class RCSBUtil:
                     successful_ids.append(file_path)
                 else:
                     skipped_ids.append(rid)
-            elif 'cif' in rinfo['file_extension']:
+            elif 'cif' in rinfo['extension']:
                 cif_data, pdb_info = self.pdb_util.import_mmcif_file(pdb_params)
                 if cif_data:
                     pdb_objects.append(cif_data)
