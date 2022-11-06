@@ -838,9 +838,13 @@ class RCSBUtil:
 
         if params.get('evalue_cutoff', None):
             self.EVALUE_CUTOFF = float(params['evalue_cutoff'])
+        else:
+            params['evalue_cutoff'] = self.EVALUE_CUTOFF
 
         if params.get('identity_cutoff', None):
             self.IDENTITY_CUTOFF = float(params['identity_cutoff'])
+        else:
+            params['identity_cutoff'] = self.IDENTITY_CUTOFF
 
         # Only extensions ‘cif’ or ‘pdb’ are valid
         accepted_extensions = ['pdb', 'cif']
@@ -1274,6 +1278,8 @@ class RCSBUtil:
             pdb_params['workspace_name'] = params['workspace_name']
             pdb_params['structure_name'] = rid
             pdb_params['is_model'] = rinfo['is_model']
+            pdb_params['evalue_cutoff'] = params['evalue_cutoff']
+            pdb_params['identity_cutoff'] = params['identity_cutoff']
 
             if 'pdb' in rinfo['extension']:
                 pdb_data, pdb_info = self.pdb_util.import_pdb_file(pdb_params)

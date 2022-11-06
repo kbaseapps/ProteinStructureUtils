@@ -459,7 +459,7 @@ class RCSBUtilsTest(unittest.TestCase):
             print(f'RCSB query by sequence/ecnum/uniprotid returned {ret[k1]} ids.')
 
     # Not implemented yet, so skipped for now
-    #@unittest.skip('test_get_pdb_ids_by_source_organism')
+    @unittest.skip('test_get_pdb_ids_by_source_organism')
     def test_get_pdb_ids_by_source_organism(self):
         ret = self.rcsb_util._get_pdb_ids(self.inputJsonObj2)
         k1 = 'total_count'
@@ -739,7 +739,9 @@ class RCSBUtilsTest(unittest.TestCase):
                 'genome_name': 'Synthetic_bacterium_JCVI_Syn3_genome',
                 'feature_id': 'JCVISYN3_0001',
                 'is_model': 0
-            }]
+            }],
+            'evalue_cutoff': 1e-20,
+            'identity_cutoff': 0.35,
         }
         pdb_objects = list()
         pdb_infos = list()
@@ -769,7 +771,9 @@ class RCSBUtilsTest(unittest.TestCase):
                 'genome_name': 'MLuteus_ATCC_49442',
                 'feature_id': 'MLuteus_masurca_RAST.CDS.133',
                 'is_model': 1
-            }]
+            }],
+            'evalue_cutoff': 1e-20,
+            'identity_cutoff': 0.35,
         }
         pdb_objects = list()
         pdb_infos = list()
