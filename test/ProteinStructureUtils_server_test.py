@@ -847,6 +847,68 @@ class ProteinStructureUtilsTest(unittest.TestCase):
 
         print(f'Checking the newly saved object data and info for {structs_ref}\n')
 
+    # saveStructures_createReport
+    #@unittest.skip('test_saveStructures_createReport')
+    def test_saveStructures_createReport(self):
+        struct_objects = {
+            'protein_structures': [{
+                'name': 'crystal structure of fdr9',
+                'num_chains': 1,
+                'num_residues': 393,
+                'num_atoms': 6226,
+                'compound': {'misc': '', 'molecule': 'putative oxidoreductase',
+                             'chain': 'b', 'engineered': 'yes'},
+                'source': {'misc': '', 'organism_scientific': 'thermobifida fusca yx',
+                           'organism_taxid': '269800', 'gene': 'tfu_1273',
+                           'expression_system': 'escherichia coli',
+                           'expression_system_taxid': '562',
+                           'expression_system_vector_type': 'plasmid',
+                           'expression_system_plasmid': 'pet28a'},
+                           'proteins': [{'id': '6TUK.pdb.gz', 'model_id': 0, 'chain_id': 'B',
+                                         'sequence': 'MERIVIVGGGLAASRTCEQLRSRGYEGELVAEPHPPYDPSHORT',
+                                         'md5': 'a493e65f63ab6d3e4a7c1ff86c75bf0a',
+                                         'seq_identity': 0.68932,
+                                         'exact_match': 0,
+                                         'genome_ref': '63679/38/1',
+                                         'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+                                         'feature_type': 'gene'
+                                        }],
+                            'pdb_handle': 'KBH_209585',
+                            'user_data': '',
+                            'is_model': 1
+            }],
+            'total_structures': 1,
+            'description': 'ONE structure created'
+        }
+        pdb_infos = [{
+            'rcsb_id': '6TUK',
+            'extension': '.pdb',
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_49442',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+            'is_model': 1,
+            'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
+            'genome_ref': '63679/38/1',
+            'feature_type': 'gene',
+            'sequence_identities': '68.93%',
+            'chain_ids': 'Model 1.Chain B',
+            'model_ids': '0',
+            'exact_matches': '0',
+            'scratch_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz')
+        }]
+        failed_ids = ['1A0I']
+
+        structs_name = 'test_saveNreport_struct'
+        if not isinstance(self.wsName, int):
+            workspace_id = self.dfu.ws_name_to_id(self.wsName)
+        else:
+            workspace_id = self.wsName
+
+        ret = self.pdb_util.saveStructures_createReport(structs_name, workspace_id, self.wsName,
+                                                        struct_objects, pdb_infos, failed_ids,
+                                                        rcsb=True)
+        self.assertIn('batch_import_rcsb_report', ret['report_name'])
+
     # Testing self.serviceImpl functions
     #@unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -939,14 +1001,13 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(ret[0]['shock_ids']), 12)
 
     # '62713/24/1' is in CI, so skipped here.
-    @unittest.skip('test_export_pdb_structures')
-    def test_export_pdb_structures_ci(self):
+    # ('ci_export_pdb_structures')
+    def ci_export_pdb_structures_ci(self):
         params = {'input_ref': '62713/24/1'}
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_ids'])
 
-    #@unittest.skip('test_dfu_save_proteinstructure')
-    def test_dfu_save_proteinstructure(self):
+    def dfu_save_proteinstructure(self):
         """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
 
         obj_to_save = {

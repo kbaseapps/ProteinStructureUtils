@@ -130,7 +130,7 @@ class RCSBUtil:
             self.EVALUE_CUTOFF = float(params['evalue_cutoff'])
 
         if params.get('identity_cutoff', None):
-            self.IDENTITY_CUTOFF = params['identity_cutoff']
+            self.IDENTITY_CUTOFF = float(params['identity_cutoff'])
 
         return params
 
@@ -154,7 +154,7 @@ class RCSBUtil:
             self.EVALUE_CUTOFF = float(params['evalue_cutoff'])
 
         if params.get('identity_cutoff', None):
-            self.IDENTITY_CUTOFF = params['identity_cutoff']
+            self.IDENTITY_CUTOFF = float(params['identity_cutoff'])
 
         if params.get('logical_and', None):
             self.LOGICAL_AND = params['logical_and']
@@ -430,7 +430,7 @@ class RCSBUtil:
         """
             _queryGraphql: Given a list of rcsb_ids, Query the RCSB GraphQL API
         """
-        logging.info(f'Querying GraphQL db for the structures of {len(id_list)} rcsd_ids')
+        # logging.info(f'Querying GraphQL db for the structures of {len(id_list)} rcsd_ids')
         if not id_list:
             return {'data': None}
         queryString = self.__graphqlQueryTemplate % '", "'.join(id_list)
@@ -578,7 +578,7 @@ class RCSBUtil:
         """
             _get_pdb_ids: creates rcsb query parameters & run the query to fetch a lost of rcsb_ids
         """
-        logging.info(f'Fetching the list of rcsd_ids with query filter {inputJsonObj}')
+        # logging.info(f'Fetching the list of rcsd_ids with query filter {inputJsonObj}')
         try:
             retIdList = []
             id_score_dict = {}
@@ -622,7 +622,7 @@ class RCSBUtil:
             outputObj['id_list'] = retIdList
             outputObj['id_score_dict'] = id_score_dict
             outputObj['inputJsonObj'] = inputJsonObj
-            logging.info(f'Fetched {len(retIdList)} rcsd_ids with query filter {inputJsonObj}')
+            # logging.info(f'Fetched {len(retIdList)} rcsd_ids with query filter {inputJsonObj}')
             return outputObj
         except Exception as e:
             raise e
@@ -675,7 +675,7 @@ class RCSBUtil:
                                  and self._filter_by_identity(seq_idens, iden_cutoff) to fetch the
                                  best sequence identity (similarity) matches
         """
-        logging.info(f'Blast {input_seq} against rcsb matches...')
+        # logging.info(f'Blast {input_seq} against rcsb matches...')
 
         if not gql_data:
             return []
@@ -730,7 +730,7 @@ class RCSBUtil:
         """
             _get_graphql_data - Query the RCSB GraphQL API, fetch data from GraphQL return
         """
-        logging.info(f'Fetch GraphQL data for the structures of {len(id_list)} rcsd_ids')
+        # logging.info(f'Fetch GraphQL data for the structures of {len(id_list)} rcsd_ids')
         # Split large id list into multiple 100 id lists to avoid server connection time-out problem
         chunkSize = 100
         idListChunks = [id_list[i:i+chunkSize] for i in range(0, len(id_list), chunkSize)]
@@ -756,7 +756,7 @@ class RCSBUtil:
                                              then compute using specified Evalue and filter with
                                              sequence similarity threshold; return formatted data
         """
-        logging.info(f'Fetch and filter GraphQL data for the structures of {len(id_list)} rcsd_ids')
+        # logging.info(f'Fetch and filter GraphQL data for the structures of {len(id_list)} rcsd_ids')
         # Split large id list into multiple 100 id lists to avoid server connection time-out problem
         chunkSize = 100
         idListChunks = [id_list[i:i+chunkSize] for i in range(0, len(id_list), chunkSize)]
@@ -781,6 +781,7 @@ class RCSBUtil:
             _rcsb_file_download: Download the rcsb structure file and save it to the scratch area
                                 Return the saved file path
         """
+        ext = ext.replace('.', '')
         rcsb_filename = '.'.join([rcsb_id, ext, zp])
         dir_name = os.path.dirname(__file__)
         rcsb_file = os.path.join(dir_name, rcsb_filename)
@@ -796,7 +797,7 @@ class RCSBUtil:
             with open(rcsb_file, 'wb') as rcsb_pt:
                 rcsb_pt.write(resp.content)
             shutil.copy(rcsb_file, rcsb_filepath)
-            logging.info(f'The rcsb file {rcsb_filename} has been downloaded to {rcsb_filepath}.')
+            # logging.info(f'The rcsb file {rcsb_filename} has been downloaded to {rcsb_filepath}.')
             return rcsb_filepath
         except (HTTPError, ConnectionError, RequestException) as e:
             logging.info(" ERROR ".center(30, "-"))
@@ -823,7 +824,9 @@ class RCSBUtil:
                           'is_model': is_model
                       }, ...],
                       'structures_name': structures_name,
-                      'workspace_name': workspace_name
+                      'workspace_name': workspace_name,
+                      'evalue_cutoff': 1e-10,
+                      'identity_cutoff': 0.50
                     }
             Note: If the file download failed, the corresponding structure entry is removed
                   from params and will be skipped from importing.
@@ -833,13 +836,19 @@ class RCSBUtil:
             if p not in params:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
+        if params.get('evalue_cutoff', None):
+            self.EVALUE_CUTOFF = float(params['evalue_cutoff'])
+
+        if params.get('identity_cutoff', None):
+            self.IDENTITY_CUTOFF = float(params['identity_cutoff'])
+
         # Only extensions ‘cif’ or ‘pdb’ are valid
         accepted_extensions = ['pdb', 'cif']
         rcsb_infos = params.get('rcsb_infos', None)
         params['skipped_rcsb_ids'] = list()
 
         rinfos_deepcopy1 = deepcopy(rcsb_infos)
-        for rinfo in rinfos_deepcopy1:
+        for rinfo in rcsb_infos:
             ext = rinfo.get('extension', '').replace('.', '')
 
             if ext not in accepted_extensions:
@@ -848,13 +857,16 @@ class RCSBUtil:
                 rinfos_deepcopy1.remove(rinfo)
                 params['skipped_rcsb_ids'].append(rinfo['rcsb_id'])
                 continue
-            rinfo['extension'] = ext
 
         rinfos_deepcopy2 = deepcopy(rinfos_deepcopy1)
-        for rinfo in rinfos_deepcopy2:
-            file_path = self._rcsb_file_download(rinfo['rcsb_id'], rinfo['extension'])
+        for rinfo1 in rinfos_deepcopy1:
+            file_path = self._rcsb_file_download(rinfo1['rcsb_id'], rinfo1['extension'])
             if file_path:
-                rinfo['file_path'] = file_path
+                rinfo1['file_path'] = file_path
+                for rinfo2 in rinfos_deepcopy2:
+                    if rinfo2['rcsb_id'] == rinfo1['rcsb_id']:
+                        rinfo2['file_path'] = rinfo1['file_path']
+                        continue
             else:
                 logging.info(f"File download for structure {rinfo['rcsb_id']} failed, "
                              f"therefore structure {rinfo['rcsb_id']} will not be imported.")
@@ -1006,9 +1018,9 @@ class RCSBUtil:
                 uniprotIDs,
                 uniprotNames)
 
-    def _write_struct_info(self, struct_info):
+    def _write_rcsb_struct_info(self, struct_info):
         """
-            _write_struct_info: write the query result info to replace the string
+            _write_rcsb_struct_info: write the query result info to replace the string
                                 '<!--replace query result tbody-->' in the jQuery
                                 DataTable jQuery in the template file 'pdbids_report_template.html'
         """
@@ -1076,7 +1088,7 @@ class RCSBUtil:
 
         query_path = os.path.join(output_directory, 'rcsb_query.json')
         shutil.copy(query_json, query_path)
-        logging.info(f'The JSON query sent to rcsb has been written to {query_path}.')
+        # logging.info(f'The JSON query sent to rcsb has been written to {query_path}.')
 
         idscores_json = os.path.join(dir_name, 'idscores.json')
         with open(idscores_json, 'w') as rcsbids_pt:
@@ -1084,7 +1096,7 @@ class RCSBUtil:
 
         idscores_path = os.path.join(output_directory, 'rcsb_ids_scores.json')
         shutil.copy(idscores_json, idscores_path)
-        logging.info(f'The rcsb_ids and scores JSON files have been written to {idscores_path}.')
+        # logging.info(f'The rcsb_ids and scores JSON files have been written to {idscores_path}.')
         return (query_path, idscores_path)
 
     def _query_rcsb_report_html(self, struct_info, rcsb_out, output_directory):
@@ -1094,7 +1106,7 @@ class RCSBUtil:
         input_json = rcsb_out.get('inputJsonObj', {})
         html_report = list()
 
-        pdblist_html = self._write_struct_info(struct_info)
+        pdblist_html = self._write_rcsb_struct_info(struct_info)
 
         dir_name = os.path.dirname(__file__)
         report_template_file = os.path.join(dir_name, 'templates', 'rcsb_query_report_template.html')
@@ -1160,7 +1172,7 @@ class RCSBUtil:
                 inputJsonObj = json.load(DATA)
 
             rcsb_output = self._get_pdb_ids(inputJsonObj)
-            logging.info(f'{rcsb_output["total_count"]} RCSB Structures found.')
+            # logging.info(f'{rcsb_output["total_count"]} RCSB Structures found.')
             return self._get_graphql_data(rcsb_output.get('id_list', []))
         except Exception as e:
             raise e
@@ -1190,10 +1202,10 @@ class RCSBUtil:
         idlist = rcsb_output.get('id_list', [])
         id_score_dict = rcsb_output.get('id_score_dict', {})
         if total_count and idlist:
-            logging.info(f'{total_count} RCSB Structures found.')
+            # logging.info(f'{total_count} RCSB Structures found.')
             struct_info = self._get_graphql_data(idlist)
-            logging.info('Retrieved structure information:')
-            logging.info(f"total_count={struct_info.get('total_count', 0)}")
+            # logging.info('Retrieved structure information:')
+            # logging.info(f"total_count={struct_info.get('total_count', 0)}")
             returnVal['rcsb_ids'] = struct_info.get('id_list', [])
             returnVal['rcsb_scores'] = id_score_dict
             if create_report:
@@ -1227,24 +1239,27 @@ class RCSBUtil:
                 search_ret = self._get_graphql_data_with_cutoffs(idlist, input_seq,
                                                                  self.EVALUE_CUTOFF,
                                                                  self.IDENTITY_CUTOFF)
-                logging.info(f'Retrieved structure information for {input_seq}')
+                # logging.info(f'Retrieved structure information for {input_seq}')
                 returnVal[input_seq] = search_ret[input_seq]
 
         return returnVal
 
-    def upload_rcsbs(self, params, workspace_name):
+    def upload_rcsbs(self, params):
         """
             upload_rcsbs: uploading the rcsb structures defined via params['rcsb_infos']
         """
         # Call _validate_import_rcsb_params to validate input params and
         # download the rcsb structure files one by one.
         params = self._validate_import_rcsb_params(params)
-        logging.info(f'Parameters modified to be used by RCSBUtil.upload_rcsbs as:\n{params}')
-
         pdb_objects = list()
         pdb_infos = list()
         successful_ids = list()
         skipped_ids = params.get('skipped_rcsb_ids', list())
+
+        if not params.get('rcsb_infos', []):
+            return pdb_objects, pdb_infos, successful_ids, skipped_ids
+
+        # logging.info(f'Parameters modified to be used by RCSBUtil.upload_rcsbs as:\n{params}')
 
         # loop through the list of pdb_file_paths
         for rinfo in params.get('rcsb_infos', None):
@@ -1256,13 +1271,14 @@ class RCSBUtil:
             pdb_params['input_staging_file_path'] = None
             pdb_params['input_file_path'] = file_path
             pdb_params['input_shock_id'] = None
-            pdb_params['workspace_name'] = workspace_name
+            pdb_params['workspace_name'] = params['workspace_name']
             pdb_params['structure_name'] = rid
             pdb_params['is_model'] = rinfo['is_model']
 
             if 'pdb' in rinfo['extension']:
                 pdb_data, pdb_info = self.pdb_util.import_pdb_file(pdb_params)
                 if pdb_data:
+                    # logging.info(f'import_pdb_file returned:\n{pdb_data}\nand:\n{pdb_info}')
                     pdb_objects.append(pdb_data)
                     pdb_infos.append(pdb_info)
                     successful_ids.append(file_path)
@@ -1271,6 +1287,7 @@ class RCSBUtil:
             elif 'cif' in rinfo['extension']:
                 cif_data, pdb_info = self.pdb_util.import_mmcif_file(pdb_params)
                 if cif_data:
+                    # logging.info(f'import_mmcif_file returned:\n{cif_data}\nand:\n{pdb_info}')
                     pdb_objects.append(cif_data)
                     pdb_infos.append(pdb_info)
                     successful_ids.append(file_path)
@@ -1306,11 +1323,10 @@ class RCSBUtil:
 
         pdb_objects = list()
         pdb_infos = list()
-        successful_ids = list()
+        successful_files = list()
         protein_structures = dict()
 
-        pdb_objects, pdb_infos,
-        successful_ids, skipped_ids = self.upload_rcsbs(params, workspace_name)
+        pdb_objects, pdb_infos, successful_files, skipped_ids = self.upload_rcsbs(params)
 
         if not pdb_objects:
             logging.info("No pdb structure was created/saved!")
@@ -1322,6 +1338,7 @@ class RCSBUtil:
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {params.get("structures_name")}')
 
+        # logging.info(f'Before save structure and reporting:\n{pdb_objects}')
         return self.pdb_util.saveStructures_createReport(structures_name, workspace_id,
                                                          workspace_name, protein_structures,
-                                                         pdb_infos, skipped_ids)
+                                                         pdb_infos, skipped_ids, rcsb=True)

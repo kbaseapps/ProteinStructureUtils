@@ -27,6 +27,7 @@ from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 from installed_clients.WorkspaceClient import Workspace
 from installed_clients.baseclient import ServerError as WorkspaceError
+from symbol import pass_stmt
 
 
 class PDBUtil:
@@ -104,7 +105,7 @@ class PDBUtil:
                 Do the PDB conversion--use PDB.PDBParser to parse the pdb file for
                                        creating a pdb data object
         """
-        logging.info(f'Parsing pdb file {file_path} to a ProteinData object with params: {params}')
+        # logging.info(f'Parsing pdb file {file_path} to a ProteinData object with params: {params}')
 
         pp_no = 0
         pdb_data = {}
@@ -127,6 +128,7 @@ class PDBUtil:
             model = structure[0]
             protein_data = self._get_proteins_by_structure(structure, model.get_id(), file_path)
             (protein_data, params) = self._match_features(params, protein_data)
+
             pdb_info = params.get('pdb_info', None)
             if pdb_info and pdb_info.get('sequence_identities', None):
                 pdb_data = {
@@ -150,7 +152,7 @@ class PDBUtil:
                 Do the PDB conversion--use PDB.MMCIFParser to parse the experiment pdb file for
                                        creating a pdb data object
         """
-        logging.info(f'Parsing pdb file {file_path} to a ProteinData object with params: {params}')
+        # logging.info(f'Parsing pdb file {file_path} to a ProteinData object with params: {params}')
 
         parser = PDB.MMCIFParser()
         cif = file_path
@@ -213,7 +215,7 @@ class PDBUtil:
         finally:
             return mmcif_data, pp_no, params
 
-    def _match_features(self, params, protein_data, identity_threshold=None):
+    def _match_features(self, params, protein_data):
         """
             _match_features: match the protein_translation in feature_id with chain sequences in
                              protein_data and compute the seq_identity and determine the exact_match
@@ -223,7 +225,13 @@ class PDBUtil:
                     feature_id = 'JCVISYN3_0004_CDS_1', feature_type = 'CDS' OR
                     feature_id = 'JCVISYN3_0004', feature_type = 'gene'
         """
-        if not identity_threshold:
+        if params.get('evalue_cutoff', None):
+            evalue_cutoff = float(params['evalue_cutoff'])
+        else:
+            evalue_cutoff = self.E_VALUE_THRESH
+        if params.get('identity_cutoff', None):
+            identity_threshold = float(params['identity_cutoff'])
+        else:
             identity_threshold = self.B_IDENTITY_THRESH
 
         pdb_info = params.get('pdb_info', None)
@@ -234,7 +242,7 @@ class PDBUtil:
             narr_id = pdb_info['narrative_id']
             feature_id = pdb_info['feature_id']
 
-            logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
+            # logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
             # 1. Get the genome's features and reference
             (gn_ref, kb_genome_features) = self._get_genome_ref_features(narr_id, genome_name)
             if not gn_ref:
@@ -245,7 +253,7 @@ class PDBUtil:
             # 2. Match the genome features with the specified feature_id to obtain feature sequence
             for feat in kb_genome_features:
                 if feat['id'] == feature_id:
-                    logging.info(f'Found genome feature match for {feature_id}')
+                    # logging.info(f'Found genome feature match for {feature_id}')
                     kb_feature_type = self._get_feature_type(feat)
                     kb_feature_seq = feat.get('protein_translation', '')
                     break
@@ -255,8 +263,8 @@ class PDBUtil:
             # 3. Call self._compute_sequence_identity with the feature sequence and the the pdb
             # proteins' translations to to get the seq_identity and exact_match
             if kb_feature_seq:
-                logging.info(f"Finding seq_identity and exact_match for feature {feature_id}"
-                             f" in genome {genome_name}'s features...")
+                # logging.info(f"Finding seq_identity and exact_match for feature {feature_id}"
+                #             f" in genome {genome_name}'s features...")
                 pdb_chain_ids = []
                 pdb_model_ids = []
                 pdb_seq_idens = []
@@ -264,7 +272,7 @@ class PDBUtil:
                 pdb_exact_matches = []
                 for prot in protein_data:
                     seq_idens, seq_mats, evals = self._compute_sequence_identity(
-                                                    kb_feature_seq, prot.get('sequence', ''))
+                        kb_feature_seq, prot.get('sequence', ''), evalue_threshold=evalue_cutoff)
                     if seq_idens:
                         seq_idens.sort()
                         max_iden = seq_idens.pop()
@@ -338,36 +346,36 @@ class PDBUtil:
             p = subprocess.Popen(blastp_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                  universal_newlines=True)
             output, errors = p.communicate()
-            if not output:
-                logging.info(f'BLASTp returned: {p.returncode}')
-                logging.info(f'OK> output: {output}')
+            #if not output:
+            #    logging.info(f'BLASTp returned: {p.returncode}')
+            #    logging.info(f'OK> output: {output}')
             if errors:
                 e = subprocess.CalledProcessError(p.returncode, blastp_cmd, output=output)
                 raise e
         except OSError as e:
             logging.info(f'OSError > {e.errno}')
             logging.info(f'OSError > {e.strerror}')
-            logging.info(f'OSError > {e.filename}')
+            # logging.info(f'OSError > {e.filename}')
         except subprocess.CalledProcessError as e:
             logging.info(f'CalledError > {e.returncode}')
-            logging.info(f'CalledError > {e.output}')
+            # logging.info(f'CalledError > {e.output}')
         except:
             logging.info(f'Unexpected error > {sys.exc_info()[0]}')
         else:
             with open(output_file_path) as blast_fhd:
                 blast_record = NCBIXML.read(blast_fhd)
                 if blast_record:
-                    logging.info(f'query: {blast_record.query[:100]}')
+                    # logging.info(f'query: {blast_record.query[:100]}')
                     for alignment in blast_record.alignments:
                         for hsp in alignment.hsps:
                             if hsp.expect < evalue_threshold:
                                 logging.info('****Alignment****')
-                                logging.info(f'sequence: {alignment.title}')
+                                # logging.info(f'sequence: {alignment.title}')
                                 logging.info(f'length: {alignment.length}')
                                 logging.info(f'e value: {hsp.expect}')
-                                logging.info(f'hsp query: {hsp.query}')
-                                logging.info(f'hsp match: {hsp.match}')
-                                logging.info(f'hsp subject: {hsp.sbjct}')
+                                # logging.info(f'hsp query: {hsp.query}')
+                                # logging.info(f'hsp match: {hsp.match}')
+                                # logging.info(f'hsp subject: {hsp.sbjct}')
                                 logging.info(f'hsp identities: {hsp.identities}')
                                 logging.info(f'hsp positives: {hsp.positives}')
                                 iden = round(hsp.identities/hsp.positives, 6)
@@ -488,13 +496,11 @@ class PDBUtil:
         """
         cpd_dict = dict()
         cpd = structure.header.get('compound', {})
-        # logging.info(f'Compound:\n {cpd}')
         if cpd and cpd.get('1'):
             cpd_dict = cpd.get('1')
 
         src_dict = dict()
         src = structure.header.get('source', {})
-        # logging.info(f'Source:\n {src}')
         if src and src.get('1'):
             src_dict = src.get('1')
 
@@ -572,7 +578,7 @@ class PDBUtil:
         """
             _upload_to_shock: upload target file to shock using DataFileUtil
         """
-        logging.info(f'Start uploading file to shock: {file_path}')
+        # logging.info(f'Start uploading file to shock: {file_path}')
 
         file_to_shock_params = {
             'file_path': file_path,
@@ -658,7 +664,7 @@ class PDBUtil:
             _read_file_by_type: read the file given by file_path depending on its type,
                                return a DataFrame object
         """
-        logging.info(f'Reading input from file: {file_path}...')
+        # logging.info(f'Reading input from file: {file_path}...')
 
         if not self._validate_file(file_path):
             raise ValueError('Input file is invalid or not found!')
@@ -700,7 +706,7 @@ class PDBUtil:
                      'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0},
                     and kbase object lists--narrative_ids, genome_names, feature_ids
         """
-        logging.info(f'Parsing metadata from input file {metadata_file_path}...')
+        # logging.info(f'Parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
                             'PDB filename', 'Is model']
@@ -770,12 +776,12 @@ class PDBUtil:
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
     def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
-                               pdb_infos, failed_pdbs):
+                               pdb_infos, failed_pdbs, rcsb=False):
         """
             _generate_batch_report: generate summary report for upload
         """
-
-        output_html_files = self._generate_batch_report_html(pdb_infos)
+        # logging.info(f'Entering PDBUtil._generate_batch_report...with rcsb={rcsb}')
+        output_html_files = self._generate_batch_report_html(pdb_infos, rcsb)
 
         description = (f'Imported PDBs into a ProteinStructures object "{structs_ref}", '
                        f'named "{structs_name}".')
@@ -784,13 +790,18 @@ class PDBUtil:
             failed_files = ','.join(failed_pdbs)
             description += f' These files "{failed_files}" failed to load.'
 
+        report_filename = 'batch_import_'
+        if rcsb:
+            report_filename += 'rcsb_report_'
+        else:
+            report_filename += 'pdb_report_'
         report_params = {'message': f'You have uploaded a batch of PDB files into {structs_name}.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
                          'objects_created': [{'ref': structs_ref,
                                               'description': description}],
                          'workspace_name': workspace_name,
-                         'report_object_name': 'batch_import_pdb_files_report_' + str(uuid.uuid4())}
+                         'report_object_name': report_filename + str(uuid.uuid4())}
 
         kbase_report_client = KBaseReport(self.callback_url, token=self.token)
         output = kbase_report_client.create_extended_report(report_params)
@@ -902,7 +913,7 @@ class PDBUtil:
 
         return viewer_tabs, viewer_content
 
-    def _write_structure_info(self, output_dir, succ_pdb_infos):
+    def _write_structure_info(self, output_dir, succ_pdb_infos, rcsb=False):
         """
             _write_structure_info: write the batch uploaded structure info to replace the string
                                    '<!--replace uploaded pdbs tbody-->' in the tboday tag of the
@@ -912,7 +923,7 @@ class PDBUtil:
         tbody_html = ''
         srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
         srv_base_url = f'https://{srv_domain}'
-        logging.info(f'Get the url for building the anchors: {srv_base_url}')
+        # logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
         for succ_pdb in succ_pdb_infos:
             tbody_html += '<tr>'
@@ -921,7 +932,13 @@ class PDBUtil:
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
             shutil.copy(pdb_file_path, new_pdb_path)
 
-            struct_nm = succ_pdb['structure_name'].upper()
+            if succ_pdb.get('structure_name', None):
+                struct_id = succ_pdb['structure_name'].upper()
+            elif succ_pdb.get('rcsb_id', None):
+                struct_id = succ_pdb['rcsb_id'].upper()
+            else:
+                struct_id = 'Unknown strtucture name'
+
             genome_name = succ_pdb['genome_name']
             genome_ref = succ_pdb['genome_ref']
             feat_id = succ_pdb['feature_id']
@@ -933,10 +950,16 @@ class PDBUtil:
             if succ_pdb.get('sequence_identities', None):
                 seq_idens = succ_pdb['sequence_identities']
 
-            tbody_html += (f'\n<td><div class="subtablinks" '
-                           f'onclick="openSubTab(event, this, false)" '
-                           f'style="cursor:pointer;color:blue;text-decoration:underline;" '
-                           f'title="Click to see in mol*">{struct_nm}</div></td>')
+            if not rcsb:
+                tbody_html += (f'\n<td><div class="subtablinks" '
+                               f'onclick="openSubTab(event, this, false)" '
+                               f'style="cursor:pointer;color:blue;text-decoration:underline;" '
+                               f'title="Click to see in mol*">{struct_id}</div></td>')
+            else:
+                tbody_html += (f'\n<td><a href="https://www.rcsb.org/3d-view/{struct_id}"'
+                               f'style="cursor: pointer;" target="_blank" '
+                               f'title="3D Structure Viewer">{struct_id}</a></td>')
+
             tbody_html += (f'\n<td><a href="{srv_base_url}/#dataview/{genome_ref}"'
                            f' target="_blank">{genome_name}</a></td><td>{feat_id}</td>')
             tbody_html += f'\n<td>{pdb_chains} </td>'
@@ -945,46 +968,53 @@ class PDBUtil:
 
         return tbody_html
 
-    def _generate_batch_report_html(self, succ_pdb_infos):
+    def _generate_batch_report_html(self, succ_pdb_infos, rcsb=False):
         """
             _generate_batch_report_html: generates the HTML for the upload report
         """
         html_report = list()
 
-        # Make report directory and copy over uploaded pdb files
+        # Make report directory for writing and copying over uploaded pdb files
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
-
-        pdb_html = self._write_structure_info(output_directory, succ_pdb_infos)
-        single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
-        viewer_tabs, multi_viewer = self._write_viewer_content_multi(output_directory,
-                                                                     succ_pdb_infos)
+        pdb_html = self._write_structure_info(output_directory, succ_pdb_infos, rcsb)
 
         dir_name = os.path.dirname(__file__)
-        report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
-        report_html = os.path.join(dir_name, 'batch_pdb_viewer.html')
+        if rcsb:
+            report_template_file = os.path.join(dir_name, 'templates', 'batch_rcsb_template.html')
+            report_html = os.path.join(dir_name, 'batch_import_rcsb_viewer.html')
+        else:
+            report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
+            report_html = os.path.join(dir_name, 'batch_upload_viewer.html')
+            single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
+            viewer_tabs, multi_viewer = self._write_viewer_content_multi(output_directory,
+                                                                         succ_pdb_infos)
 
         with open(report_html, 'w') as report_html_pt:
             with open(report_template_file, 'r') as report_template_pt:
                 # Fetch & fill in detailed info into template HTML
                 batch_html_report = report_template_pt.read()\
                     .replace('<!--replace uploaded pdbs tbody-->', pdb_html)
-                batch_html_report = batch_html_report\
-                    .replace('<!--replace StructureViewer subtabs-->', viewer_tabs)
-                batch_html_report = batch_html_report\
-                    .replace('<!--replace subtab content multi-->', multi_viewer)
-                batch_html_report = batch_html_report\
-                    .replace('<!--replace subtab content single-->', single_viewer)
+                if not rcsb:
+                    batch_html_report = batch_html_report\
+                        .replace('<!--replace StructureViewer subtabs-->', viewer_tabs)
+                    batch_html_report = batch_html_report\
+                        .replace('<!--replace subtab content multi-->', multi_viewer)
+                    batch_html_report = batch_html_report\
+                        .replace('<!--replace subtab content single-->', single_viewer)
                 report_html_pt.write(batch_html_report)
 
-        molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
-        molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
-        molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
-        shutil.copy(molstar_js_file, os.path.join(output_directory, 'molstar.js'))
-        shutil.copy(molstar_css_file, os.path.join(output_directory, 'molstar.css'))
-        shutil.copy(molstar_ico_file, os.path.join(output_directory, 'favicon.ico'))
+        if not rcsb:
+            molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
+            molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
+            molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
+            shutil.copy(molstar_js_file, os.path.join(output_directory, 'molstar.js'))
+            shutil.copy(molstar_css_file, os.path.join(output_directory, 'molstar.css'))
+            shutil.copy(molstar_ico_file, os.path.join(output_directory, 'favicon.ico'))
+            batch_html_report_path = os.path.join(output_directory, 'batch_upload_report.html')
+        else:
+            batch_html_report_path = os.path.join(output_directory, 'batch_import_rcsb_report.html')
 
-        batch_html_report_path = os.path.join(output_directory, 'batch_pdb_report.html')
         shutil.copy(report_html, batch_html_report_path)
         logging.info(f'Full batch_report has been written to {batch_html_report_path}')
 
@@ -1036,7 +1066,7 @@ class PDBUtil:
             import_pdb_file: upload a pdb file and convert into a
                             KBaseStructure.ProteinStructure object
         """
-        logging.info(f'import_pdb_file to a pdb data structure with params: {params}')
+        # logging.info(f'import_pdb_file to a pdb data structure with params: {params}')
 
         # file_path is the pdb file's working area path (after dfu.download_staging_file call)
         file_path = self._validate_import_file_params(params)
@@ -1062,7 +1092,7 @@ class PDBUtil:
             import_mmcif_file: upload an mmcif file and convert into a
                               KBaseStructure.ProteinStructure object
         """
-        logging.info(f'import_mmcif_file to a pdb structure with params: {params}')
+        # logging.info(f'import_mmcif_file to a pdb structure with params: {params}')
 
         # file_path is the pdb file's working area path (after dfu.download_staging_file call)
         file_path = self._validate_import_file_params(params)
@@ -1136,7 +1166,7 @@ class PDBUtil:
         }
 
     def saveStructures_createReport(self, structures_name, workspace_id, workspace_name,
-                                    protein_structures, pdb_infos, failed_files):
+                                    protein_structures, pdb_infos, failed_files, rcsb=False):
         """
             saveStructures_createReport: With given inputs, save the ProteinStructures object
                                          create a report and return the final results
@@ -1150,18 +1180,18 @@ class PDBUtil:
                      'name': structures_name,
                      'data': protein_structures}]
             })[0]
-        except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
-            err_msg = f'DFU.save_objects errored with message: {e.message} and data: {e.data}'
-            raise ValueError(err_msg)
-        else:
-            structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
+            structs_ref = f'{info[6]}/{info[0]}/{info[4]}'
+            # logging.info(f'ProteinStructures data structure saved as:\n{structs_ref}')
             returnVal = {'structures_ref': structs_ref}
+        except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
+            err_msg = f'DFU.save_objects errored with: {e}'
+            raise ValueError(err_msg)
+        else:  # execute if no exception
             report_output = self._generate_batch_report(
-                        workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
+                    workspace_name, structs_ref, structures_name, pdb_infos, failed_files, rcsb)
             returnVal.update(report_output)
-            logging.info(f'ProteinStructures data structure saved as:\n{structs_ref}')
-        finally:
-            return returnVal
+
+        return returnVal
 
     def batch_import_pdbs(self, params):
         """

@@ -23,7 +23,7 @@
       "optional" : false,
       "advanced" : false,
       "allow_multiple" : false,
-      "default_values" : [ "" ],
+      "default_values" : [ "uploaded_proteinstructures" ],
       "field_type" : "text",
       "text_options" : {
         "valid_ws_types" : ["KBaseStructure.ProteinStructures"],

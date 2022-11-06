@@ -34,7 +34,7 @@ module ProteinStructureUtils {
   } BatchPDBImportOutput;
 
   /* batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files*/
-  funcdef batch_import_pdbs_from_metafile (BatchPDBImportParams params) returns (BatchPDBImportOutput result) authentication required;
+  funcdef batch_import_pdbs_from_metafile(BatchPDBImportParams params) returns (BatchPDBImportOutput result) authentication required;
 
   /* The information required by the importing app
     rcsb_id: rcsb structure id
@@ -57,11 +57,15 @@ module ProteinStructureUtils {
     rcsb_infos: a list of RCSBInfoStruct's
     structures_name: Proteinstructures object name
     workspace_name: workspace name for object to be saved to
+    evalue_cutoff: threshold of homology search
+    identity_cutoff: threshold for sequence identity match
   */
   typedef structure {
       list<RCSBInfoStruct> rcsb_infos;
       string structures_name;
       workspace_name workspace_name;
+      float evalue_cutoff;
+      float identity_cutoff;
   } ImportRCSBParams;
 
   typedef structure {
@@ -70,7 +74,7 @@ module ProteinStructureUtils {
       string report_ref;
   } ImportRCSBStructOutput;
 
-  funcdef import_rcsb_structures (ImportRCSBParams params) returns (ImportRCSBStructOutput result) authentication required;
+  funcdef import_rcsb_structures(ImportRCSBParams params) returns (ImportRCSBStructOutput result) authentication required;
 
   /* Input/output of the export_pdb_structures function
     input_ref: generics object reference
@@ -83,7 +87,7 @@ module ProteinStructureUtils {
       list<string> shock_ids;
   } ExportStructOutput;
 
-  funcdef export_pdb_structures (ExportParams params) returns (ExportStructOutput result) authentication required;
+  funcdef export_pdb_structures(ExportParams params) returns (ExportStructOutput result) authentication required;
 
   /* Input/output of the query_rcsb_structures function
     sequence_strings: a list of protein sequences

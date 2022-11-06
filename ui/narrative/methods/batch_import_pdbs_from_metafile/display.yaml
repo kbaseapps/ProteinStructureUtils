@@ -34,11 +34,11 @@ parameters :
 
     structures_name :
         ui-name : |
-            ProteinStructures object name
+            ProteinStructures name
         short-hint : |
-            Provide a name for the ProteinStructures that will be created by this importer
+            Provide a name for the ProteinStructures object that will be created by this importer
         long-hint : |
-            Provide a name for the ProteinStructures that will be created by this importer
+            Provide a name for the ProteinStructures object that will be created by this importer
 
 
 description : |
