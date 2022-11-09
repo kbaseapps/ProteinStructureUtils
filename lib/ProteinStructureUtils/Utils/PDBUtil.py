@@ -820,12 +820,12 @@ class PDBUtil:
                 f'layoutShowControls: true,\n'
                 f'layoutShowRemoteState: false,\n'
                 f'layoutShowSequence: true,\n'
-                f'layoutShowLog: false,\n'
+                f'layoutShowLog: true,\n'
                 f'layoutShowLeftPanel: true,\n'
-                f'viewportShowExpand: false,\n'
-                f'viewportShowSelectionMode: false,\n'
+                f'viewportShowExpand: true,\n'
+                f'viewportShowSelectionMode: true,\n'
                 f'viewportShowAnimation: true,\n'
-                f'collapseLeftPanel: false,\n'
+                f'collapseLeftPanel: true,\n'
                 f'}});\n')
 
     def _write_viewer_content_single(self, output_dir, succ_pdb_infos):
