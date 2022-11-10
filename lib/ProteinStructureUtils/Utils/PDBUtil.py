@@ -923,6 +923,9 @@ class PDBUtil:
         tbody_html = ''
         srv_domain = urlparse(self.shock_url).netloc  # parse url to get the domain portion
         srv_base_url = f'https://{srv_domain}'
+        if srv_base_url == 'https://kbase.us':
+            srv_base_url = 'https://narrative.kbase.us'
+
         # logging.info(f'Get the url for building the anchors: {srv_base_url}')
 
         for succ_pdb in succ_pdb_infos:
@@ -1064,7 +1067,7 @@ class PDBUtil:
     def import_pdb_file(self, params, create_report=False):
         """
             import_pdb_file: upload a pdb file and convert into a
-                            KBaseStructure.ProteinStructure object
+                            KBaseStructure.ProteinStructure data
         """
         # logging.info(f'import_pdb_file to a pdb data structure with params: {params}')
 
@@ -1090,7 +1093,7 @@ class PDBUtil:
     def import_mmcif_file(self, params, create_report=False):
         """
             import_mmcif_file: upload an mmcif file and convert into a
-                              KBaseStructure.ProteinStructure object
+                              KBaseStructure.ProteinStructure data
         """
         # logging.info(f'import_mmcif_file to a pdb structure with params: {params}')
 
