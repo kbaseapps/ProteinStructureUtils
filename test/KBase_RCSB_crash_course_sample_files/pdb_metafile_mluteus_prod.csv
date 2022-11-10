@@ -1,0 +1,6 @@
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model
+107138,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,MLuteus_AlphaFold_3483.pdb,yes
+107138,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3484,MLuteus_Alphafold_3484.pdb,yes
+107138,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,pdb_extract_MLuteus_133.cif,yes
+107138,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,ma-bak-cepc-0245.cif,yes
+107138,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,vinaoutNtarget_133.pdb,yes
