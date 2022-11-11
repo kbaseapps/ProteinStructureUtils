@@ -959,7 +959,7 @@ class PDBUtil:
                                f'style="cursor:pointer;color:blue;text-decoration:underline;" '
                                f'title="Click to see in mol*">{struct_id}</div></td>')
             else:
-                tbody_html += (f'\n<td><a href="https://www.rcsb.org/3d-view/{struct_id}"'
+                tbody_html += (f'\n<td><a href="https://www.rcsb.org/structure/{struct_id}"'
                                f'style="cursor: pointer;" target="_blank" '
                                f'title="3D Structure Viewer">{struct_id}</a></td>')
 
