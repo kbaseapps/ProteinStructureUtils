@@ -1060,7 +1060,7 @@ class RCSBUtil:
             (prot_sequences, pdb_chains, taxons, src_dbs, ec_numbers, rcsb_ecs, uniprotIDs,
                 uniprotNames) = self._get_poly_entity_data(pdb_struct)
 
-            tbody_html += (f'\n<td><a href="https://www.rcsb.org/3d-view/{rcsb_id}"'
+            tbody_html += (f'\n<td><a href="https://www.rcsb.org/structure/{rcsb_id}"'
                            f'style="cursor: pointer;" target="_blank" '
                            f'title="3D Structure Viewer">{rcsb_id}</a></td>')
             tbody_html += f'\n<td>{expl_method} </td>'
