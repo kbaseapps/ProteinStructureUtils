@@ -878,15 +878,21 @@ class PDBUtil:
         div_id = 'app_all'
         pre_loads = ''
         viewer_tabs = ('<div class="tab">'
-                       '<button id="AllStructures_sub" class="subtablinks" '
-                       'onclick="openSubTab(event, this)">ALL STRUCTURES</button>')
-        viewer_content = ('<div id="AllStructures" class="subtabcontent">'
-                          '<h2>Uploaded Structure(s)</h2><div id="app_all" class="app"></div>')
+                       # '<button id="AllStructures_sub" class="subtablinks" '
+                       # 'onclick="openSubTab(event, this)">ALL STRUCTURES</button>'
+                       )
+        viewer_content = (''
+                          # '<div id="AllStructures" class="subtabcontent">'
+                          # '<h2>Uploaded Structure(s)</h2><div id="app_all" class="app"></div>'
+                          )
 
         script_content = self._config_viewer(viewer_nm, div_id)
 
+        default_click = ''
         for succ_pdb in succ_pdb_infos:
             struct_nm = succ_pdb['structure_name'].upper()
+            if not default_click:
+                default_click = f'{struct_nm}_sub'
             file_path = succ_pdb['file_path']
             file_ext = succ_pdb['file_extension'][1:]
             if file_ext == 'cif':
@@ -911,7 +917,7 @@ class PDBUtil:
         viewer_content += script_content
         viewer_content += '\n</div>\n'
 
-        return viewer_tabs, viewer_content
+        return viewer_tabs, default_click
 
     def _write_structure_info(self, output_dir, succ_pdb_infos, rcsb=False):
         """
@@ -990,8 +996,10 @@ class PDBUtil:
             report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
             report_html = os.path.join(dir_name, 'batch_upload_viewer.html')
             single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
-            viewer_tabs, multi_viewer = self._write_viewer_content_multi(output_directory,
-                                                                         succ_pdb_infos)
+            # viewer_tabs, multi_viewer = self._write_viewer_content_multi(output_directory,
+            #                                                             succ_pdb_infos)
+            viewer_tabs, default_click = self._write_viewer_content_multi(output_directory,
+                                                                          succ_pdb_infos)
 
         with open(report_html, 'w') as report_html_pt:
             with open(report_template_file, 'r') as report_template_pt:
@@ -1001,10 +1009,13 @@ class PDBUtil:
                 if not rcsb:
                     batch_html_report = batch_html_report\
                         .replace('<!--replace StructureViewer subtabs-->', viewer_tabs)
-                    batch_html_report = batch_html_report\
-                        .replace('<!--replace subtab content multi-->', multi_viewer)
+                    # batch_html_report = batch_html_report\
+                    #    .replace('<!--replace subtab content multi-->', multi_viewer)
                     batch_html_report = batch_html_report\
                         .replace('<!--replace subtab content single-->', single_viewer)
+                    batch_html_report = batch_html_report\
+                        .replace('document.getElementById("AllStructures_sub").click()',
+                                 f'document.getElementById("{default_click}").click()')
                 report_html_pt.write(batch_html_report)
 
         if not rcsb:
