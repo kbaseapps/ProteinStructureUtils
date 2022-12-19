@@ -815,7 +815,8 @@ class PDBUtil:
             _config_viewer: write the mol* viewer configurations
         """
         return (f'<script type="text/javascript">\n'
-                f'let {viewer_nm} = new molstar.Viewer("{div_id}", {{\n'
+                #  f'let {viewer_nm} = new molstar.Viewer("{div_id}", {{\n'
+                f'molstar.Viewer.create("{div_id}", {{\n'
                 f'layoutIsExpanded: false,\n'
                 f'layoutShowControls: true,\n'
                 f'layoutShowRemoteState: false,\n'
@@ -826,7 +827,7 @@ class PDBUtil:
                 f'viewportShowSelectionMode: true,\n'
                 f'viewportShowAnimation: true,\n'
                 f'collapseLeftPanel: true,\n'
-                f'}});\n')
+                f'}}).then(viewer => {{\n')
 
     def _write_viewer_content_single(self, output_dir, succ_pdb_infos):
         """
@@ -856,9 +857,10 @@ class PDBUtil:
                        f'<div id="{div_id}" class="app"></div>\n')
 
             script_content = self._config_viewer(viewer_name, div_id)
-            script_content += (f'{viewer_name}.loadStructureFromUrl("./{base_filename}", '
+            script_content += (f'viewer.loadStructureFromUrl("./{base_filename}", '
                                f'"{file_ext}", false, {{ representationParams: '
-                               f'{{ theme: {{ globalName: "operator-name" }} }} }});')
+                               f'{{ theme: {{ globalName: "operator-name" }} }} }});\n'
+                               '});')
             script_content += '\n</script>'
 
             sub_div += script_content
@@ -905,10 +907,10 @@ class PDBUtil:
                             f'class="subtablinks" onclick="openSubTab(event, this)">'
                             f'{struct_nm}</button>')
 
-            pre_loads += (f'\n{viewer_nm}.loadStructureFromUrl("./{os.path.basename(file_path)}", '
+            pre_loads += (f'\nviewer.loadStructureFromUrl("./{os.path.basename(file_path)}", '
                           f'"{file_ext}", false, {{ representationParams: '
-                          f'{{ theme: {{ globalName: "operator-name" }} }} }});')
-
+                          f'{{ theme: {{ globalName: "operator-name" }} }} }});\n'
+                          '});')
         viewer_tabs += '\n</div>'
 
         # insert the structure file for preloading
@@ -1019,11 +1021,11 @@ class PDBUtil:
                 report_html_pt.write(batch_html_report)
 
         if not rcsb:
-            molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
-            molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
+            # molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
+            # molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
+            # shutil.copy(molstar_js_file, os.path.join(output_directory, 'molstar.js'))
+            # shutil.copy(molstar_css_file, os.path.join(output_directory, 'molstar.css'))
             molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
-            shutil.copy(molstar_js_file, os.path.join(output_directory, 'molstar.js'))
-            shutil.copy(molstar_css_file, os.path.join(output_directory, 'molstar.css'))
             shutil.copy(molstar_ico_file, os.path.join(output_directory, 'favicon.ico'))
             batch_html_report_path = os.path.join(output_directory, 'batch_upload_report.html')
         else:
