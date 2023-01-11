@@ -163,6 +163,10 @@ class RCSBUtil:
         inputJsonObj = {}
         for pk in queriables:
             if params.get(pk, None):
+                if pk == 'sequence_strings':
+                    # removes all whitespace (spaces, tabs, newlines) from params[pk]
+                    for i in range(len(params[pk])):
+                        params[pk][i] = ''.join(params[pk][i].split())
                 inputJsonObj[queriables[pk]] = params[pk]
 
         if not inputJsonObj:
@@ -975,7 +979,7 @@ class RCSBUtil:
         """
         prot_sequences = []
         pdb_chains = []
-        #src_organisms = []
+        # src_organisms = []
         taxons = []
         src_dbs = []
         ec_numbers = []
@@ -1225,7 +1229,7 @@ class RCSBUtil:
 
     def query_structure_anno(self, params):
         """
-            query_structure_anno: with given constraints, query structure info from RCSB database
+            query_structure_anno: with given constraints, query structure annotation from RCSB
         """
         # logging.info(f'query_structure_anno with params: {params}')
         params = self._validate_rcsb_seqquery_params(params)

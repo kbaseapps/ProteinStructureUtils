@@ -705,6 +705,29 @@ class RCSBUtilsTest(unittest.TestCase):
         params2 = self.rcsb_util._validate_import_rcsb_params(params1)
         self.assertEqual(len(params2['rcsb_infos']), 2)
 
+    #@unittest.skip('test_validate_rcsb_query_params')
+    def test_validate_rcsb_query_params(self):
+        params = {
+            'workspace_name': self.wsName,
+            'sequence_strings': self.inputJsonObj1['sequence']
+        }
+        jsObj, ws_name = self.rcsb_util._validate_rcsb_query_params(params)
+        self.assertTrue(ws_name)
+        self.assertEqual(jsObj['sequence'], self.inputJsonObj1['sequence'])
+
+        # testing handling input sequence containing whitespace (spaces, tabs, newlines)
+        seqs_list = ['MNL TELKNT PVSELITLG',
+                     'AKSGED\tIFGDGVLE\nILQDGF',
+                     'DIY  \tVSPSQI\tRRFN\nLRT\n']
+        params1 = {
+            'workspace_name': self.wsName,
+            'sequence_strings': seqs_list
+        }
+        jsObj, ws_name = self.rcsb_util._validate_rcsb_query_params(params1)
+        self.assertEqual(jsObj['sequence'][0], ''.join(seqs_list[0].split()))
+        self.assertEqual(jsObj['sequence'][1], ''.join(seqs_list[1].split()))
+        self.assertEqual(jsObj['sequence'][2], ''.join(seqs_list[2].split()))
+
     #@unittest.skip('test_upload_rcsbs_1')
     def test_upload_rcsbs_1(self):
         id_list = ['6ifs', '6ift', '6ifw', '1fat']

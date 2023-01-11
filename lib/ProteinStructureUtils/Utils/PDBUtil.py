@@ -27,7 +27,6 @@ from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 from installed_clients.WorkspaceClient import Workspace
 from installed_clients.baseclient import ServerError as WorkspaceError
-from symbol import pass_stmt
 
 
 class PDBUtil:
@@ -242,7 +241,6 @@ class PDBUtil:
             narr_id = pdb_info['narrative_id']
             feature_id = pdb_info['feature_id']
 
-            # logging.info(f"Looking up for feature {feature_id} in genome {genome_name}'s features")
             # 1. Get the genome's features and reference
             (gn_ref, kb_genome_features) = self._get_genome_ref_features(narr_id, genome_name)
             if not gn_ref:
@@ -250,6 +248,7 @@ class PDBUtil:
                 return protein_data, params
 
             pdb_info['genome_ref'] = gn_ref
+
             # 2. Match the genome features with the specified feature_id to obtain feature sequence
             for feat in kb_genome_features:
                 if feat['id'] == feature_id:
@@ -323,7 +322,7 @@ class PDBUtil:
         SeqIO.write(Seq1, query_seq, "fasta")
         SeqIO.write(Seq2, subject_seq, "fasta")
 
-        # on my laptop: blastp_path = '/Users/qzhang/miniconda3/bin/blastp'
+        # on a laptop: blastp_path = '/Users/username/miniconda3/bin/blastp'
         blastp_path = 'blastp'
         output_file_path = os.path.join(blast_dir, 'blast_output.xml')
 
@@ -395,7 +394,7 @@ class PDBUtil:
         (genome_info, genome_data) = self._get_object_info_data(narr_id, genome_name)
         if genome_info and genome_data:
             genome_ref = '/'.join([str(narr_id), str(genome_info[0]), str(genome_info[4])])
-            genome_features = genome_data['features']
+            genome_features = genome_data.get('features', None)
 
         return (genome_ref, genome_features)
 
