@@ -12,6 +12,7 @@ import pandas as pd
 import pathlib
 import subprocess
 from urllib.parse import urlparse
+from string import punctuation
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
@@ -702,15 +703,16 @@ class PDBUtil:
                      'narrative_id': narr_id,
                      'genome_name': obj_name,
                      'feature_id': feat_id,
-                     'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0},
+                     'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0,
+                     'from_rcsb': 1 if 'y' in from_rcsb or 'Y' in from_rcsb else 0},
                     and kbase object lists--narrative_ids, genome_names, feature_ids
         """
         # logging.info(f'Parsing metadata from input file {metadata_file_path}...')
 
         required_columns = ['Narrative ID', 'Object name (Genome AMA feature set)', 'Feature ID',
-                            'PDB filename', 'Is model']
+                            'PDB or RCSB ID', 'File Extension', 'Is model', 'From RCSB']
         # Only extensions ‘.cif’ or ‘.pdb’ are valid
-        accepted_extensions = ['.pdb', '.cif']
+        accepted_extensions = ['pdb', 'cif']
 
         pdb_file_paths = list()
         narrative_ids = list()
@@ -728,6 +730,7 @@ class PDBUtil:
                 raise ValueError(f'Required column "{col}" is missing!')
 
         for i in range(len(df_meta_data[df_columns[0]])):
+            skipped = False
             narr_id = int(df_meta_data[df_columns[0]][i])
             if not pd.isna(narr_id):
                 narrative_ids.append(narr_id)
@@ -746,31 +749,38 @@ class PDBUtil:
             else:
                 raise ValueError(f'Please fill all the rows in column: {required_columns[2]}!')
 
-            pdb_fn = df_meta_data[df_columns[3]][i]  # pdb_fn does not have staging dir prefix
-            if pd.isna(pdb_fn):
+            struct_name = df_meta_data[df_columns[3]][i]  # pdb_rcsb_id does not contain staging dir prefix
+            if pd.isna(struct_name):
                 raise ValueError(f'Please fill all the rows in column: {required_columns[3]}!')
 
-            (struct_name, ext) = os.path.splitext(os.path.basename(pdb_fn))
+            ext = df_meta_data[df_columns[4]][i].strip(punctuation)  # structure file extension
             if ext not in accepted_extensions:
-                # raise ValueError('Only files with extensions ".cif" or ".pdb" are accepted.')
-                print('Only files with extensions ".cif" or ".pdb" are accepted.')
+                # raise ValueError('Only files with extensions "cif" or "pdb" are accepted.')
+                print('Only files with extensions "cif" or "pdb" are accepted,',
+                      'others will be skipped')
+                skipped = True
 
-            is_model = df_meta_data[df_columns[4]][i]
-            if not pd.isna(is_model):
-                pdb_file_paths.append(
-                    {'file_path': pdb_fn,
-                     'file_extension': ext,
-                     'structure_name': struct_name,
-                     'narrative_id': narr_id,
-                     'genome_name': obj_name,
-                     'feature_id': feat_id,
-                     'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0}
-                )
-            else:
-                raise ValueError(f'Please fill all the rows in column: {required_columns[4]}!')
+            if not skipped:
+                pdb_fn = '.'.join([struct_name, ext])
+                is_model = df_meta_data[df_columns[5]][i]
+                from_rcsb = df_meta_data[df_columns[6]][i]
+                if not pd.isna(is_model) and not pd.isna(from_rcsb):
+                    pdb_file_paths.append(
+                        {'file_path': pdb_fn,
+                         'file_extension': ext,
+                         'structure_name': struct_name,
+                         'narrative_id': narr_id,
+                         'genome_name': obj_name,
+                         'feature_id': feat_id,
+                         'is_model': 1 if 'y' in is_model or 'Y' in is_model else 0,
+                         'from_rcsb': 1 if 'y' in from_rcsb or 'Y' in from_rcsb else 0}
+                    )
+                else:
+                    raise ValueError(f'Please fill all the rows in columns: {required_columns[5]}'
+                                     f' and {required_columns[6]}!')
 
         if not pdb_file_paths:
-            raise ValueError('No PDB file info is provided!')
+            raise ValueError('No protein structure file info is provided!')
 
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
@@ -1088,7 +1098,7 @@ class PDBUtil:
 
         (data, n_polypeptides, params) = self._pdb_file_to_data(file_path, params)
         if not data:
-            logging.info(f'PDB file {file_path} import with "import_pdb_file" failed!')
+            logging.info(f'PDB file {file_path} was not imported with "import_pdb_file"!')
             return {}, {}
 
         data['pdb_handle'] = self._upload_to_shock(file_path)
