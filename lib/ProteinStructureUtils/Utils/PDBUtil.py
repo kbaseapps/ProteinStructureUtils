@@ -8,11 +8,13 @@ import string
 import shutil
 import uuid
 import errno
+import requests
 import pandas as pd
 import pathlib
 import subprocess
 from urllib.parse import urlparse
 from string import punctuation
+from requests.exceptions import ConnectionError, HTTPError, RequestException
 
 from Bio import PDB
 from Bio.PDB.Polypeptide import PPBuilder
@@ -50,7 +52,7 @@ class PDBUtil:
                 raise ValueError(f'Parameter "{p}" is required, but missing!')
 
         if params.get('input_file_path'):
-            file_path = params.get('input_file_path')
+            file_path = params['input_file_path']
         elif params.get('input_shock_id'):
             file_path = self.dfu.shock_to_file(
                 {'shock_id': params['input_shock_id'],
@@ -59,6 +61,8 @@ class PDBUtil:
             file_path = self.dfu.download_staging_file(
                 {'staging_file_subdir_path': params.get('input_staging_file_path')}
                  ).get('copy_file_path')
+        elif params.get('rcsb_file'):
+            file_path = params['rcsb_file']
         else:
             error_msg = "Must supply either a input_shock_id or input_file_path "
             error_msg += "or input_staging_file_path"
@@ -1076,6 +1080,38 @@ class PDBUtil:
 
         return {'file_path': file_path}
 
+    def _rcsb_file_download(self, rcsb_id, ext='pdb', zp='gz'):
+        """
+            _rcsb_file_download: Download the rcsb structure file and save it to the scratch area
+                                Return the saved file path
+        """
+        logging.info(f'Start downloading file for structure {rcsb_id} from RCSB.')
+        ext = ext.replace('.', '')
+        rcsb_filename = '.'.join([rcsb_id, ext, zp])
+        dir_name = os.path.dirname(__file__)
+        rcsb_file = os.path.join(dir_name, rcsb_filename)
+
+        if not self.download_dir:
+            self.download_dir = os.path.join(self.scratch, str(uuid.uuid4()))
+            os.mkdir(self.download_dir)
+        rcsb_filepath = os.path.join(self.download_dir, rcsb_filename)
+
+        try:
+            resp = requests.get(os.path.join(self.__baseDownloadUrl, rcsb_filename))
+            resp.raise_for_status()
+            with open(rcsb_file, 'wb') as rcsb_pt:
+                rcsb_pt.write(resp.content)
+            shutil.copy(rcsb_file, rcsb_filepath)
+            logging.info(f'The rcsb file {rcsb_filename} has been downloaded to {rcsb_filepath}.')
+            return rcsb_filepath
+        except (HTTPError, ConnectionError, RequestException) as e:
+            logging.info(" ERROR ".center(30, "-"))
+            logging.info(f'RCSB file downloading for {rcsb_id} had an Error: {e}')
+            return ''
+        except Exception as e:
+            print(e)
+            return ''
+
     def __init__(self, config):
         self.callback_url = config['SDK_CALLBACK_URL']
         self.scratch = config['scratch']
@@ -1085,6 +1121,8 @@ class PDBUtil:
         self.hs = AbstractHandle(config['handle-service-url'])
         self.ws_client = Workspace(config['workspace-url'])
         self.shock_url = config['shock-url']
+        self.download_dir = None
+        self.__baseDownloadUrl = 'https://files.rcsb.org/download'
 
     def import_pdb_file(self, params, create_report=False):
         """
@@ -1264,22 +1302,36 @@ class PDBUtil:
         for pdb in pdb_file_paths:
             pdb_params = {}
             pdb_params['pdb_info'] = pdb
-            pdb_params['input_staging_file_path'] = pdb['file_path']
-            pdb_params['input_file_path'] = None
+            if pdb['from_rcsb']:
+                rcsb_file = self._rcsb_file_download(pdb['structure_name'], pdb['file_extension'])
+                if rcsb_file:
+                    pdb_params['input_file_path'] = rcsb_file
+                    pdb_params['input_staging_file_path'] = None
+                    pdb_params['from_rcsb'] = pdb['from_rcsb']
+                else:
+                    logging.info(f"File download for RCSB structure {pdb['file_path']} failed, "
+                                 f"therefore structure {pdb['structure_name']} is not imported.")
+                    failed_files.append(pdb['file_path'])
+                    continue
+            else:
+                pdb_params['input_staging_file_path'] = pdb['file_path']
+                pdb_params['input_file_path'] = None
             pdb_params['input_shock_id'] = None
             pdb_params['workspace_name'] = workspace_name
             pdb_params['structure_name'] = pdb['structure_name']
             pdb_params['is_model'] = pdb['is_model']
 
-            if pdb['file_extension'] == '.pdb':
+            if pdb['file_extension'] == 'pdb':
                 pdb_data, pdb_info = self.import_pdb_file(pdb_params)
                 if pdb_data:
+                    # logging.info(f'*****Imported {pdb_data}!')
                     pdb_objects.append(pdb_data)
                     pdb_infos.append(pdb_info)
                     successful_files.append(pdb['file_path'])
                 else:
+                    # logging.info(f'*****Importing {pdb["structure_name"]} failed!')
                     failed_files.append(pdb['file_path'])
-            elif pdb['file_extension'] == '.cif':
+            elif pdb['file_extension'] == 'cif':
                 cif_data, pdb_info = self.import_mmcif_file(pdb_params)
                 if cif_data:
                     pdb_objects.append(cif_data)

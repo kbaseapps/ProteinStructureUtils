@@ -178,7 +178,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         return {'copy_file_path': file_path}
 
     # Testing PDBUtil module functions
-    @unittest.skip('test_validate_file')
+    #@unittest.skip('test_validate_file')
     def test_validate_file(self):
         not_exist_file = 'abc.csv'
         with self.assertRaisesRegex(
@@ -186,7 +186,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 f'"{not_exist_file}" does not exist!'):
             self.pdb_util._validate_file(not_exist_file)
 
-    @unittest.skip('test_read_file_by_type_csv')
+    #@unittest.skip('test_read_file_by_type_csv')
     def test_read_file_by_type_csv(self):
         required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
                          'Feature ID', 'PDB or RCSB ID', 'File Extension', 'Is model', 'From RCSB']
@@ -221,7 +221,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             col_list = ret_df[col].values.tolist()
             self.assertEqual(len(col_list), 8)
 
-    @unittest.skip('test_read_file_by_type_tsv')
+    #@unittest.skip('test_read_file_by_type_tsv')
     def test_read_file_by_type_tsv(self):
         required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
                          'Feature ID', 'PDB or RCSB ID', 'File Extension', 'Is model', 'From RCSB']
@@ -256,7 +256,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             col_list = ret_df[col].values.tolist()
             self.assertEqual(len(col_list), 7)
 
-    @unittest.skip('test_read_file_by_type_xlsx')
+    #@unittest.skip('test_read_file_by_type_xlsx')
     def test_read_file_by_type_xlsx(self):
         required_cols = ['Narrative ID', 'Object name (Genome AMA feature set)',
                          'Feature ID', 'PDB or RCSB ID', 'File Extension', 'Is model', 'From RCSB']
@@ -292,7 +292,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             col_list = ret_df[col].values.tolist()
             self.assertEqual(len(col_list), 7)
 
-    @unittest.skip('test_incomplete_parse_metadata_csv_files')
+    #@unittest.skip('test_incomplete_parse_metadata_csv_files')
     def test_parse_incomplete_metadata_csv_files(self):
         metafile = 'pdb_metafile_sample1a.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -330,7 +330,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'Please fill all the rows in column: Object name!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-    @unittest.skip('test_incomplete_parse_metadata_tsv_files')
+    #@unittest.skip('test_incomplete_parse_metadata_tsv_files')
     def test_parse_incomplete_metadata_tsv_files(self):
         metafile = 'pdb_metafile_sample1a.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -368,7 +368,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'Please fill all the rows in column: Object name!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-    @unittest.skip('test_incomplete_parse_metadata_xlsx_files')
+    #@unittest.skip('test_incomplete_parse_metadata_xlsx_files')
     def test_parse_incomplete_metadata_xlsx_files(self):
         metafile = 'pdb_metafile_sample1a.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -406,7 +406,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                 'Please fill all the rows in column: Object name!'):
             self.pdb_util._parse_metadata_file(meta_file_path, self.ws_id)
 
-    @unittest.skip('test_parse_complete_metadata_csv_file')
+    #@unittest.skip('test_parse_complete_metadata_csv_file')
     def test_parse_complete_metadata_csv_file(self):
         metafile = 'pdb_metafile_sample2.csv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -422,7 +422,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
              'feature_id', 'file_extension', 'from_rcsb'])
 
-    @unittest.skip('test_parse_complete_metadata_tsv_file')
+    #@unittest.skip('test_parse_complete_metadata_tsv_file')
     def test_parse_complete_metadata_tsv_file(self):
         metafile = 'pdb_metafile_sample2.tsv'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -439,7 +439,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
              'feature_id', 'file_extension', 'from_rcsb'])
 
-    @unittest.skip('test_parse_complete_metadata_xlsx_file')
+    #@unittest.skip('test_parse_complete_metadata_xlsx_file')
     def test_parse_complete_metadata_xlsx_file(self):
         metafile = 'pdb_metafile_sample2.xlsx'
         meta_file_path = os.path.join(self.scratch, metafile)
@@ -456,29 +456,29 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
              'feature_id', 'file_extension', 'from_rcsb'])
 
-    @unittest.skip('test_structure_to_pdb_file')
+    #@unittest.skip('test_structure_to_pdb_file')
     def test_structure_to_pdb_file(self):
         ret = self.pdb_util._structure_to_pdb_file({'input_ref': self.pdb_ref,
                                                     'destination_dir': self.scratch})
         self.assertEqual(ret['file_path'], os.path.join(self.scratch, '1nqg.pdb'))
 
-    @unittest.skip('test_structure_to_mmcif_file')
+    #@unittest.skip('test_structure_to_mmcif_file')
     def test_structure_to_mmcif_file(self):
         ret = self.pdb_util._structure_to_pdb_file({'input_ref': self.pdb_mmCif_ref,
                                                     'destination_dir': self.scratch})
         self.assertEqual(ret['file_path'], os.path.join(self.scratch, '1fat.cif'))
 
-    @unittest.skip('test_export_pdb_structure')
+    #@unittest.skip('test_export_pdb_structure')
     def test_export_pdb_structure(self):
         ret = self.pdb_util._export_pdb({'input_ref': self.pdb_ref})
         self.assertCountEqual(ret.keys(), ['shock_id'])
 
-    @unittest.skip('test_export_mmcif_structure')
+    #@unittest.skip('test_export_mmcif_structure')
     def test_export_mmcif_structure(self):
         ret = self.pdb_util._export_pdb({'input_ref': self.pdb_mmCif_ref})
         self.assertCountEqual(ret.keys(), ['shock_id'])
 
-    @unittest.skip('test_compute_sequence_identity')
+    #@unittest.skip('test_compute_sequence_identity')
     def test_compute_sequence_identity(self):
         seq1 = 'TGTGACTA'
         seq2 = 'CATGGTCA'
@@ -518,7 +518,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(idens, [expected_iden])
         self.assertTrue(not exact_mat)
 
-    @unittest.skip('test_match_features')  # Note the genome is from an Appdev narrative 57196
+    #@unittest.skip('test_match_features')  # Note the genome is from an Appdev narrative 57196
     def test_match_features(self):
         fileName = '6ift.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -573,7 +573,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertNotIn('sequence_identities', params2['pdb_info'])
         self.assertNotIn('exact_matches', params2['pdb_info'])
 
-    @unittest.skip('test_match_features_nonexist_genome')
+    #@unittest.skip('test_match_features_nonexist_genome')
     def test_match_features_nonexist_genome(self):
         fileName = 'MLuteus_AlphaFold_133.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -600,7 +600,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(params1, params)
         self.assertEqual(prot_data1, prot_data)
 
-    @unittest.skip('test_pdb_file_to_data')  # Note the genome is from an Appdev narrative 42297
+    #@unittest.skip('test_pdb_file_to_data')  # Note the genome is from an Appdev narrative 42297
     def test_pdb_file_to_data(self):
         fileName = '1fat.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -667,7 +667,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertIn('sequence_identities', params3['pdb_info'])
         self.assertIn('exact_matches', params3['pdb_info'])
 
-    @unittest.skip('test_pdb_file_to_data_erred')  # Note the genome is from an Appdev narrative 63679
+    #@unittest.skip('test_pdb_file_to_data_erred')  # Note the genome is from an Appdev narrative 63679
     def test_pdb_file_to_data_erred(self):
         fileName = 'MLuteus_AlphaFold_133.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -685,7 +685,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         (data1, pp_no1, params1) = self.pdb_util._pdb_file_to_data(pdb_file_path, params)
         self.assertFalse(data1)
 
-    @unittest.skip('test_mmcif_file_to_data')
+    #@unittest.skip('test_mmcif_file_to_data')
     def test_mmcif_file_to_data(self):
         fileName = '1fat.cif'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -705,7 +705,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(pp_no, 7)
         print(params1)
 
-    @unittest.skip('test_import_pdb_file_nopatch')
+    #@unittest.skip('test_import_pdb_file_nopatch')
     def test_import_pdb_file_nopatch(self):
         fileName = '1fat.pdb'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -743,7 +743,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self._check_import_model_pdb_6ift(ret_data, ret_info)
         self.assertEqual(ret_data['user_data'], params['description'])
 
-    @unittest.skip('test_import_pdb_file_patched')
+    #@unittest.skip('test_import_pdb_file_patched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_import_pdb_file_patched(self, download_staging_file):
         fileName = '1fat.pdb'
@@ -799,7 +799,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(pdb_info['model_ids'], '0')
         self.assertEqual(pdb_info['scratch_path'], '/kb/module/work/tmp/6ift.pdb')
 
-    @unittest.skip('test_import_mmcif_file_nopatch')
+    #@unittest.skip('test_import_mmcif_file_nopatch')
     def test_import_mmcif_file_nopatch(self):
         fileName = '1fat.cif'
         pdb_file_path = os.path.join(self.scratch, fileName)
@@ -816,7 +816,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(ret_data, {})
         self.assertEqual(ret_info, {})
 
-    @unittest.skip('test_import_mmcif_file_pathched')
+    #@unittest.skip('test_import_mmcif_file_pathched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_import_mmcif_file_patched(self, download_staging_file):
         fileName = '1fat.cif'
@@ -833,7 +833,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(ret_info, {})
 
     # saveStructures_createReport
-    @unittest.skip('test_saveStructures_createReport')
+    #@unittest.skip('test_saveStructures_createReport')
     def test_saveStructures_createReport(self):
         struct_objects = {
             'protein_structures': [{
@@ -896,7 +896,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                                                         rcsb=True)
         self.assertIn('batch_import_rcsb_report', ret['report_name'])
 
-    @unittest.skip('test_batch_import_pdbs_pathched')
+    #@unittest.skip('test_batch_import_pdbs_pathched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_batch_import_pdbs_patched(self, download_staging_file):
         fileName = 'pdb_metafile_sample2.csv'
@@ -907,12 +907,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.pdb_util.batch_import_pdbs(params)
-        structs_ref = ret['structures_ref']
-
-        print(f'Checking the newly saved object data and info for {structs_ref}\n')
+        self.assertCountEqual(ret.keys(), ["structures_ref", "report_ref", "report_name"])
+        #structs_ref = ret['structures_ref']
+        #print(f'Checking the newly saved object data and info for {structs_ref}\n')
 
     # Testing self.serviceImpl functions
-    @unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
+    ##@unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_Impl_batch_import_pdbs_from_metafile1(self, download_staging_file):
         metafile = 'pdb_metafile_sample1.csv'
@@ -926,7 +926,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    @unittest.skip('test_Impl_batch_import_pdbs_from_metafile2')
+    #@unittest.skip('test_Impl_batch_import_pdbs_from_metafile2')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_Impl_batch_import_pdbs_from_metafile2(self, download_staging_file):
         metafile = 'pdb_metafile_sample2.csv'
@@ -940,7 +940,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
 
-    @unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
+    #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_Impl_batch_import_pdbs_for_MLuteus_ATCC_alphafolds(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_afpdbs.csv'
@@ -958,7 +958,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
-    @unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_cifs')
+    #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_cifs')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_Impl_batch_import_pdbs_for_MLuteus_ATCC_cifs(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_afcifs.csv'
@@ -976,7 +976,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
-    @unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_docked')
+    #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_docked')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_Impl_batch_import_pdbs_for_MLuteus_ATCC_docked(self, download_staging_file):
         metafile = 'pdb_metafile_mluteus_docked.csv'
@@ -994,8 +994,26 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
+    #@unittest.skip('test_Impl_batch_import_pdbs_mix_rcsb')
+    @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
+    def test_Impl_batch_import_pdbs__mix_rcsb(self, download_staging_file):
+        metafile = 'pdb_metafile_sample_mix_rcsb.csv'
+        metafile = os.path.join('/kb/module/test/data', metafile)
+
+        params = {
+            'metadata_staging_file_path': metafile,
+            'structures_name': 'mluteus_docked_structures',
+            'workspace_name': self.wsName
+        }
+        ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
+        self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        parms = {'input_ref': ret2[0]['structures_ref']}
+        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 3)
+        self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
+
     # '57196/53/1' is in AppDev
-    @unittest.skip('test_export_pdb_structures')
+    #@unittest.skip('test_export_pdb_structures')
     def test_export_pdb_structures(self):
         params = {'input_ref': '57196/53/1'}
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)

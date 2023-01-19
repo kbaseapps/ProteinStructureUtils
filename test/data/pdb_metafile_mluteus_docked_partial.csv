@@ -1,3 +1,3 @@
-Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB filename,Is model,From RCSB
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,vinaoutNtarget_133.pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1883,vinaoutNtarget_1883.pdb,yes,no
+Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB or RCSB ID,File Extension,Is model,From RCSB
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,vinaoutNtarget_133,pdb,yes,no
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1883,vinaoutNtarget_1883,pdb,yes,no
