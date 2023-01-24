@@ -603,8 +603,6 @@ class PDBUtil:
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
         result_file_path = os.path.join(output_directory, 'viewer.html')
-        new_pdb_path = os.path.join(output_directory, os.path.basename(pdb_path))
-        shutil.copy(pdb_path, new_pdb_path)
 
         # Fill in template HTML
         with open(os.path.join(os.path.dirname(__file__), 'templates', 'viewer_template.html')
@@ -789,12 +787,12 @@ class PDBUtil:
         return (pdb_file_paths, narrative_ids, genome_names, feature_ids)
 
     def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
-                               pdb_infos, failed_pdbs, rcsb=False):
+                               pdb_infos, failed_pdbs):
         """
             _generate_batch_report: generate summary report for upload
         """
         # logging.info(f'Entering PDBUtil._generate_batch_report...with rcsb={rcsb}')
-        output_html_files = self._generate_batch_report_html(pdb_infos, rcsb)
+        output_html_files = self._generate_batch_report_html(pdb_infos)
 
         description = (f'Imported PDBs into a ProteinStructures object "{structs_ref}", '
                        f'named "{structs_name}".')
@@ -804,10 +802,6 @@ class PDBUtil:
             description += f' These files "{failed_files}" failed to load.'
 
         report_filename = 'batch_import_'
-        if rcsb:
-            report_filename += 'rcsb_report_'
-        else:
-            report_filename += 'pdb_report_'
         report_params = {'message': f'You have uploaded a batch of PDB files into {structs_name}.',
                          'html_links': output_html_files,
                          'direct_html_link_index': 0,
@@ -852,8 +846,10 @@ class PDBUtil:
         pdb_index = 0
 
         for succ_pdb in succ_pdb_infos:
+            if succ_pdb.get('from_rcsb', False):
+                continue
             file_path = succ_pdb['file_path']
-            file_ext = succ_pdb['file_extension'][1:]
+            file_ext = succ_pdb['file_extension']
             if file_ext == 'cif':
                 file_ext = 'mmcif'
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
@@ -905,11 +901,13 @@ class PDBUtil:
 
         default_click = ''
         for succ_pdb in succ_pdb_infos:
+            if succ_pdb.get('from_rcsb', False):
+                continue
             struct_nm = succ_pdb['structure_name'].upper()
             if not default_click:
                 default_click = f'{struct_nm}_sub'
             file_path = succ_pdb['file_path']
-            file_ext = succ_pdb['file_extension'][1:]
+            file_ext = succ_pdb['file_extension']
             if file_ext == 'cif':
                 file_ext = 'mmcif'
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
@@ -932,9 +930,9 @@ class PDBUtil:
         viewer_content += script_content
         viewer_content += '\n</div>\n'
 
-        return viewer_tabs, default_click
+        return viewer_tabs, viewer_content, default_click
 
-    def _write_structure_info(self, output_dir, succ_pdb_infos, rcsb=False):
+    def _write_structure_info(self, output_dir, succ_pdb_infos):
         """
             _write_structure_info: write the batch uploaded structure info to replace the string
                                    '<!--replace uploaded pdbs tbody-->' in the tboday tag of the
@@ -954,7 +952,8 @@ class PDBUtil:
             file_path = succ_pdb['file_path']
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
             new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
-            shutil.copy(pdb_file_path, new_pdb_path)
+            if not succ_pdb.get('from_rcsb', False):
+                shutil.copy(pdb_file_path, new_pdb_path)
 
             if succ_pdb.get('structure_name', None):
                 struct_id = succ_pdb['structure_name'].upper()
@@ -974,6 +973,7 @@ class PDBUtil:
             if succ_pdb.get('sequence_identities', None):
                 seq_idens = succ_pdb['sequence_identities']
 
+            rcsb = succ_pdb.get('from_rcsb', False)
             if not rcsb:
                 tbody_html += (f'\n<td><div class="subtablinks" '
                                f'onclick="openSubTab(event, this, false)" '
@@ -992,7 +992,7 @@ class PDBUtil:
 
         return tbody_html
 
-    def _generate_batch_report_html(self, succ_pdb_infos, rcsb=False):
+    def _generate_batch_report_html(self, succ_pdb_infos):
         """
             _generate_batch_report_html: generates the HTML for the upload report
         """
@@ -1001,48 +1001,32 @@ class PDBUtil:
         # Make report directory for writing and copying over uploaded pdb files
         output_directory = os.path.join(self.scratch, str(uuid.uuid4()))
         os.mkdir(output_directory)
-        pdb_html = self._write_structure_info(output_directory, succ_pdb_infos, rcsb)
+        pdb_html = self._write_structure_info(output_directory, succ_pdb_infos)
 
         dir_name = os.path.dirname(__file__)
-        if rcsb:
-            report_template_file = os.path.join(dir_name, 'templates', 'batch_rcsb_template.html')
-            report_html = os.path.join(dir_name, 'batch_import_rcsb_viewer.html')
-        else:
-            report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
-            report_html = os.path.join(dir_name, 'batch_upload_viewer.html')
-            single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
-            # viewer_tabs, multi_viewer = self._write_viewer_content_multi(output_directory,
-            #                                                             succ_pdb_infos)
-            viewer_tabs, default_click = self._write_viewer_content_multi(output_directory,
-                                                                          succ_pdb_infos)
-
+        report_template_file = os.path.join(dir_name, 'templates', 'batch_pdb_template.html')
+        report_html = os.path.join(dir_name, 'batch_upload_viewer.html')
+        single_viewer = self._write_viewer_content_single(output_directory, succ_pdb_infos)
+        viewer_tabs, multi_viewer, default_click = self._write_viewer_content_multi(
+                                                                      output_directory,
+                                                                      succ_pdb_infos)
         with open(report_html, 'w') as report_html_pt:
             with open(report_template_file, 'r') as report_template_pt:
                 # Fetch & fill in detailed info into template HTML
                 batch_html_report = report_template_pt.read()\
                     .replace('<!--replace uploaded pdbs tbody-->', pdb_html)
-                if not rcsb:
-                    batch_html_report = batch_html_report\
-                        .replace('<!--replace StructureViewer subtabs-->', viewer_tabs)
-                    # batch_html_report = batch_html_report\
-                    #    .replace('<!--replace subtab content multi-->', multi_viewer)
-                    batch_html_report = batch_html_report\
-                        .replace('<!--replace subtab content single-->', single_viewer)
-                    batch_html_report = batch_html_report\
-                        .replace('document.getElementById("AllStructures_sub").click()',
-                                 f'document.getElementById("{default_click}").click()')
+                batch_html_report = batch_html_report\
+                    .replace('<!--replace StructureViewer subtabs-->', viewer_tabs)
+                batch_html_report = batch_html_report\
+                    .replace('<!--replace subtab content single-->', single_viewer)
+                batch_html_report = batch_html_report\
+                    .replace('document.getElementById("AllStructures_sub").click()',
+                             f'document.getElementById("{default_click}").click()')
                 report_html_pt.write(batch_html_report)
 
-        if not rcsb:
-            # molstar_js_file = os.path.join(dir_name, 'templates', 'molstar.js')
-            # molstar_css_file = os.path.join(dir_name, 'templates', 'molstar.css')
-            # shutil.copy(molstar_js_file, os.path.join(output_directory, 'molstar.js'))
-            # shutil.copy(molstar_css_file, os.path.join(output_directory, 'molstar.css'))
-            molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
-            shutil.copy(molstar_ico_file, os.path.join(output_directory, 'favicon.ico'))
-            batch_html_report_path = os.path.join(output_directory, 'batch_upload_report.html')
-        else:
-            batch_html_report_path = os.path.join(output_directory, 'batch_import_rcsb_report.html')
+        molstar_ico_file = os.path.join(dir_name, 'templates', 'favicon.ico')
+        shutil.copy(molstar_ico_file, os.path.join(output_directory, 'favicon.ico'))
+        batch_html_report_path = os.path.join(output_directory, 'batch_upload_report.html')
 
         shutil.copy(report_html, batch_html_report_path)
         logging.info(f'Full batch_report has been written to {batch_html_report_path}')
@@ -1229,7 +1213,7 @@ class PDBUtil:
         }
 
     def saveStructures_createReport(self, structures_name, workspace_id, workspace_name,
-                                    protein_structures, pdb_infos, failed_files, rcsb=False):
+                                    protein_structures, pdb_infos, failed_files):
         """
             saveStructures_createReport: With given inputs, save the ProteinStructures object
                                          create a report and return the final results
@@ -1251,7 +1235,7 @@ class PDBUtil:
             raise ValueError(err_msg)
         else:  # execute if no exception
             report_output = self._generate_batch_report(
-                    workspace_name, structs_ref, structures_name, pdb_infos, failed_files, rcsb)
+                    workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
             returnVal.update(report_output)
 
         return returnVal
@@ -1273,9 +1257,9 @@ class PDBUtil:
                 report_ref: report reference (if any)
 
             1. call _validate_batch_import_params to validate input params
-            2. call _parse_metadata to parse for model_pdb_files, exp_pdb_files and kbase_meta_data
-            3. call import_pdb_file on each entry in pdb_paths, and/or
-               call import_mmcif_file on each entry in pdb_paths
+            2. call _parse_metadata_file to parse for pdb_file_paths and kbase_meta_data
+            3. call import_pdb_file on each entry in pdb_file_paths, and/or
+               call import_mmcif_file on each entry in pdb_file_paths
             4. assemble the data for a ProteinStructures for saving the data object
             5. call saveStructures_createReport to save the object and
                generate a report for batch_import_pdbs' result
@@ -1301,7 +1285,6 @@ class PDBUtil:
         # loop through the list of pdb_file_paths
         for pdb in pdb_file_paths:
             pdb_params = {}
-            pdb_params['pdb_info'] = pdb
             if pdb['from_rcsb']:
                 rcsb_file = self._rcsb_file_download(pdb['structure_name'], pdb['file_extension'])
                 if rcsb_file:
@@ -1316,6 +1299,8 @@ class PDBUtil:
             else:
                 pdb_params['input_staging_file_path'] = pdb['file_path']
                 pdb_params['input_file_path'] = None
+
+            pdb_params['pdb_info'] = pdb
             pdb_params['input_shock_id'] = None
             pdb_params['workspace_name'] = workspace_name
             pdb_params['structure_name'] = pdb['structure_name']

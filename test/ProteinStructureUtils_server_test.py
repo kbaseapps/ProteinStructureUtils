@@ -867,12 +867,13 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'description': 'ONE structure created'
         }
         pdb_infos = [{
-            'rcsb_id': '6TUK',
-            'extension': '.pdb',
+            'structure_name': '6TUK',
+            'file_extension': '.pdb',
             'narrative_id': 63679,
             'genome_name': 'MLuteus_ATCC_49442',
             'feature_id': 'MLuteus_masurca_RAST.CDS.133',
             'is_model': 1,
+            'from_rcsb': 1,
             'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
             'genome_ref': '63679/38/1',  # for appdev
             # 'genome_ref': '107138/2/1',  # for prod
@@ -892,9 +893,8 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             workspace_id = self.wsName
 
         ret = self.pdb_util.saveStructures_createReport(structs_name, workspace_id, self.wsName,
-                                                        struct_objects, pdb_infos, failed_ids,
-                                                        rcsb=True)
-        self.assertIn('batch_import_rcsb_report', ret['report_name'])
+                                                        struct_objects, pdb_infos, failed_ids)
+        self.assertIn('batch_import_', ret['report_name'])
 
     #@unittest.skip('test_batch_import_pdbs_pathched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -908,11 +908,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         }
         ret = self.pdb_util.batch_import_pdbs(params)
         self.assertCountEqual(ret.keys(), ["structures_ref", "report_ref", "report_name"])
-        #structs_ref = ret['structures_ref']
-        #print(f'Checking the newly saved object data and info for {structs_ref}\n')
 
     # Testing self.serviceImpl functions
-    ##@unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
+    #@unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
     def test_Impl_batch_import_pdbs_from_metafile1(self, download_staging_file):
         metafile = 'pdb_metafile_sample1.csv'
@@ -1009,7 +1007,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
         parms = {'input_ref': ret2[0]['structures_ref']}
         exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
-        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 3)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 5)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     # '57196/53/1' is in AppDev

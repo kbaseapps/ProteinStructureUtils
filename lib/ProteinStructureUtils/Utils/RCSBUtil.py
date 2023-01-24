@@ -1267,9 +1267,9 @@ class RCSBUtil:
         if not params.get('rcsb_infos', []):
             return pdb_objects, pdb_infos, successful_ids, skipped_ids
 
-        # logging.info(f'Parameters modified to be used by RCSBUtil.upload_rcsbs as:\n{params}')
+        # logging.info(f'Parameters validated to be used by RCSBUtil.upload_rcsbs as:\n{params}')
 
-        # loop through the list of pdb_file_paths
+        # loop through the list of rcsb_infos
         for rinfo in params.get('rcsb_infos', None):
             pdb_params = {}
             file_path = rinfo['file_path']
