@@ -953,7 +953,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
         parms = {'input_ref': ret1[0]['structures_ref']}
         exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
-        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
+        # self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_cifs')

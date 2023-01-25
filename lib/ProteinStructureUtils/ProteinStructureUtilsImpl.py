@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "e33f525a22e5081cc1924afc6d1edba253b600d5"
+    GIT_COMMIT_HASH = "80ebb3bc5983f8744e56418d77a66f703c0e5347"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -73,49 +73,6 @@ class ProteinStructureUtils:
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method batch_import_pdbs_from_metafile return value ' +
-                             'result is not type dict as required.')
-        # return the results
-        return [result]
-
-    def import_rcsb_structures(self, ctx, params):
-        """
-        :param params: instance of type "ImportRCSBParams" (Input/output of
-           the import_rcsb_structures function rcsb_infos: a list of
-           RCSBInfoStruct's structures_name: Proteinstructures object name
-           workspace_name: workspace name for object to be saved to
-           evalue_cutoff: threshold of homology search identity_cutoff:
-           threshold for sequence identity match) -> structure: parameter
-           "rcsb_infos" of list of type "RCSBInfoStruct" (The information
-           required by the importing app rcsb_id: rcsb structure id
-           extension: file extension for the structure ('pdb' or 'cif')
-           narrative_id: a KBase narrative id genome_name: a KBase genome
-           name in the respective narrative of narrative_id feature_id: a
-           KBase feature id in the respective narrative of narrative_id
-           is_model: a value of 0 or 1 to indicate the structure is
-           exprimental or computational) -> structure: parameter "rcsb_id" of
-           String, parameter "extension" of String, parameter "narrative_id"
-           of String, parameter "genome_name" of String, parameter
-           "feature_id" of String, parameter "is_model" of type "boolean" (A
-           boolean - 0 for false, 1 for true. @range (0, 1)), parameter
-           "structures_name" of String, parameter "workspace_name" of type
-           "workspace_name" (workspace name of the object), parameter
-           "evalue_cutoff" of Double, parameter "identity_cutoff" of Double
-        :returns: instance of type "ImportRCSBStructOutput" -> structure:
-           parameter "structures_ref" of String, parameter "report_name" of
-           String, parameter "report_ref" of String
-        """
-        # ctx is the context object
-        # return variables are: result
-        #BEGIN import_rcsb_structures
-        # logging.info(f'Starting import_rcsb_structures with params:\n{params}.')
-        self.config['USER_ID'] = ctx['user_id']
-        self.rcsb_util = RCSBUtil(self.config)
-        result = self.rcsb_util.batch_import_rcsbs(params)
-        #END import_rcsb_structures
-
-        # At some point might do deeper type checking...
-        if not isinstance(result, dict):
-            raise ValueError('Method import_rcsb_structures return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]

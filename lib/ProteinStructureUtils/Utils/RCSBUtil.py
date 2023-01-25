@@ -811,9 +811,9 @@ class RCSBUtil:
             print(e)
             return ''
 
-    def _validate_import_rcsb_params(self, params):
+    def _validate_upload_rcsb_params(self, params):
         """
-            _validate_import_rcsb_params:
+            _validate_upload_rcsb_params:
                 1) validates input params to import_rcsb_structures and remove unsupported rcsb_id's
                 2) For the structure ids given by params['rcsb_ids'], return the
                 params with rcsb_infos having the attribute 'file_path' defined.
@@ -1256,9 +1256,9 @@ class RCSBUtil:
         """
             upload_rcsbs: uploading the rcsb structures defined via params['rcsb_infos']
         """
-        # Call _validate_import_rcsb_params to validate input params and
+        # Call _validate_upload_rcsb_params to validate input params and
         # download the rcsb structure files one by one.
-        params = self._validate_import_rcsb_params(params)
+        params = self._validate_upload_rcsb_params(params)
         pdb_objects = list()
         pdb_infos = list()
         successful_ids = list()

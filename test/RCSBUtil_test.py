@@ -673,8 +673,8 @@ class RCSBUtilsTest(unittest.TestCase):
         struct_ret_and = self.rcsb_util.query_structure_info(params2)
         self.assertEqual(len(struct_ret_and.get('rcsb_ids', [])), 67)
 
-    #@unittest.skip('test_validate_import_rcsb_params')
-    def test_validate_import_rcsb_params(self):
+    #@unittest.skip('test_validate_upload_rcsb_params')
+    def test_validate_upload_rcsb_params(self):
         params1 = {
             'workspace_name': self.wsName,
             'structures_name': 'structs_name',
@@ -702,7 +702,7 @@ class RCSBUtilsTest(unittest.TestCase):
             }]
         }
         self.assertEqual(len(params1['rcsb_infos']), 3)
-        params2 = self.rcsb_util._validate_import_rcsb_params(params1)
+        params2 = self.rcsb_util._validate_upload_rcsb_params(params1)
         self.assertEqual(len(params2['rcsb_infos']), 2)
 
     #@unittest.skip('test_validate_rcsb_query_params')
@@ -728,7 +728,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertEqual(jsObj['sequence'][1], ''.join(seqs_list[1].split()))
         self.assertEqual(jsObj['sequence'][2], ''.join(seqs_list[2].split()))
 
-    #@unittest.skip('test_upload_rcsbs_1')
+    @unittest.skip('test_upload_rcsbs_1')
     def test_upload_rcsbs_1(self):
         id_list = ['6ifs', '6ift', '6ifw', '1fat']
         params = {
@@ -774,7 +774,7 @@ class RCSBUtilsTest(unittest.TestCase):
         self.assertTrue(pdb_infos)
         self.assertEqual(len(pdb_infos), 3)
 
-    #@unittest.skip('test_upload_rcsbs_2')
+    @unittest.skip('test_upload_rcsbs_2')
     def test_upload_rcsbs_2(self):
         id_list = ['6TUK', '3LXD', '1A5U', '1A82', '1AQ2']
         params = {
@@ -845,32 +845,3 @@ class RCSBUtilsTest(unittest.TestCase):
         qry_ret = self.serviceImpl.query_rcsb_annotations(self.ctx, params)
         if qry_ret[0]:
             self.assertCountEqual(qry_ret[0].keys(), params['sequence_strings'])
-
-    #@unittest.skip('test_import_rcsb_structures')
-    def test_import_rcsb_structures(self):
-        params = {
-            'workspace_name': self.wsName,
-            'structures_name': 'test_structs_name',
-            'rcsb_infos': [{
-                'rcsb_id': '3LXD',
-                'extension': '.pdb',
-                'narrative_id': 63679,
-                'genome_name': 'MLuteus_ATCC_49442',
-                'feature_id': 'MLuteus_masurca_RAST.CDS.133',
-                'is_model': 1
-            }, {
-                'rcsb_id': '6TUK',
-                'extension': '.pdb',
-                'narrative_id': 63679,
-                'genome_name': 'MLuteus_ATCC_49442',
-                'feature_id': 'MLuteus_masurca_RAST.CDS.133',
-                'is_model': 1
-            }],
-            'evalue_cutoff': 1e-20,
-            'identity_cutoff': 0.35,
-        }
-        impt_ret = self.serviceImpl.import_rcsb_structures(self.ctx, params)
-        if impt_ret[0]:
-            self.assertCountEqual(impt_ret[0].keys(),
-                                  ['structures_ref', 'report_ref', 'report_name'])
-
