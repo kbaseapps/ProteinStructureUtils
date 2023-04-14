@@ -71,7 +71,7 @@ module KBaseStructure {
   typedef string handle_ref;
 
   
-    /*
+  /*
     ProteinData
     mol_id id: ID for the protein
     string sequence: amino acid sequence
@@ -108,8 +108,30 @@ module KBaseStructure {
     bool exact_match;
   } ProteinData;
 
-
- /*
+  /*
+    PDBInfo
+    file_path: PDB structure file path
+    scratch_path: PDB structure file path on scratch
+    file_extension: PDB structure file extenstion
+    structure_name: PDB structure name
+    narrative_id: KBase narrative id
+    genome_name: KBase genome object name
+    feature_id: KBase feature id
+    is_model: 1 if structure is a computational model 0 otherwise
+    from_rcsb': 1 if structure is from RCSB database 0 otherwise
+  */
+  typedef structure {
+    string file_path;
+    string scratch_path;
+    string file_extension;
+    string structure_name;
+    string narrative_id;
+    string genome_name;
+    string feature_id;
+    bool is_model;
+    bool from_rcsb;
+    } PDBInfo;
+  /*
     ProteinStructure - merged from previous ModelProteinStructure and ExperimentalProteinStructure
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
     source: a source dict with keys in ['organism_scientific', 'organism_taxid', 'other_details', 'organ', 'misc',...]
@@ -159,13 +181,15 @@ module KBaseStructure {
       
   /*
     ProteinStructures - using the merged ProteinStructure
-    protein_structures: a list of references to ProteinStructure
+    protein_structures: a list of ProteinStructure objects
+    pdb_infos: a list of PDBInfo objects
     total_structures: total count of protein structures
     description: description/remarks
     @optional description
   */
   typedef structure {
     list<ProteinStructure> protein_structures;
+    list<PDBInfo> pdb_infos;
     int total_structures;
     string description;
   } ProteinStructures;

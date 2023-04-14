@@ -16,7 +16,7 @@ module ProteinStructureUtils {
   /* workspace name of the object */
   typedef string workspace_name;
 
-  /* Input/Output of the batch_import_pdbs_from_metafile
+  /* Input/Output of batch_import_pdbs_from_metafile
     structures_name: Proteinstructures object name
     workspace_name: workspace name for object to be saved to
     metadata_staging_file_path: path to a spreadsheet file that lists the metadata of PDB files and their KBase metadata
