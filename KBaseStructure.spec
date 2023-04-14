@@ -111,7 +111,6 @@ module KBaseStructure {
   /*
     PDBInfo
     file_path: PDB structure file path
-    scratch_path: PDB structure file path on scratch
     file_extension: PDB structure file extenstion
     structure_name: PDB structure name
     narrative_id: KBase narrative id
@@ -119,18 +118,39 @@ module KBaseStructure {
     feature_id: KBase feature id
     is_model: 1 if structure is a computational model 0 otherwise
     from_rcsb': 1 if structure is from RCSB database 0 otherwise
+    sequence_identities: sequence identities matched
+    chain_ids: protein chain ids
+    model_ids: model ids
+
+    rcsb_id: The structure id for RCSB database
+    genome_ref: name of a KBase genome object reference
+    feature_type: id of a KBase feature object's type, default to 'gene'
+    stratch_path: path on the shared folder where the structure file resides, default to file_path
+    exact_matches: a string comma seperated '0' and '1' indicating an exact match not
+    found ('0') or found ('1') for the structure's proteins with a given KBase genome feature
+
+    @optional rcsb_id genome_ref feature_type scratch_path exact_matches
   */
   typedef structure {
     string file_path;
-    string scratch_path;
     string file_extension;
     string structure_name;
     int narrative_id;
     string genome_name;
     string feature_id;
+    string sequence_identities;
+    string chain_ids;
+    string model_ids;
     bool is_model;
     bool from_rcsb;
-    } PDBInfo;
+
+    string rcsb_id;
+    string genome_ref;
+    string feature_type;
+    string scratch_path;
+    string exact_matches;
+  } PDBInfo;
+
   /*
     ProteinStructure - merged from previous ModelProteinStructure and ExperimentalProteinStructure
     compound: a compound dict with keys in ['molecule', 'chain', 'synonym', 'misc', ...]
