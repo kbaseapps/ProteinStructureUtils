@@ -1,6 +1,11 @@
 Narrative ID,Object name (Genome AMA feature set),Feature ID,PDB or RCSB ID,File Extension,Is model,From RCSB
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.133,MLuteus_AlphaFold_133,pdb,yes,no
-63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.1883,MLuteus_AlphaFold_1883,pdb,yes,no
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifs,pdb,yes,yes
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ift,pdb,yes,yes
-57196,Synthetic_bacterium_JCVI_Syn3_genome,JCVISYN3_0004,6ifw,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3366,vinaoutNtarget_3366,pdb,yes,no
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,vinaoutNtarget_3483,pdb,yes,no
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3484,MLuteus_3484_ALPHAFOLD_cycle_1,pdb,yes,no
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3366,2dkh,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3366,2dki,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,6jql,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,6jqm,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,3gup,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,3v36,pdb,yes,yes
+63679,MLuteus_ATCC_49442,MLuteus_masurca_RAST.CDS.3483,6jzs,pdb,yes,yes

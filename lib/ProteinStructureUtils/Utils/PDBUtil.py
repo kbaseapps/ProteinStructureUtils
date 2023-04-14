@@ -789,7 +789,7 @@ class PDBUtil:
     def _generate_batch_report(self, workspace_name, structs_ref, structs_name,
                                pdb_infos, failed_pdbs):
         """
-            _generate_batch_report: generate summary report for upload
+            _generate_batch_report: generate summary report for batch upload
         """
         # logging.info(f'Entering PDBUtil._generate_batch_report...with rcsb={rcsb}')
         output_html_files = self._generate_batch_report_html(pdb_infos)
@@ -994,7 +994,7 @@ class PDBUtil:
 
     def _generate_batch_report_html(self, succ_pdb_infos):
         """
-            _generate_batch_report_html: generates the HTML for the upload report
+            _generate_batch_report_html: generates the HTML for the batch upload report
         """
         html_report = list()
 
@@ -1331,6 +1331,7 @@ class PDBUtil:
 
         total_structures = len(pdb_objects)
         protein_structures['protein_structures'] = pdb_objects
+        protein_structures['pdb_infos'] = pdb_infos
         protein_structures['total_structures'] = total_structures
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')

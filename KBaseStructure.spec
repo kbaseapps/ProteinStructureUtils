@@ -125,7 +125,7 @@ module KBaseStructure {
     string scratch_path;
     string file_extension;
     string structure_name;
-    string narrative_id;
+    int narrative_id;
     string genome_name;
     string feature_id;
     bool is_model;
