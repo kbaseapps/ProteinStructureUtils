@@ -835,6 +835,24 @@ class ProteinStructureUtilsTest(unittest.TestCase):
     # saveStructures_createReport
     #@unittest.skip('test_saveStructures_createReport')
     def test_saveStructures_createReport(self):
+        pdb_infos = [{
+            'structure_name': '6TUK',
+            'file_extension': '.pdb',
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_49442',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+            'is_model': 1,
+            'from_rcsb': 1,
+            'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
+            'genome_ref': '63679/38/1',  # for appdev
+            # 'genome_ref': '107138/2/1',  # for prod
+            'feature_type': 'gene',
+            'sequence_identities': '68.93%',
+            'chain_ids': 'Model 1.Chain B',
+            'model_ids': '0',
+            'exact_matches': '0',
+            'scratch_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz')
+        }]
         struct_objects = {
             'protein_structures': [{
                 'name': 'crystal structure of fdr9',
@@ -863,27 +881,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                            'user_data': '',
                            'is_model': 1
             }],
-            'total_structures': 1,'total_structures': 1,
+            'pdb_infos': pdb_infos,
+            'total_structures': 1,
             'description': 'ONE structure created'
         }
-        pdb_infos = [{
-            'structure_name': '6TUK',
-            'file_extension': '.pdb',
-            'narrative_id': 63679,
-            'genome_name': 'MLuteus_ATCC_49442',
-            'feature_id': 'MLuteus_masurca_RAST.CDS.133',
-            'is_model': 1,
-            'from_rcsb': 1,
-            'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
-            'genome_ref': '63679/38/1',  # for appdev
-            # 'genome_ref': '107138/2/1',  # for prod
-            'feature_type': 'gene',
-            'sequence_identities': '68.93%',
-            'chain_ids': 'Model 1.Chain B',
-            'model_ids': '0',
-            'exact_matches': '0',
-            'scratch_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz')
-        }]
         failed_ids = ['1A0I']
 
         structs_name = 'test_saveNreport_struct'
@@ -1025,7 +1026,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_ids'])
 
-    def dfu_save_proteinstructure(self):
+    def dfu_save_proteinstructures(self):
         """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
 
         obj_to_save = {
@@ -1057,6 +1058,75 @@ class ProteinStructureUtilsTest(unittest.TestCase):
               }
             ],
             'total_structures': 4,
+            'pdb_infos': [{
+                'structure_name': '6TUK',
+                'file_extension': '.pdb',
+                'narrative_id': 63679,
+                'genome_name': 'MLuteus_ATCC_49442',
+                'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+                'is_model': 1,
+                'from_rcsb': 1,
+                'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
+                'genome_ref': '63679/38/1',  # for appdev
+                # 'genome_ref': '107138/2/1',  # for prod
+                'feature_type': 'gene',
+                'sequence_identities': '68.93%',
+                'chain_ids': 'Model 1.Chain B',
+                'model_ids': '0',
+                'exact_matches': '0',
+                'scratch_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz')
+            }, {
+                'structure_name': 'MLuteus_AlphaFold_133',
+                'file_extension': '.pdb',
+                'narrative_id': 63679,
+                'genome_name': 'MLuteus_ATCC_49442',
+                'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+                'is_model': 1,
+                'from_rcsb': 0,
+                'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb'),
+                'genome_ref': '63679/38/1',  # for appdev
+                # 'genome_ref': '107138/2/1',  # for prod
+                'feature_type': 'gene',
+                'sequence_identities': '99.99%',
+                'chain_ids': 'Model 1.Chain B',
+                'model_ids': '0',
+                'exact_matches': '1',
+                'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb')
+            }, {
+                'structure_name': 'MLuteus_AlphaFold_3483',
+                'file_extension': '.pdb',
+                'narrative_id': 63679,
+                'genome_name': 'MLuteus_ATCC_49442',
+                'feature_id': 'MLuteus_masurca_RAST.CDS.3483',
+                'is_model': 1,
+                'from_rcsb': 0,
+                'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb'),
+                'genome_ref': '63679/38/1',  # for appdev
+                # 'genome_ref': '107138/2/1',  # for prod
+                'feature_type': 'gene',
+                'sequence_identities': '99.99%',
+                'chain_ids': 'Model 1.Chain B',
+                'model_ids': '0',
+                'exact_matches': '1',
+                'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb')
+            }, {
+                'structure_name': 'MLuteus_AlphaFold_3664',
+                'file_extension': '.pdb',
+                'narrative_id': 63679,
+                'genome_name': 'MLuteus_ATCC_49442',
+                'feature_id': 'MLuteus_masurca_RAST.CDS.3664',
+                'is_model': 1,
+                'from_rcsb': 0,
+                'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb'),
+                'genome_ref': '63679/38/1',  # for appdev
+                # 'genome_ref': '107138/2/1',  # for prod
+                'feature_type': 'gene',
+                'sequence_identities': '99.99%',
+                'chain_ids': 'Model 1.Chain B',
+                'model_ids': '0',
+                'exact_matches': '1',
+                'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb')
+            }],
             'description': 'Created 4 structures in batch2_test_structures'
         }
 
