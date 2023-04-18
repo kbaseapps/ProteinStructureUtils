@@ -1170,7 +1170,7 @@ class PDBUtil:
             pdb_info['scratch_path'] = file_path
         return data, pdb_info
 
-    def export_pdb_structures(self, params):
+    def export_structure_handles(self, params):
         """
             export_structure_handles: return the handles of the ProteinStructures object
         """
@@ -1194,7 +1194,7 @@ class PDBUtil:
 
     def export_protein_structures(self, params):
         """
-            export_pdb_structures: return the shock_ids of the ProteinStructures object
+            export_protein_structures: return the shock_ids of the ProteinStructures object
         """
         if 'input_ref' not in params:
             raise ValueError('Variable "input_ref" is required!')

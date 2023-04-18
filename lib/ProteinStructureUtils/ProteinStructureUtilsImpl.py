@@ -25,7 +25,7 @@ class ProteinStructureUtils:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "80ebb3bc5983f8744e56418d77a66f703c0e5347"
+    GIT_COMMIT_HASH = "ae30fb924319989e7b2b7238d03ee603c7306773"
 
     #BEGIN_CLASS_HEADER
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -49,7 +49,7 @@ class ProteinStructureUtils:
         """
         batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files
         :param params: instance of type "BatchPDBImportParams" (Input/Output
-           of the batch_import_pdbs_from_metafile structures_name:
+           of batch_import_pdbs_from_metafile structures_name:
            Proteinstructures object name workspace_name: workspace name for
            object to be saved to metadata_staging_file_path: path to a
            spreadsheet file that lists the metadata of PDB files and their
@@ -58,8 +58,7 @@ class ProteinStructureUtils:
            "structures_name" of String, parameter "workspace_name" of type
            "workspace_name" (workspace name of the object)
         :returns: instance of type "BatchPDBImportOutput" -> structure:
-           parameter "structures_ref" of String, parameter "report_name" of
-           String, parameter "report_ref" of String
+           parameter "structures_ref" of String
         """
         # ctx is the context object
         # return variables are: result
@@ -92,7 +91,7 @@ class ProteinStructureUtils:
         # logging.info(f'Starting export_pdb_structures with params:\n{params}.')
         self.config['USER_ID'] = ctx['user_id']
         self.pdb_util = PDBUtil(self.config)
-        result = self.pdb_util.export_pdb_structures(params)
+        result = self.pdb_util.export_structure_handles(params)
         #END export_pdb_structures
 
         # At some point might do deeper type checking...

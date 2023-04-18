@@ -832,10 +832,10 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(ret_data, {})
         self.assertEqual(ret_info, {})
 
-    # saveStructures_createReport
-    #@unittest.skip('test_saveStructures_createReport')
-    def test_saveStructures_createReport(self):
-        pdb_infos = [{
+    # saveStructures
+    #@unittest.skip('test_saveStructures_1')
+    def test_saveStructures_1(self):
+        pdb_infos1 = [{
             'structure_name': '6TUK',
             'file_extension': '.pdb',
             'narrative_id': 63679,
@@ -881,21 +881,28 @@ class ProteinStructureUtilsTest(unittest.TestCase):
                            'user_data': '',
                            'is_model': 1
             }],
-            'pdb_infos': pdb_infos,
+            'pdb_infos': pdb_infos1,
             'total_structures': 1,
             'description': 'ONE structure created'
         }
         failed_ids = ['1A0I']
 
-        structs_name = 'test_saveNreport_struct'
+        structs_name = 'test_save_struct'
         if not isinstance(self.wsName, int):
             workspace_id = self.dfu.ws_name_to_id(self.wsName)
         else:
             workspace_id = self.wsName
 
-        ret = self.pdb_util.saveStructures_createReport(structs_name, workspace_id, self.wsName,
-                                                        struct_objects, pdb_infos, failed_ids)
-        self.assertIn('batch_import_', ret['report_name'])
+        structs_ref = self.pdb_util.saveStructures(structs_name, workspace_id, self.wsName,
+                                                   struct_objects)
+        self.assertTrue(structs_ref)
+
+        structs_data, structs_info = self.get_structs_object(structs_ref)
+        self.assertEqual(structs_data['pdb_infos'], pdb_infos1)
+
+        # test pdb_util._createReport() using the above structs_ref
+        report_out = self.pdb_util._createReport(self.wsName, structs_ref, structs_name, failed_ids)
+        self.assertCountEqual(report_out.keys(), ["report_ref", "report_name"])
 
     #@unittest.skip('test_batch_import_pdbs_pathched')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -908,7 +915,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.pdb_util.batch_import_pdbs(params)
-        self.assertCountEqual(ret.keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret.keys(), ["structures_ref"])
 
     # Testing self.serviceImpl functions
     #@unittest.skip('test_Impl_batch_import_pdbs_from_metafile1')
@@ -923,7 +930,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret[0].keys(), ["structures_ref"])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_from_metafile2')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -937,7 +944,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret1[0].keys(), ["structures_ref"])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_alphafolds')
     @patch.object(DataFileUtil, "download_staging_file", side_effect=mock_download_staging_file)
@@ -951,9 +958,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret1 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret1[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret1[0].keys(), ["structures_ref"])
         parms = {'input_ref': ret1[0]['structures_ref']}
-        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        exp_pdb_shockIDs = self.pdb_util.export_structure_handles(parms)
         # self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
@@ -969,9 +976,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret[0].keys(), ["structures_ref"])  # , "report_ref", "report_name"])
         parms = {'input_ref': ret[0]['structures_ref']}
-        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        exp_pdb_shockIDs = self.pdb_util.export_structure_handles(parms)
         self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
@@ -987,9 +994,9 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret2[0].keys(), ["structures_ref"])  #, "report_ref", "report_name"])
         parms = {'input_ref': ret2[0]['structures_ref']}
-        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
+        exp_pdb_shockIDs = self.pdb_util.export_structure_handles(parms)
         self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 12)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
@@ -1005,30 +1012,101 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'workspace_name': self.wsName
         }
         ret2 = self.serviceImpl.batch_import_pdbs_from_metafile(self.ctx, params)
-        self.assertCountEqual(ret2[0].keys(), ["structures_ref", "report_ref", "report_name"])
+        self.assertCountEqual(ret2[0].keys(), ["structures_ref"])  #, "report_ref", "report_name"])
         parms = {'input_ref': ret2[0]['structures_ref']}
-        exp_pdb_shockIDs = self.pdb_util.export_pdb_structures(parms)
-        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 5)
+        exp_pdb_shockIDs = self.pdb_util.export_structure_handles(parms)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 7)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     # '57196/53/1' is in AppDev
-    #@unittest.skip('test_export_pdb_structures')
-    def test_export_pdb_structures(self):
+    #@unittest.skip('test_export_structure_handles')
+    def test_export_structure_handles(self):
         params = {'input_ref': '57196/53/1'}
         ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_ids'])
         self.assertEqual(len(ret[0]['shock_ids']), 12)
 
     # '62713/24/1' is in CI, so skipped here by starting the function without 'test_'.
-    # ('ci_export_pdb_structures')
-    def ci_export_pdb_structures_ci(self):
+    # ('ci_export_structure_handles')
+    def ci_export_structure_handles_ci(self):
         params = {'input_ref': '62713/24/1'}
-        ret = self.serviceImpl.export_pdb_structures(self.ctx, params)
+        ret = self.serviceImpl.export_structure_handles(self.ctx, params)
         self.assertCountEqual(ret[0].keys(), ['shock_ids'])
 
-    def dfu_save_proteinstructures(self):
-        """Just for testing dfu saving a well-defined KBaseStructure.ProteinStructures"""
+    # saveStructures
+    #@unittest.skip('test_saveStructures_2')
+    def test_saveStructures_2(self):
+        """Saving (by dfu) a well-defined KBaseStructure.ProteinStructures"""
 
+        pdb_infos2 = [{
+            'structure_name': '6TUK',
+            'file_extension': '.pdb',
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_49442',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+            'is_model': 1,
+            'from_rcsb': 1,
+            'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
+            'genome_ref': '63679/38/1',  # for appdev
+            # 'genome_ref': '107138/2/1',  # for prod
+            'feature_type': 'gene',
+            'sequence_identities': '68.93%',
+            'chain_ids': 'Model 1.Chain B',
+            'model_ids': '0',
+            'exact_matches': '0',
+            'scratch_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz')
+        }, {
+            'structure_name': 'MLuteus_AlphaFold_133',
+            'file_extension': '.pdb',
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_49442',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.133',
+            'is_model': 1,
+            'from_rcsb': 0,
+            'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb'),
+            'genome_ref': '63679/38/1',  # for appdev
+            # 'genome_ref': '107138/2/1',  # for prod
+            'feature_type': 'gene',
+            'sequence_identities': '99.99%',
+            'chain_ids': 'Model 1.Chain B',
+            'model_ids': '0',
+            'exact_matches': '1',
+            'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb')
+        }, {
+            'structure_name': 'MLuteus_AlphaFold_3483',
+            'file_extension': '.pdb',
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_49442',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.3483',
+            'is_model': 1,
+            'from_rcsb': 0,
+            'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb'),
+            'genome_ref': '63679/38/1',  # for appdev
+            # 'genome_ref': '107138/2/1',  # for prod
+            'feature_type': 'gene',
+            'sequence_identities': '99.99%',
+            'chain_ids': 'Model 1.Chain B',
+            'model_ids': '0',
+            'exact_matches': '1',
+            'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb')
+        }, {
+            'structure_name': 'MLuteus_AlphaFold_3664',
+            'file_extension': '.pdb',
+            'narrative_id': 63679,
+            'genome_name': 'MLuteus_ATCC_49442',
+            'feature_id': 'MLuteus_masurca_RAST.CDS.3664',
+            'is_model': 1,
+            'from_rcsb': 0,
+            'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb'),
+            'genome_ref': '63679/38/1',  # for appdev
+            # 'genome_ref': '107138/2/1',  # for prod
+            'feature_type': 'gene',
+            'sequence_identities': '99.99%',
+            'chain_ids': 'Model 1.Chain B',
+            'model_ids': '0',
+            'exact_matches': '1',
+            'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb')
+        }]
         obj_to_save = {
             'protein_structures': [
               {'name': 'ksga from bacillus subtilis 168', 'num_chains': 2, 'num_residues': 567, 'num_atoms': 4583,
@@ -1058,78 +1136,11 @@ class ProteinStructureUtilsTest(unittest.TestCase):
               }
             ],
             'total_structures': 4,
-            'pdb_infos': [{
-                'structure_name': '6TUK',
-                'file_extension': '.pdb',
-                'narrative_id': 63679,
-                'genome_name': 'MLuteus_ATCC_49442',
-                'feature_id': 'MLuteus_masurca_RAST.CDS.133',
-                'is_model': 1,
-                'from_rcsb': 1,
-                'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
-                'genome_ref': '63679/38/1',  # for appdev
-                # 'genome_ref': '107138/2/1',  # for prod
-                'feature_type': 'gene',
-                'sequence_identities': '68.93%',
-                'chain_ids': 'Model 1.Chain B',
-                'model_ids': '0',
-                'exact_matches': '0',
-                'scratch_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz')
-            }, {
-                'structure_name': 'MLuteus_AlphaFold_133',
-                'file_extension': '.pdb',
-                'narrative_id': 63679,
-                'genome_name': 'MLuteus_ATCC_49442',
-                'feature_id': 'MLuteus_masurca_RAST.CDS.133',
-                'is_model': 1,
-                'from_rcsb': 0,
-                'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb'),
-                'genome_ref': '63679/38/1',  # for appdev
-                # 'genome_ref': '107138/2/1',  # for prod
-                'feature_type': 'gene',
-                'sequence_identities': '99.99%',
-                'chain_ids': 'Model 1.Chain B',
-                'model_ids': '0',
-                'exact_matches': '1',
-                'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb')
-            }, {
-                'structure_name': 'MLuteus_AlphaFold_3483',
-                'file_extension': '.pdb',
-                'narrative_id': 63679,
-                'genome_name': 'MLuteus_ATCC_49442',
-                'feature_id': 'MLuteus_masurca_RAST.CDS.3483',
-                'is_model': 1,
-                'from_rcsb': 0,
-                'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb'),
-                'genome_ref': '63679/38/1',  # for appdev
-                # 'genome_ref': '107138/2/1',  # for prod
-                'feature_type': 'gene',
-                'sequence_identities': '99.99%',
-                'chain_ids': 'Model 1.Chain B',
-                'model_ids': '0',
-                'exact_matches': '1',
-                'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb')
-            }, {
-                'structure_name': 'MLuteus_AlphaFold_3664',
-                'file_extension': '.pdb',
-                'narrative_id': 63679,
-                'genome_name': 'MLuteus_ATCC_49442',
-                'feature_id': 'MLuteus_masurca_RAST.CDS.3664',
-                'is_model': 1,
-                'from_rcsb': 0,
-                'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb'),
-                'genome_ref': '63679/38/1',  # for appdev
-                # 'genome_ref': '107138/2/1',  # for prod
-                'feature_type': 'gene',
-                'sequence_identities': '99.99%',
-                'chain_ids': 'Model 1.Chain B',
-                'model_ids': '0',
-                'exact_matches': '1',
-                'scratch_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb')
-            }],
+            'pdb_infos': pdb_infos2,
             'description': 'Created 4 structures in batch2_test_structures'
         }
 
+        structs_ref = ""
         try:
             info = self.dfu.save_objects({
                 'id': self.ws_id,
@@ -1144,11 +1155,12 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             raise ValueError(err_msg)
         else:
             structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
-            self.check_object(structs_ref)
-            return structs_ref
+        o_data, o_info = self.get_structs_object(structs_ref)
+        self.assertEqual(o_data['pdb_infos'], pdb_infos2)
 
-    def check_object(self, obj_ref):
+    def get_structs_object(self, obj_ref):
         print(f'Checking the given object data and info for {obj_ref}\n')
         obj_data, obj_info = self.pdb_util._dfu_get_objects(obj_ref)
-        print(f'\n------------------------Data-------------------------------\n{obj_data}')
-        print(f'\n------------------------Info-------------------------------\n{obj_info}')
+        #print(f'\n------------------------Data-------------------------------\n{obj_data}')
+        #print(f'\n------------------------Info-------------------------------\n{obj_info}')
+        return obj_data, obj_info
