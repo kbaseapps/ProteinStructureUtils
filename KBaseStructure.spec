@@ -205,7 +205,7 @@ module KBaseStructure {
     pdb_infos: a list of PDBInfo objects
     total_structures: total count of protein structures
     description: description/remarks
-    @optional description
+    @optional description pdb_infos
   */
   typedef structure {
     list<ProteinStructure> protein_structures;

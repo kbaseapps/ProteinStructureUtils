@@ -29,8 +29,6 @@ module ProteinStructureUtils {
 
   typedef structure {
       string structures_ref;
-      string report_name;
-      string report_ref;
   } BatchPDBImportOutput;
 
   /* batch_import_pdbs_from_metafile: import a batch of ProteinStructures from PDB files*/

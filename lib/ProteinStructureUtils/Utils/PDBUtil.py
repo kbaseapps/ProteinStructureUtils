@@ -813,9 +813,7 @@ class PDBUtil:
         kbase_report_client = KBaseReport(self.callback_url, token=self.token)
         output = kbase_report_client.create_extended_report(report_params)
 
-        report_output = {'report_name': output['name'], 'report_ref': output['ref']}
-
-        return report_output
+        return{'report_name': output['name'], 'report_ref': output['ref']}
 
     def _config_viewer(self, viewer_nm, div_id):
         """
@@ -1096,6 +1094,18 @@ class PDBUtil:
             print(e)
             return ''
 
+    def _createReport(self, workspace_name, structures_ref, structures_name, failed_files):
+        """
+            _createReport: With given inputs create a report and return the final results
+        """
+        obj_data, obj_info = self._dfu_get_objects(structures_ref)
+        pdb_infos = obj_data.get('pdb_infos', [])
+        if pdb_infos:
+            return self._generate_batch_report(
+                    workspace_name, structures_ref, structures_name, pdb_infos, failed_files)
+        else:
+            return {}
+
     def __init__(self, config):
         self.callback_url = config['SDK_CALLBACK_URL']
         self.scratch = config['scratch']
@@ -1212,13 +1222,13 @@ class PDBUtil:
             'result_dir': export_package_dir
         }
 
-    def saveStructures_createReport(self, structures_name, workspace_id, workspace_name,
-                                    protein_structures, pdb_infos, failed_files):
+    def saveStructures(self, structures_name, workspace_id, workspace_name,
+                       protein_structures):
         """
-            saveStructures_createReport: With given inputs, save the ProteinStructures object
-                                         create a report and return the final results
+            saveStructures: With given inputs, save the ProteinStructures object, return object ref
         """
-        returnVal = {}
+        structs_ref = ''
+
         try:
             info = self.dfu.save_objects({
                 'id': workspace_id,
@@ -1227,18 +1237,13 @@ class PDBUtil:
                      'name': structures_name,
                      'data': protein_structures}]
             })[0]
-            structs_ref = f'{info[6]}/{info[0]}/{info[4]}'
             # logging.info(f'ProteinStructures data structure saved as:\n{structs_ref}')
-            returnVal = {'structures_ref': structs_ref}
         except (RuntimeError, TypeError, KeyError, ValueError, WorkspaceError) as e:
             err_msg = f'DFU.save_objects errored with: {e}'
             raise ValueError(err_msg)
-        else:  # execute if no exception
-            report_output = self._generate_batch_report(
-                    workspace_name, structs_ref, structures_name, pdb_infos, failed_files)
-            returnVal.update(report_output)
-
-        return returnVal
+        else:
+            structs_ref = f"{info[6]}/{info[0]}/{info[4]}"
+        return structs_ref
 
     def batch_import_pdbs(self, params):
         """
@@ -1261,8 +1266,7 @@ class PDBUtil:
             3. call import_pdb_file on each entry in pdb_file_paths, and/or
                call import_mmcif_file on each entry in pdb_file_paths
             4. assemble the data for a ProteinStructures for saving the data object
-            5. call saveStructures_createReport to save the object and
-               generate a report for batch_import_pdbs' result
+            5. call saveStructures to save the object
         """
         (metadata_file_path, workspace_name,
          structures_name) = self._validate_batch_import_params(params)
@@ -1336,5 +1340,5 @@ class PDBUtil:
         protein_structures['description'] = (f'Created {total_structures} '
                                              f'structures in {structures_name}')
 
-        return self.saveStructures_createReport(structures_name, workspace_id, workspace_name,
-                                                protein_structures, pdb_infos, failed_files)
+        return {'structures_ref': self.saveStructures(structures_name, workspace_id, workspace_name,
+                                                      protein_structures)}
