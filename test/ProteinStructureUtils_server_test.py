@@ -419,7 +419,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(feature_ids), 8)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
+            ['file_name', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
              'feature_id', 'file_extension', 'from_rcsb'])
 
     #@unittest.skip('test_parse_complete_metadata_tsv_file')
@@ -436,7 +436,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(feature_ids), 7)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
+            ['file_name', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
              'feature_id', 'file_extension', 'from_rcsb'])
 
     #@unittest.skip('test_parse_complete_metadata_xlsx_file')
@@ -453,7 +453,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertEqual(len(feature_ids), 7)
         self.assertCountEqual(
             pdb_data[0].keys(),
-            ['file_path', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
+            ['file_name', 'is_model', 'genome_name', 'structure_name', 'narrative_id',
              'feature_id', 'file_extension', 'from_rcsb'])
 
     #@unittest.skip('test_structure_to_pdb_file')
@@ -843,7 +843,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'feature_id': 'MLuteus_masurca_RAST.CDS.133',
             'is_model': 1,
             'from_rcsb': 1,
-            'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
+            'file_name': '6TUK.pdb.gz',
             'genome_ref': '63679/38/1',  # for appdev
             # 'genome_ref': '107138/2/1',  # for prod
             'feature_type': 'gene',
@@ -979,7 +979,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
         self.assertCountEqual(ret[0].keys(), ["structures_ref"])  # , "report_ref", "report_name"])
         parms = {'input_ref': ret[0]['structures_ref']}
         exp_pdb_shockIDs = self.pdb_util.export_structure_handles(parms)
-        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 2)
+        self.assertEqual(len(exp_pdb_shockIDs['shock_ids']), 3)
         self.assertCountEqual(exp_pdb_shockIDs.keys(), ['shock_ids'])
 
     #@unittest.skip('test_Impl_batch_import_pdbs_for_MLuteus_ATCC_docked')
@@ -1046,7 +1046,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'feature_id': 'MLuteus_masurca_RAST.CDS.133',
             'is_model': 1,
             'from_rcsb': 1,
-            'file_path': os.path.join('/kb/module/test/data', '6TUK.pdb.gz'),
+            'file_name': '6TUK.pdb.gz',
             'genome_ref': '63679/38/1',  # for appdev
             # 'genome_ref': '107138/2/1',  # for prod
             'feature_type': 'gene',
@@ -1063,7 +1063,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'feature_id': 'MLuteus_masurca_RAST.CDS.133',
             'is_model': 1,
             'from_rcsb': 0,
-            'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_133.pdb'),
+            'file_name': 'MLuteus_AlphaFold_133.pdb',
             'genome_ref': '63679/38/1',  # for appdev
             # 'genome_ref': '107138/2/1',  # for prod
             'feature_type': 'gene',
@@ -1080,7 +1080,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'feature_id': 'MLuteus_masurca_RAST.CDS.3483',
             'is_model': 1,
             'from_rcsb': 0,
-            'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3483.pdb'),
+            'file_name': 'MLuteus_AlphaFold_3483.pdb',
             'genome_ref': '63679/38/1',  # for appdev
             # 'genome_ref': '107138/2/1',  # for prod
             'feature_type': 'gene',
@@ -1097,7 +1097,7 @@ class ProteinStructureUtilsTest(unittest.TestCase):
             'feature_id': 'MLuteus_masurca_RAST.CDS.3664',
             'is_model': 1,
             'from_rcsb': 0,
-            'file_path': os.path.join('/kb/module/test/data', 'MLuteus_AlphaFold_3664.pdb'),
+            'file_name': 'MLuteus_AlphaFold_3664.pdb',
             'genome_ref': '63679/38/1',  # for appdev
             # 'genome_ref': '107138/2/1',  # for prod
             'feature_type': 'gene',
