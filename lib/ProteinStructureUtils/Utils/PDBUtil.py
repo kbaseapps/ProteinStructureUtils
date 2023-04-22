@@ -699,7 +699,7 @@ class PDBUtil:
                 and the kbase_meta_data
 
             return: a list pdb_file_paths containing objects of structure:
-                    {'file_path': pdb_fn,
+                    {'file_name': pdb_fn,
                      'file_extension': ext,
                      'structure_name': struct_name,
                      'narrative_id': narr_id,
@@ -768,7 +768,7 @@ class PDBUtil:
                 from_rcsb = df_meta_data[df_columns[6]][i]
                 if not pd.isna(is_model) and not pd.isna(from_rcsb):
                     pdb_file_paths.append(
-                        {'file_path': pdb_fn,
+                        {'file_name': pdb_fn,
                          'file_extension': ext,
                          'structure_name': struct_name,
                          'narrative_id': narr_id,
@@ -846,12 +846,12 @@ class PDBUtil:
         for succ_pdb in succ_pdb_infos:
             if succ_pdb.get('from_rcsb', False):
                 continue
-            file_path = succ_pdb['file_path']
+            file_name = succ_pdb['file_name']
             file_ext = succ_pdb['file_extension']
             if file_ext == 'cif':
                 file_ext = 'mmcif'
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
-            base_filename = os.path.basename(file_path)
+            base_filename = os.path.basename(file_name)
             new_pdb_path = os.path.join(output_dir, base_filename)
             shutil.copy(pdb_file_path, new_pdb_path)
 
@@ -904,19 +904,20 @@ class PDBUtil:
             struct_nm = succ_pdb['structure_name'].upper()
             if not default_click:
                 default_click = f'{struct_nm}_sub'
-            file_path = succ_pdb['file_path']
+            file_name = succ_pdb['file_name']
             file_ext = succ_pdb['file_extension']
             if file_ext == 'cif':
                 file_ext = 'mmcif'
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
-            new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
+            base_filename = os.path.basename(file_name)
+            new_pdb_path = os.path.join(output_dir, base_filename)
             shutil.copy(pdb_file_path, new_pdb_path)
 
             viewer_tabs += (f'\n<button id="{struct_nm}_sub" '
                             f'class="subtablinks" onclick="openSubTab(event, this)">'
                             f'{struct_nm}</button>')
 
-            pre_loads += (f'\nviewer.loadStructureFromUrl("./{os.path.basename(file_path)}", '
+            pre_loads += (f'\nviewer.loadStructureFromUrl("./{base_filename}", '
                           f'"{file_ext}", false, {{ representationParams: '
                           f'{{ theme: {{ globalName: "operator-name" }} }} }});\n'
                           '});')
@@ -947,9 +948,9 @@ class PDBUtil:
 
         for succ_pdb in succ_pdb_infos:
             tbody_html += '<tr>'
-            file_path = succ_pdb['file_path']
+            file_name = succ_pdb['file_name']
             pdb_file_path = succ_pdb['scratch_path']  # this is the scratch path for this pdb file
-            new_pdb_path = os.path.join(output_dir, os.path.basename(file_path))
+            new_pdb_path = os.path.join(output_dir, os.path.basename(file_name))
             if not succ_pdb.get('from_rcsb', False):
                 shutil.copy(pdb_file_path, new_pdb_path)
 
@@ -1296,12 +1297,12 @@ class PDBUtil:
                     pdb_params['input_staging_file_path'] = None
                     pdb_params['from_rcsb'] = pdb['from_rcsb']
                 else:
-                    logging.info(f"File download for RCSB structure {pdb['file_path']} failed, "
+                    logging.info(f"File download for RCSB structure {pdb['file_name']} failed, "
                                  f"therefore structure {pdb['structure_name']} is not imported.")
-                    failed_files.append(pdb['file_path'])
+                    failed_files.append(pdb['file_name'])
                     continue
             else:
-                pdb_params['input_staging_file_path'] = pdb['file_path']
+                pdb_params['input_staging_file_path'] = pdb['file_name']
                 pdb_params['input_file_path'] = None
 
             pdb_params['pdb_info'] = pdb
@@ -1316,18 +1317,18 @@ class PDBUtil:
                     # logging.info(f'*****Imported {pdb_data}!')
                     pdb_objects.append(pdb_data)
                     pdb_infos.append(pdb_info)
-                    successful_files.append(pdb['file_path'])
+                    successful_files.append(pdb['file_name'])
                 else:
                     # logging.info(f'*****Importing {pdb["structure_name"]} failed!')
-                    failed_files.append(pdb['file_path'])
+                    failed_files.append(pdb['file_name'])
             elif pdb['file_extension'] == 'cif':
                 cif_data, pdb_info = self.import_mmcif_file(pdb_params)
                 if cif_data:
                     pdb_objects.append(cif_data)
                     pdb_infos.append(pdb_info)
-                    successful_files.append(pdb['file_path'])
+                    successful_files.append(pdb['file_name'])
                 else:
-                    failed_files.append(pdb['file_path'])
+                    failed_files.append(pdb['file_name'])
 
         if not pdb_objects:
             logging.info("No pdb structure was created/saved!")

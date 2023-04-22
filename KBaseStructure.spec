@@ -110,7 +110,7 @@ module KBaseStructure {
 
   /*
     PDBInfo
-    file_path: PDB structure file path
+    file_name: PDB structure file nmae
     file_extension: PDB structure file extenstion
     structure_name: PDB structure name
     narrative_id: KBase narrative id
@@ -125,14 +125,14 @@ module KBaseStructure {
     rcsb_id: The structure id for RCSB database
     genome_ref: name of a KBase genome object reference
     feature_type: id of a KBase feature object's type, default to 'gene'
-    stratch_path: path on the shared folder where the structure file resides, default to file_path
+    stratch_path: path on the shared folder where the structure file resides, default to file_name
     exact_matches: a string comma seperated '0' and '1' indicating an exact match not
     found ('0') or found ('1') for the structure's proteins with a given KBase genome feature
 
-    @optional rcsb_id genome_ref feature_type scratch_path exact_matches
+    @optional file_name rcsb_id genome_ref feature_type scratch_path exact_matches
   */
   typedef structure {
-    string file_path;
+    string file_name;
     string file_extension;
     string structure_name;
     int narrative_id;
